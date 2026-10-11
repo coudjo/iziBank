@@ -1,7 +1,6 @@
 // Core banking schema
-// Source: docs/schema/core-banking.sql
-// Phase A amendments in the implementation plan section 2 are applied in A1-03,
-// not in this snapshot. Where the plan and this file disagree, the plan wins.
+// Source: docs/schema/core-banking.sql plus Phase A section 2 amendments (applied A1-03).
+// Where the plan and this file disagree, the plan wins.
 
 Project iziBank {
   database_type: 'SQL Server 2022'
@@ -22,7 +21,11 @@ Table InstitutionProfile {
   LicenseNumber varchar(30) [unique]
   RegulatoryCategoryId int
   IncorporationDate date
-  HeadOfficeAddress varchar(300)
+  HeadOfficeAddress nvarchar(300)
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
   Note: 'Singleton - exactly one row per deployment'
 }
 
@@ -33,6 +36,10 @@ Table Branch {
   OperatingLicenseNo varchar(30)
   ClearingDays smallint
   IsActive bool [not null, default: true]
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table Currency {
@@ -41,6 +48,10 @@ Table Currency {
   CurrencyName varchar(50) [not null]
   ExchangeRate decimal(18,6)
   IsLocalCurrency bool [not null, default: false]
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table BusinessDayStatus {
@@ -50,12 +61,20 @@ Table BusinessDayStatus {
   BusinessDayStart datetime
   BusinessDayEnd datetime
   CurrentStatusId int
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table DefinedHoliday {
   HolidayId int [pk, increment]
   HolidayDate date [not null, unique]
   Remarks varchar(100)
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table Module {
@@ -64,6 +83,10 @@ Table Module {
   ModuleName varchar(50) [not null]
   HasDataEntry bool [not null, default: false]
   IsActive bool [not null, default: true]
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table SubModule {
@@ -72,21 +95,31 @@ Table SubModule {
   SubModuleCode varchar(20) [not null, unique]
   SubModuleName varchar(50) [not null]
   IsActive bool [not null, default: true]
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table StaffUser {
   StaffUserId bigint [pk, increment]
   BranchId int [not null]
   StaffCode varchar(20) [not null, unique]
+  FullName nvarchar(100) [not null]
   IsTeller bool [not null, default: false]
   TellerGLAccountId bigint
   IsDisabled bool [not null, default: false]
   SecretKeyHash varchar(255)
   CanChangeSecretKey bool
   ChangeKeyAtNextLogOn bool
+  SecretKeyChangedOn datetime
   SecretKeyExpiryDays smallint
   CanSwitchBranch bool
   RowVersion blob
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table CustomerDigitalAccess {
@@ -95,6 +128,10 @@ Table CustomerDigitalAccess {
   AccessCode varchar(20) [not null, unique]
   SecretKeyHash varchar(255)
   IsDisabled bool [not null, default: false]
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table UserPermission {
@@ -111,6 +148,10 @@ Table UserPermission {
   DebitLimit decimal(19,4)
   CreditSupervisionLimit decimal(19,4)
   DebitSupervisionLimit decimal(19,4)
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table UserSession {
@@ -129,11 +170,15 @@ Table EventType {
   EventTypeId int [pk, increment]
   EventCode varchar(30) [not null, unique]
   EventName varchar(100) [not null]
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table UserActivityLog {
   EventId bigint [pk, increment]
-  SessionId bigint [not null] [note: 'Phase A amendment 2 makes this nullable']
+  SessionId bigint [note: 'Nullable so failed logins can be recorded before a session exists']
   BranchId int
   EventTypeId int [not null]
   EntityType varchar(50)
@@ -159,9 +204,11 @@ Table DataChangeAuditLog {
 
 Table Party {
   PartyId bigint [pk, increment]
+  PartyNumber varchar(20) [not null, unique]
+  DisplayName nvarchar(200) [not null]
   PartyTypeId int [not null]
-  Address1 varchar(200)
-  Address2 varchar(200)
+  Address1 nvarchar(200)
+  Address2 nvarchar(200)
   Phone varchar(20)
   Mobile varchar(20)
   EmailAddress varchar(100)
@@ -173,35 +220,51 @@ Table Party {
   IsSupervisionRequired bool [not null, default: false]
   SupervisedByUserId bigint
   SupervisedOn datetime
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table IndividualDetail {
   PartyId bigint [pk]
-  Title varchar(10)
-  FirstName varchar(60) [not null]
-  LastName varchar(60) [not null]
+  Title nvarchar(10)
+  FirstName nvarchar(60) [not null]
+  LastName nvarchar(60) [not null]
   GenderId int
   DateOfBirth date
   Nationality varchar(50)
   IdentificationTypeId int
   IdentificationNumber varchar(30)
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table BusinessDetail {
   PartyId bigint [pk]
-  BusinessName varchar(150) [not null]
+  BusinessName nvarchar(150) [not null]
   RegistrationNumber varchar(40) [unique]
   TaxIdentificationNumber varchar(30)
   IncorporationDate date
   BusinessCategoryId int
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table GroupDetail {
   PartyId bigint [pk]
-  GroupName varchar(100) [not null]
+  GroupName nvarchar(100) [not null]
   FormationDate date
   MeetingFrequency varchar(30)
   ChairpersonPartyId bigint
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table GroupMember {
@@ -211,6 +274,10 @@ Table GroupMember {
   GroupMemberRoleId int
   JoinedOn date
   LeftOn date
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table PartyBeneficialOwner {
@@ -218,6 +285,10 @@ Table PartyBeneficialOwner {
   BusinessPartyId bigint [not null]
   OwnerPartyId bigint [not null]
   OwnershipPercentage decimal(5,2)
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table PartyIdentificationDocument {
@@ -228,6 +299,10 @@ Table PartyIdentificationDocument {
   ImageValue varbinary(max)
   IssuedOn date
   ExpiresOn date
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table PartyImage {
@@ -236,14 +311,22 @@ Table PartyImage {
   IsSupervisionRequired bool [not null, default: false]
   SupervisedByUserId bigint
   SupervisedOn datetime
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table PartyNextOfKin {
   PartyNextOfKinId bigint [pk, increment]
   PartyId bigint [not null]
-  FullName varchar(100) [not null]
+  FullName nvarchar(100) [not null]
   Relationship varchar(40)
   MobileNumber varchar(20)
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table PartyRegulatoryAttribute {
@@ -252,6 +335,10 @@ Table PartyRegulatoryAttribute {
   AttributeCode varchar(50) [not null]
   AttributeValue varchar(500)
   RecordedOn datetime [not null]
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table CreditOfficer {
@@ -259,6 +346,10 @@ Table CreditOfficer {
   BranchId int [not null]
   StaffUserId bigint [not null]
   IsDisabled bool [not null, default: false]
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table Product {
@@ -280,6 +371,10 @@ Table Product {
   IsSupervisionRequired bool [not null, default: false]
   SupervisedByUserId bigint
   SupervisedOn datetime
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table ProductInterestRate {
@@ -291,6 +386,10 @@ Table ProductInterestRate {
   InterestRate decimal(9,4) [not null]
   EffectiveFrom date [not null]
   EffectiveTo date
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table Account {
@@ -298,7 +397,7 @@ Table Account {
   AccountNumber varchar(20) [not null, unique]
   BranchId int [not null]
   ProductId int [not null]
-  AccountName varchar(150) [not null]
+  AccountName nvarchar(150) [not null]
   DateOpened date [not null]
   OpenedByUserId bigint
   OperatingModeId int
@@ -310,6 +409,10 @@ Table Account {
   SupervisedByUserId bigint
   SupervisedOn datetime
   RowVersion blob
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table AccountHolder {
@@ -318,6 +421,10 @@ Table AccountHolder {
   PartyId bigint [not null]
   AccountHolderRoleId int [not null]
   OperatingInstructionId int
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table AccountBalance {
@@ -346,6 +453,10 @@ Table AccountClassification {
   AccountClassificationId int [pk, increment]
   ClassificationCode varchar(10) [not null, unique]
   ClassificationName varchar(100) [not null]
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table AccountSubClassification {
@@ -353,6 +464,10 @@ Table AccountSubClassification {
   AccountClassificationId int [not null]
   SubClassificationCode varchar(10) [not null, unique]
   SubClassificationName varchar(100) [not null]
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table AccountClassificationAssignment {
@@ -360,6 +475,10 @@ Table AccountClassificationAssignment {
   AccountId bigint [not null]
   AccountClassificationId int [not null]
   AccountSubClassificationId int
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table AccountCondition {
@@ -371,12 +490,20 @@ Table AccountCondition {
   DebitLimit decimal(19,4)
   SuperviseAllTransactions bool [not null, default: false]
   DoNotApplyTransactionCharges bool [not null, default: false]
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table AccountReminder {
   AccountReminderId bigint [pk, increment]
   AccountId bigint [not null]
   ReminderText varchar(200) [not null]
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table DormantAccountHistory {
@@ -384,6 +511,10 @@ Table DormantAccountHistory {
   AccountId bigint [not null]
   ActivatedByUserId bigint
   DateActivated datetime [not null]
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table FreezeReleaseAccountBalance {
@@ -392,6 +523,10 @@ Table FreezeReleaseAccountBalance {
   FreezeReleaseActionId int [not null]
   Amount decimal(19,4)
   Remarks varchar(200)
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table LedgerAccount {
@@ -399,11 +534,17 @@ Table LedgerAccount {
   BranchId int [not null]
   LedgerAccountCode varchar(20) [not null, unique]
   AccountName varchar(100) [not null]
-  LegderAccountTypeId int [note: 'Typo in source DDL; Phase A amendment 3 renames to LedgerAccountTypeId']
+  LedgerAccountTypeId int
   CurrencyId int
   Balance decimal(19,4) [not null, default: false]
-  ApprovalRequired bool [not null, default: false] [note: 'Phase A amendment 6 renames to IsSupervisionRequired']
+  IsSupervisionRequired bool [not null, default: true]
+  SupervisedByUserId bigint
+  SupervisedOn datetime
   RowVersion blob
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
 }
 
 Table RegulatoryCategoryType {
@@ -1201,7 +1342,7 @@ Ref: DormantAccountHistory.ActivatedByUserId > StaffUser.StaffUserId
 Ref: FreezeReleaseAccountBalance.AccountId > Account.AccountId
 Ref: FreezeReleaseAccountBalance.FreezeReleaseActionId > FreezeReleaseActionType.Id
 Ref: LedgerAccount.BranchId > Branch.BranchId
-Ref: LedgerAccount.LegderAccountTypeId > LedgerAccountType.Id
+Ref: LedgerAccount.LedgerAccountTypeId > LedgerAccountType.Id
 Ref: LedgerAccount.CurrencyId > Currency.CurrencyId
 Ref: AccountLedgerEntry.AccountId > Account.AccountId
 Ref: AccountLedgerEntry.TransactionCodeId > TransactionCode.TransactionCodeId

@@ -52,6 +52,13 @@ dotnet_diagnostic.CS1591.severity = none
 dotnet_diagnostic.CA1711.severity = none
 dotnet_diagnostic.CA1716.severity = none
 
+# EF Core scaffolding — do not rewrite generated migrations
+[src/Banking.Infrastructure/Persistence/Migrations/**.cs]
+generated_code = true
+dotnet_diagnostic.IDE0161.severity = none
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA1861.severity = none
+
 # Test method names may use underscores
 [tests/**/*.cs]
 dotnet_diagnostic.CA1707.severity = none

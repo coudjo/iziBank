@@ -47,9 +47,12 @@ Wait until the `sqlserver` service is healthy, then connect with the connection 
 ## Build and test
 
 ```bash
+dotnet tool restore
 dotnet build
 dotnet test
 ```
+
+Schema migrations live in `src/Banking.Infrastructure/Persistence/Migrations`. `0001` is the EF baseline. `0002` creates the append-only ledger tables with hand-written SQL.
 
 ## Working agreement
 
