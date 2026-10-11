@@ -10,5 +10,6 @@
     <Project Path="tests/Banking.Api.IntegrationTests/Banking.Api.IntegrationTests.csproj" />
     <Project Path="tests/Banking.Application.Tests/Banking.Application.Tests.csproj" />
     <Project Path="tests/Banking.Domain.Tests/Banking.Domain.Tests.csproj" />
+    <Project Path="tests/Banking.Infrastructure.Tests/Banking.Infrastructure.Tests.csproj" />
   </Folder>
 </Solution>

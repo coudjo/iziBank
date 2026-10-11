@@ -11,3 +11,4 @@ Format: task ID, then a one-line description.
 - A0-03: Testcontainers MSSQL fixture, one database per test class, authenticated `HttpClient` helper.
 - A0-04: CI restore/build/test and OpenAPI drift check.
 - A0-05: Schema snapshot, Phase A decision ADR, and this changelog.
+- A1-01: Domain `IAuditable` and `Lookup` base types, `BankingDbContext`, and global EF conventions.
