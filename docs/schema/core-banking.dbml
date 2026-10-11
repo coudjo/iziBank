@@ -1,0 +1,1325 @@
+// Core banking schema
+// Source: docs/schema/core-banking.sql
+// Phase A amendments in the implementation plan section 2 are applied in A1-03,
+// not in this snapshot. Where the plan and this file disagree, the plan wins.
+
+Project iziBank {
+  database_type: 'SQL Server 2022'
+  Note: '''
+    Single institution, one shared database.
+    Phase A implements the Foundation group only.
+    Out-of-scope tables are recorded here so later phases do not invent names.
+  '''
+}
+
+// ---------------------------------------------------------------------------
+// Phase A — in scope
+// ---------------------------------------------------------------------------
+
+Table InstitutionProfile {
+  InstitutionProfileId int [pk, increment]
+  InstitutionName varchar(150) [not null]
+  LicenseNumber varchar(30) [unique]
+  RegulatoryCategoryId int
+  IncorporationDate date
+  HeadOfficeAddress varchar(300)
+  Note: 'Singleton - exactly one row per deployment'
+}
+
+Table Branch {
+  BranchId int [pk, increment]
+  BranchCode varchar(10) [not null, unique]
+  BranchName varchar(100) [not null]
+  OperatingLicenseNo varchar(30)
+  ClearingDays smallint
+  IsActive bool [not null, default: true]
+}
+
+Table Currency {
+  CurrencyId int [pk, increment]
+  CurrencyCode varchar(5) [not null, unique]
+  CurrencyName varchar(50) [not null]
+  ExchangeRate decimal(18,6)
+  IsLocalCurrency bool [not null, default: false]
+}
+
+Table BusinessDayStatus {
+  BusinessDayStatusId bigint [pk, increment]
+  BranchId int [not null]
+  WorkingDate date [not null]
+  BusinessDayStart datetime
+  BusinessDayEnd datetime
+  CurrentStatusId int
+}
+
+Table DefinedHoliday {
+  HolidayId int [pk, increment]
+  HolidayDate date [not null, unique]
+  Remarks varchar(100)
+}
+
+Table Module {
+  ModuleId int [pk, increment]
+  ModuleCode varchar(20) [not null, unique]
+  ModuleName varchar(50) [not null]
+  HasDataEntry bool [not null, default: false]
+  IsActive bool [not null, default: true]
+}
+
+Table SubModule {
+  SubModuleId int [pk, increment]
+  ModuleId int [not null]
+  SubModuleCode varchar(20) [not null, unique]
+  SubModuleName varchar(50) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table StaffUser {
+  StaffUserId bigint [pk, increment]
+  BranchId int [not null]
+  StaffCode varchar(20) [not null, unique]
+  IsTeller bool [not null, default: false]
+  TellerGLAccountId bigint
+  IsDisabled bool [not null, default: false]
+  SecretKeyHash varchar(255)
+  CanChangeSecretKey bool
+  ChangeKeyAtNextLogOn bool
+  SecretKeyExpiryDays smallint
+  CanSwitchBranch bool
+  RowVersion blob
+}
+
+Table CustomerDigitalAccess {
+  CustomerDigitalAccessId bigint [pk, increment]
+  PartyId bigint [not null]
+  AccessCode varchar(20) [not null, unique]
+  SecretKeyHash varchar(255)
+  IsDisabled bool [not null, default: false]
+}
+
+Table UserPermission {
+  UserPermissionId bigint [pk, increment]
+  StaffUserId bigint [not null]
+  BranchId int [not null]
+  ModuleId int [not null]
+  SubModuleId int
+  AllowAdd bool
+  AllowEdit bool
+  AllowDelete bool
+  CanSupervise bool
+  CreditLimit decimal(19,4)
+  DebitLimit decimal(19,4)
+  CreditSupervisionLimit decimal(19,4)
+  DebitSupervisionLimit decimal(19,4)
+}
+
+Table UserSession {
+  SessionId bigint [pk, increment]
+  StaffUserId bigint
+  CustomerDigitalAccessId bigint
+  LoginAt datetime [not null]
+  LogoutAt datetime
+  LogoutReasonId int
+  IPAddress varchar(45)
+  DeviceInfo varchar(200)
+  Note: 'Exactly one of StaffUserId / CustomerDigitalAccessId must be set (CHECK constraint)'
+}
+
+Table EventType {
+  EventTypeId int [pk, increment]
+  EventCode varchar(30) [not null, unique]
+  EventName varchar(100) [not null]
+}
+
+Table UserActivityLog {
+  EventId bigint [pk, increment]
+  SessionId bigint [not null] [note: 'Phase A amendment 2 makes this nullable']
+  BranchId int
+  EventTypeId int [not null]
+  EntityType varchar(50)
+  EntityId varchar(50)
+  Outcome varchar(10) [not null]
+  EventTimestamp datetime [not null]
+  RequestDetailsJson nvarchar(max)
+  Note: 'LEDGER - append-only, partitioned by month'
+}
+
+Table DataChangeAuditLog {
+  AuditId bigint [pk, increment]
+  StaffUserId bigint
+  BranchId int
+  TableName varchar(100) [not null]
+  RecordId varchar(50)
+  ActionType varchar(10) [not null]
+  OldValueJson nvarchar(max)
+  NewValueJson nvarchar(max)
+  LoggedOn datetime [not null]
+  Note: 'LEDGER - append-only, partitioned by month'
+}
+
+Table Party {
+  PartyId bigint [pk, increment]
+  PartyTypeId int [not null]
+  Address1 varchar(200)
+  Address2 varchar(200)
+  Phone varchar(20)
+  Mobile varchar(20)
+  EmailAddress varchar(100)
+  KYCStatusId int
+  SourceOfFunds varchar(200)
+  OccupationOrSector varchar(100)
+  IsPoliticallyExposed bool [not null, default: false]
+  CreditOfficerId bigint
+  IsSupervisionRequired bool [not null, default: false]
+  SupervisedByUserId bigint
+  SupervisedOn datetime
+}
+
+Table IndividualDetail {
+  PartyId bigint [pk]
+  Title varchar(10)
+  FirstName varchar(60) [not null]
+  LastName varchar(60) [not null]
+  GenderId int
+  DateOfBirth date
+  Nationality varchar(50)
+  IdentificationTypeId int
+  IdentificationNumber varchar(30)
+}
+
+Table BusinessDetail {
+  PartyId bigint [pk]
+  BusinessName varchar(150) [not null]
+  RegistrationNumber varchar(40) [unique]
+  TaxIdentificationNumber varchar(30)
+  IncorporationDate date
+  BusinessCategoryId int
+}
+
+Table GroupDetail {
+  PartyId bigint [pk]
+  GroupName varchar(100) [not null]
+  FormationDate date
+  MeetingFrequency varchar(30)
+  ChairpersonPartyId bigint
+}
+
+Table GroupMember {
+  GroupMemberId bigint [pk, increment]
+  GroupPartyId bigint [not null]
+  MemberPartyId bigint [not null]
+  GroupMemberRoleId int
+  JoinedOn date
+  LeftOn date
+}
+
+Table PartyBeneficialOwner {
+  PartyBeneficialOwnerId bigint [pk, increment]
+  BusinessPartyId bigint [not null]
+  OwnerPartyId bigint [not null]
+  OwnershipPercentage decimal(5,2)
+}
+
+Table PartyIdentificationDocument {
+  PartyIdentificationDocumentId bigint [pk, increment]
+  PartyId bigint [not null]
+  DocumentTypeId int [not null]
+  DocumentNumber varchar(40) [not null]
+  ImageValue varbinary(max)
+  IssuedOn date
+  ExpiresOn date
+}
+
+Table PartyImage {
+  PartyId bigint [pk]
+  ImageValue varbinary(max)
+  IsSupervisionRequired bool [not null, default: false]
+  SupervisedByUserId bigint
+  SupervisedOn datetime
+}
+
+Table PartyNextOfKin {
+  PartyNextOfKinId bigint [pk, increment]
+  PartyId bigint [not null]
+  FullName varchar(100) [not null]
+  Relationship varchar(40)
+  MobileNumber varchar(20)
+}
+
+Table PartyRegulatoryAttribute {
+  PartyRegulatoryAttributeId bigint [pk, increment]
+  PartyId bigint [not null]
+  AttributeCode varchar(50) [not null]
+  AttributeValue varchar(500)
+  RecordedOn datetime [not null]
+}
+
+Table CreditOfficer {
+  CreditOfficerId bigint [pk, increment]
+  BranchId int [not null]
+  StaffUserId bigint [not null]
+  IsDisabled bool [not null, default: false]
+}
+
+Table Product {
+  ProductId int [pk, increment]
+  BranchId int [not null]
+  ProductCode varchar(10) [not null, unique]
+  ProductName varchar(100) [not null]
+  ProductTypeId int [not null]
+  AccountPrefix varchar(6) [not null]
+  CurrencyId int [not null]
+  LedgerControlAccountId bigint
+  CreditInterestRate decimal(9,4)
+  DebitInterestRate decimal(9,4)
+  MinimumBalance decimal(19,4)
+  AccountsPerCustomer smallint
+  IsFreezed bool
+  IsChequeBookAllowed bool
+  IsActive bool [not null, default: true]
+  IsSupervisionRequired bool [not null, default: false]
+  SupervisedByUserId bigint
+  SupervisedOn datetime
+}
+
+Table ProductInterestRate {
+  ProductInterestRateId bigint [pk, increment]
+  ProductId int [not null]
+  RateTypeId int
+  MinimumAmount decimal(19,4)
+  MaximumAmount decimal(19,4)
+  InterestRate decimal(9,4) [not null]
+  EffectiveFrom date [not null]
+  EffectiveTo date
+}
+
+Table Account {
+  AccountId bigint [pk, increment]
+  AccountNumber varchar(20) [not null, unique]
+  BranchId int [not null]
+  ProductId int [not null]
+  AccountName varchar(150) [not null]
+  DateOpened date [not null]
+  OpenedByUserId bigint
+  OperatingModeId int
+  ClosedOn datetime
+  ClosedByUserId bigint
+  CloseReasonId int
+  IsDormant bool [not null, default: false]
+  IsSupervisionRequired bool [not null, default: false]
+  SupervisedByUserId bigint
+  SupervisedOn datetime
+  RowVersion blob
+}
+
+Table AccountHolder {
+  AccountHolderId bigint [pk, increment]
+  AccountId bigint [not null]
+  PartyId bigint [not null]
+  AccountHolderRoleId int [not null]
+  OperatingInstructionId int
+}
+
+Table AccountBalance {
+  AccountId bigint [pk]
+  OpeningBalance decimal(19,4) [not null, default: false]
+  ClearBalance decimal(19,4) [not null, default: false]
+  FreezedAmount decimal(19,4) [not null, default: false]
+  UnsupervisedCredit decimal(19,4) [not null, default: false]
+  UnsupervisedDebit decimal(19,4) [not null, default: false]
+  OverdrawLimit decimal(19,4) [not null, default: false]
+  AvailableBalance decimal(19,4) [not null, default: false]
+  TotalBalance decimal(19,4) [not null, default: false]
+  LastCreditTransactionDate datetime
+  LastDebitTransactionDate datetime
+  RowVersion blob
+}
+
+Table AccountBalanceDailySnapshot {
+  SnapshotId bigint [pk, increment]
+  AccountId bigint [not null]
+  SnapshotDate date [not null]
+  ClosingBalance decimal(19,4) [not null]
+}
+
+Table AccountClassification {
+  AccountClassificationId int [pk, increment]
+  ClassificationCode varchar(10) [not null, unique]
+  ClassificationName varchar(100) [not null]
+}
+
+Table AccountSubClassification {
+  AccountSubClassificationId int [pk, increment]
+  AccountClassificationId int [not null]
+  SubClassificationCode varchar(10) [not null, unique]
+  SubClassificationName varchar(100) [not null]
+}
+
+Table AccountClassificationAssignment {
+  AssignmentId bigint [pk, increment]
+  AccountId bigint [not null]
+  AccountClassificationId int [not null]
+  AccountSubClassificationId int
+}
+
+Table AccountCondition {
+  AccountId bigint [pk]
+  IsFreezed bool [not null, default: false]
+  DoNotAllowCredit bool [not null, default: false]
+  DoNotAllowDebit bool [not null, default: false]
+  CreditLimit decimal(19,4)
+  DebitLimit decimal(19,4)
+  SuperviseAllTransactions bool [not null, default: false]
+  DoNotApplyTransactionCharges bool [not null, default: false]
+}
+
+Table AccountReminder {
+  AccountReminderId bigint [pk, increment]
+  AccountId bigint [not null]
+  ReminderText varchar(200) [not null]
+}
+
+Table DormantAccountHistory {
+  DormantHistoryId bigint [pk, increment]
+  AccountId bigint [not null]
+  ActivatedByUserId bigint
+  DateActivated datetime [not null]
+}
+
+Table FreezeReleaseAccountBalance {
+  FreezeReleaseId bigint [pk, increment]
+  AccountId bigint [not null]
+  FreezeReleaseActionId int [not null]
+  Amount decimal(19,4)
+  Remarks varchar(200)
+}
+
+Table LedgerAccount {
+  LedgerAccountId bigint [pk, increment]
+  BranchId int [not null]
+  LedgerAccountCode varchar(20) [not null, unique]
+  AccountName varchar(100) [not null]
+  LegderAccountTypeId int [note: 'Typo in source DDL; Phase A amendment 3 renames to LedgerAccountTypeId']
+  CurrencyId int
+  Balance decimal(19,4) [not null, default: false]
+  ApprovalRequired bool [not null, default: false] [note: 'Phase A amendment 6 renames to IsSupervisionRequired']
+  RowVersion blob
+}
+
+Table RegulatoryCategoryType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table BusinessDayStatusType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table LogoutReasonType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table PartyType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table KYCStatusType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table GenderType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table IdentificationDocumentType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table BusinessCategoryType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table GroupMemberRoleType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table ProductType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table RateType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table AccountHolderRoleType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table OperatingInstructionType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table OperatingModeType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table CloseReasonType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table FreezeReleaseActionType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table LedgerAccountType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+// ---------------------------------------------------------------------------
+// Later phases — do not create in Phase A
+// ---------------------------------------------------------------------------
+
+Table ChargeCode {
+  ChargeId int [pk, increment]
+  Code varchar(10) [not null, unique]
+  Description varchar(100)
+  ChargeCategoryId int
+  IsActive bool [not null, default: true]
+}
+
+Table ProductCharge {
+  ProductChargeId bigint [pk, increment]
+  ProductId int [not null]
+  ChargeId int [not null]
+  ChargeConditionId int
+  FreeTransactions smallint
+  EffectiveFrom date [not null]
+  EffectiveTo date
+}
+
+Table ProductChargeTier {
+  ProductChargeTierId bigint [pk, increment]
+  ProductChargeId bigint [not null]
+  TierNumber smallint [not null]
+  ChargeBasisId int
+  TransactionAmount decimal(19,4)
+  AmountOrPercentage decimal(19,4)
+  MinimumCharge decimal(19,4)
+  MaximumCharge decimal(19,4)
+}
+
+Table TransactionCode {
+  TransactionCodeId int [pk, increment]
+  Code varchar(10) [not null, unique]
+  Description varchar(100)
+  TransactionCategoryId int
+  CreditOrDebit char(1) [not null]
+  DefaultNarration varchar(100)
+  IsSystemCode bool [not null, default: false]
+}
+
+Table TransactionCodeChargeTier {
+  TransactionCodeChargeTierId bigint [pk, increment]
+  TransactionCodeId int [not null]
+  TierNumber smallint [not null]
+  ChargeBasisId int
+  Amount decimal(19,4)
+  Percentage decimal(9,4)
+  IncomeLedgerAccountId bigint
+}
+
+Table AccountLedgerEntry {
+  LedgerEntryId bigint [pk, increment]
+  AccountId bigint [not null]
+  TransactionCodeId int [not null]
+  Amount decimal(19,4) [not null]
+  CreditOrDebit char(1) [not null]
+  EntryDate date [not null]
+  VoucherId varchar(20)
+  TellerLedgerAccountId bigint
+  ReversesEntryId bigint
+  EntryStatusId int [not null]
+  OperatorStaffUserId bigint
+  SupervisorStaffUserId bigint
+  Note: 'LEDGER - append-only, partitioned by EntryDate (monthly)'
+}
+
+Table LedgerEntry {
+  LedgerEntryId bigint [pk, increment]
+  LedgerAccountId bigint [not null]
+  TransactionCodeId int [not null]
+  Amount decimal(19,4) [not null]
+  CrDb char(1) [not null]
+  EntryDate date [not null]
+  ReversesEntryId bigint
+  EntryStatusId int [not null]
+  OperatorStaffUserId bigint
+  SupervisorStaffUserId bigint
+  Note: 'LEDGER - append-only, partitioned by EntryDate (monthly)'
+}
+
+Table PendingInterBranchEntry {
+  PendingEntryId bigint [pk, increment]
+  AccountId bigint [not null]
+  ProductId int
+  Amount decimal(19,4) [not null]
+  CrDb char(1) [not null]
+  TransactionCodeId int
+  OtherBranchId int [not null]
+  OtherBranchAccountId bigint
+  EntryStatusId int
+}
+
+Table SavedTransferEntry {
+  SavedTransferEntryId bigint [pk, increment]
+  BranchId int [not null]
+  AccountId bigint [not null]
+  ProductId int
+  Amount decimal(19,4) [not null]
+  CrDb char(1) [not null]
+  TransactionCodeId int
+  EntryStatusId int
+}
+
+Table LoanApplication {
+  LoanApplicationId bigint [pk, increment]
+  BranchId int [not null]
+  PartyId bigint [not null]
+  ProductId int [not null]
+  CreditOfficerId bigint
+  DebitAccountId bigint
+  LoanAccountId bigint
+  AppliedAmount decimal(19,4) [not null]
+  InterestRate decimal(9,4)
+  TermMonths smallint
+  RepaymentFrequencyId int
+  ApplicationDate date [not null]
+  LoanPurposeId int
+  ApplicationStatusId int [not null]
+  AppliedByUserId bigint
+}
+
+Table LoanApproval {
+  LoanApprovalId bigint [pk, increment]
+  LoanApplicationId bigint [not null]
+  ApprovedAmount decimal(19,4)
+  InterestRate decimal(9,4)
+  TermMonths smallint
+  DecisionId int [not null]
+  RejectedReason varchar(200)
+  DecidedByUserId bigint
+  DecidedOn datetime
+}
+
+Table Loan {
+  LoanId bigint [pk, increment]
+  BranchId int [not null]
+  AccountId bigint [not null]
+  LoanApplicationId bigint
+  LoanSeries smallint
+  LoanAmount decimal(19,4) [not null]
+  InterestRate decimal(9,4)
+  OutstandingPrincipal decimal(19,4)
+  OutstandingInterest decimal(19,4)
+  DisbursedOn date
+  DisbursedByUserId bigint
+  LoanStatusId int [not null]
+  DebitAccountId bigint
+  IsSupervisionRequired bool [not null, default: false]
+  SupervisedByUserId bigint
+  SupervisedOn datetime
+  IsPaidOff bool [not null, default: false]
+  ClosedOn datetime
+}
+
+Table LoanInstallmentSchedule {
+  InstallmentId bigint [pk, increment]
+  LoanId bigint [not null]
+  InstallmentNumber smallint [not null]
+  InstallmentDueOn date [not null]
+  PrincipalAmount decimal(19,4)
+  InterestAmount decimal(19,4)
+  InstallmentAmount decimal(19,4)
+  PrincipalPaid decimal(19,4)
+  InterestPaid decimal(19,4)
+  PaidOn datetime
+  PenaltyAmount decimal(19,4)
+  PenaltyPaid decimal(19,4)
+}
+
+Table LoanInstallmentScheduleRevision {
+  RevisionId bigint [pk, increment]
+  InstallmentId bigint [not null]
+  RevisionNumber smallint [not null]
+  PrincipalAmount decimal(19,4)
+  InterestAmount decimal(19,4)
+  RevisedOn datetime [not null]
+  RevisedByUserId bigint
+  RevisionReason varchar(200)
+}
+
+Table LoanLevelDetail {
+  LoanLevelId int [pk, increment]
+  ProductId int [not null]
+  LoanLevelCode varchar(10) [not null, unique]
+  MaxLoanAmount decimal(19,4)
+  MinLoanAmount decimal(19,4)
+  MaxInterestRate decimal(9,4)
+  MinInterestRate decimal(9,4)
+  MaxLoanTermMonths smallint
+  EffectiveFrom date [not null]
+  EffectiveTo date
+}
+
+Table Collateral {
+  CollateralId bigint [pk, increment]
+  LoanApplicationId bigint [not null]
+  PartyId bigint
+  CollateralCategoryId int
+  Description varchar(100)
+  CollateralValue decimal(19,4) [not null]
+  ForceSaleValue decimal(19,4)
+  StartDate date
+  ExpiryDate date
+}
+
+Table Guarantor {
+  GuarantorId bigint [pk, increment]
+  LoanApplicationId bigint [not null]
+  GuarantorPartyId bigint [not null]
+  WorkingDate date
+}
+
+Table PaidOffLoanDetail {
+  PaidOffId bigint [pk, increment]
+  LoanId bigint [not null]
+  PaidOffPrincipal decimal(19,4)
+  PaidOffInterest decimal(19,4)
+  PaidOffDate date
+  PaidOffByUserId bigint
+}
+
+Table GroupLoanMemberAllocation {
+  AllocationId bigint [pk, increment]
+  LoanId bigint [not null]
+  MemberPartyId bigint [not null]
+  AllocatedAmount decimal(19,4) [not null]
+  MemberRepaymentStatusId int
+  Note: 'ASSUMPTION - confirm per-member tracking inside a group loan is needed'
+}
+
+Table OverdraftApplication {
+  OverdraftApplicationId bigint [pk, increment]
+  AccountId bigint [not null]
+  Amount decimal(19,4) [not null]
+  InterestRate decimal(9,4)
+  ApplicationStatusId int
+}
+
+Table OverdraftApproval {
+  OverdraftApprovalId bigint [pk, increment]
+  OverdraftApplicationId bigint [not null]
+  ApprovedAmount decimal(19,4)
+  DecisionId int [not null]
+  ApprovedByUserId bigint
+}
+
+Table Overdraft {
+  OverdraftId bigint [pk, increment]
+  AccountId bigint [not null]
+  OverdraftApprovalId bigint [not null]
+  OverdrawLimit decimal(19,4) [not null]
+  ExpiryDate date
+}
+
+Table FixedDeposit {
+  FixedDepositId bigint [pk, increment]
+  BranchId int [not null]
+  AccountId bigint [not null]
+  LinkedSavingsAccountId bigint
+  Amount decimal(19,4) [not null]
+  InterestRate decimal(9,4)
+  StartDate date
+  EndDate date
+  MaturityInstructionId int
+  StatusId int [not null]
+  ProcessedOrCancelledByUserId bigint
+  ClosedByUserId bigint
+}
+
+Table RepresentingBank {
+  RepresentingBankId int [pk, increment]
+  RepresentingBankCode varchar(10) [not null, unique]
+  RepresentingBankName varchar(100) [not null]
+}
+
+Table RepresentingBankBranch {
+  RepresentingBankBranchId int [pk, increment]
+  RepresentingBankId int [not null]
+  SubBranchName varchar(100) [not null]
+}
+
+Table OutwardClearing {
+  OutwardClearingId bigint [pk, increment]
+  BranchId int [not null]
+  AccountId bigint [not null]
+  RepresentingBankId int
+  ChequeNumber varchar(20) [not null]
+  Amount decimal(19,4) [not null]
+  ChequeDate date
+  EntryStatusId int
+}
+
+Table InwardClearing {
+  InwardClearingId bigint [pk, increment]
+  BranchId int [not null]
+  AccountId bigint [not null]
+  RepresentingBankId int
+  ChequeNumber varchar(20) [not null]
+  Amount decimal(19,4) [not null]
+  EntryStatusId int
+}
+
+Table ClearedChequeHistory {
+  ClearedChequeId bigint [pk, increment]
+  OutwardClearingId bigint
+  InwardClearingId bigint
+  ClearingDate date [not null]
+  Note: 'Exactly one of OutwardClearingId / InwardClearingId must be set (CHECK constraint)'
+}
+
+Table StoppedCheque {
+  StoppedChequeId bigint [pk, increment]
+  AccountId bigint [not null]
+  StartNumber varchar(20) [not null]
+  EndNumber varchar(20) [not null]
+  ReasonAndAction varchar(100)
+}
+
+Table ChequeBookRequest {
+  ChequeBookRequestId bigint [pk, increment]
+  AccountId bigint [not null]
+  ChequeBookCategoryId int
+  NumberOfLeaves smallint
+  RequestStatusId int
+}
+
+Table ChequeBookIssued {
+  ChequeBookIssuedId bigint [pk, increment]
+  AccountId bigint [not null]
+  StartNumber varchar(20) [not null]
+  EndNumber varchar(20) [not null]
+  IssuedOn datetime
+}
+
+Table ChequePaid {
+  ChequePaidId bigint [pk, increment]
+  AccountId bigint [not null]
+  ChequeNumber varchar(20) [not null]
+  Amount decimal(19,4) [not null]
+  PaidOn datetime
+  PaidByUserId bigint
+}
+
+Table NotificationTemplate {
+  NotificationTemplateId int [pk, increment]
+  TemplateCode varchar(30) [not null, unique]
+  ChannelId int [not null]
+  BodyTemplate nvarchar(max)
+  IsActive bool [not null, default: true]
+}
+
+Table NotificationOutbox {
+  NotificationId bigint [pk, increment]
+  AccountId bigint
+  PartyId bigint
+  ChannelId int [not null]
+  TemplateId int
+  Recipient varchar(150) [not null]
+  MessageBody nvarchar(max)
+  StatusId int [not null]
+  RetryCount smallint [not null, default: false]
+  FailureReason varchar(300)
+  SentOn datetime
+  Note: 'Partitioned by month'
+}
+
+Table USSDSession {
+  SessionId varchar(50) [pk]
+  MobileNumber varchar(20) [not null]
+  CustomerDigitalAccessId bigint
+  MenuPosition varchar(20)
+  CreatedOn datetime [not null]
+  ExpiresAt datetime [not null]
+}
+
+Table VerificationCode {
+  VerificationCodeId bigint [pk, increment]
+  BranchId int
+  OTPHash varchar(255) [not null]
+  MobileNumber varchar(20) [not null]
+  CustomerDigitalAccessId bigint
+  StatusId int [not null]
+  ExpiresAt datetime [not null]
+}
+
+Table VerifiedDevice {
+  VerifiedDeviceId bigint [pk, increment]
+  MobileNumber varchar(20) [not null]
+  CustomerDigitalAccessId bigint
+  IsVerified bool [not null, default: false]
+  IsActive bool [not null, default: true]
+  VerifiedOn datetime
+}
+
+Table ApiMerchant {
+  MerchantId bigint [pk, increment]
+  BranchId int [not null]
+  MerchantCode varchar(20) [not null, unique]
+  MerchantName varchar(200) [not null]
+  CredentialVaultKey varchar(200)
+}
+
+Table ReportDefinition {
+  ReportId int [pk, increment]
+  ReportCode varchar(30) [not null, unique]
+  Category varchar(50)
+  ReportFileName varchar(150)
+  HasSummary bool [not null, default: false]
+  IsActive bool [not null, default: true]
+}
+
+Table ReportPermission {
+  ReportPermissionId bigint [pk, increment]
+  BranchId int [not null]
+  StaffUserId bigint [not null]
+  ReportId int [not null]
+  AllowView bool [not null, default: false]
+}
+
+Table InterestProcedure {
+  ProcedureId int [pk, increment]
+  ProcedureCode varchar(10) [not null, unique]
+  ProcedureDescription varchar(150)
+  ProcedureCategoryId int
+}
+
+Table ProductGLSetting {
+  ProductGLSettingId int [pk, increment]
+  SettingDescription varchar(50) [not null, unique]
+}
+
+Table ProductLedgerSettingDetail {
+  SettingDetailId bigint [pk, increment]
+  BranchId int [not null]
+  ProductId int [not null]
+  ProductLedgerSettingId int [not null]
+  LedgerAccountId bigint
+}
+
+Table SystemLedgerSetting {
+  SystemLedgerSettingId bigint [pk, increment]
+  BranchId int [not null]
+  SettingCode varchar(10) [not null, unique]
+  LedgerAccountId bigint
+  Description varchar(100)
+}
+
+Table ChargeCategoryType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table ChargeConditionType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table ChargeBasisType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table TransactionCategoryType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table EntryStatusType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table RepaymentFrequencyType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table LoanPurposeType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table ApplicationStatusType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table DecisionType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table LoanStatusType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table CollateralCategoryType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table MemberRepaymentStatusType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table MaturityInstructionType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table FixedDepositStatusType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table RequestStatusType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table ChequeBookCategoryType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table NotificationChannelType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table NotificationStatusType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table ProcedureCategoryType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+}
+
+Table VerificationStatusType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+  Note: 'Not in the implementation plan catalog - added because VerificationCode.StatusId needs a target'
+}
+
+// Relationships
+Ref: InstitutionProfile.RegulatoryCategoryId > RegulatoryCategoryType.Id
+Ref: BusinessDayStatus.BranchId > Branch.BranchId
+Ref: BusinessDayStatus.CurrentStatusId > BusinessDayStatusType.Id
+Ref: SubModule.ModuleId > Module.ModuleId
+Ref: StaffUser.BranchId > Branch.BranchId
+Ref: StaffUser.TellerGLAccountId > LedgerAccount.LedgerAccountId
+Ref: CustomerDigitalAccess.PartyId > Party.PartyId
+Ref: UserPermission.StaffUserId > StaffUser.StaffUserId
+Ref: UserPermission.BranchId > Branch.BranchId
+Ref: UserPermission.ModuleId > Module.ModuleId
+Ref: UserPermission.SubModuleId > SubModule.SubModuleId
+Ref: UserSession.StaffUserId > StaffUser.StaffUserId
+Ref: UserSession.CustomerDigitalAccessId > CustomerDigitalAccess.CustomerDigitalAccessId
+Ref: UserSession.LogoutReasonId > LogoutReasonType.Id
+Ref: UserActivityLog.SessionId > UserSession.SessionId
+Ref: UserActivityLog.BranchId > Branch.BranchId
+Ref: UserActivityLog.EventTypeId > EventType.EventTypeId
+Ref: DataChangeAuditLog.StaffUserId > StaffUser.StaffUserId
+Ref: DataChangeAuditLog.BranchId > Branch.BranchId
+Ref: Party.PartyTypeId > PartyType.Id
+Ref: Party.KYCStatusId > KYCStatusType.Id
+Ref: Party.CreditOfficerId > CreditOfficer.CreditOfficerId
+Ref: Party.SupervisedByUserId > StaffUser.StaffUserId
+Ref: IndividualDetail.PartyId > Party.PartyId
+Ref: IndividualDetail.GenderId > GenderType.Id
+Ref: IndividualDetail.IdentificationTypeId > IdentificationDocumentType.Id
+Ref: BusinessDetail.PartyId > Party.PartyId
+Ref: BusinessDetail.BusinessCategoryId > BusinessCategoryType.Id
+Ref: GroupDetail.PartyId > Party.PartyId
+Ref: GroupDetail.ChairpersonPartyId > Party.PartyId
+Ref: GroupMember.GroupPartyId > Party.PartyId
+Ref: GroupMember.MemberPartyId > Party.PartyId
+Ref: GroupMember.GroupMemberRoleId > GroupMemberRoleType.Id
+Ref: PartyBeneficialOwner.BusinessPartyId > BusinessDetail.PartyId
+Ref: PartyBeneficialOwner.OwnerPartyId > Party.PartyId
+Ref: PartyIdentificationDocument.PartyId > Party.PartyId
+Ref: PartyIdentificationDocument.DocumentTypeId > IdentificationDocumentType.Id
+Ref: PartyImage.PartyId > Party.PartyId
+Ref: PartyImage.SupervisedByUserId > StaffUser.StaffUserId
+Ref: PartyNextOfKin.PartyId > Party.PartyId
+Ref: PartyRegulatoryAttribute.PartyId > Party.PartyId
+Ref: CreditOfficer.BranchId > Branch.BranchId
+Ref: CreditOfficer.StaffUserId > StaffUser.StaffUserId
+Ref: Product.BranchId > Branch.BranchId
+Ref: Product.ProductTypeId > ProductType.Id
+Ref: Product.CurrencyId > Currency.CurrencyId
+Ref: Product.LedgerControlAccountId > LedgerAccount.LedgerAccountId
+Ref: Product.SupervisedByUserId > StaffUser.StaffUserId
+Ref: ProductInterestRate.ProductId > Product.ProductId
+Ref: ProductInterestRate.RateTypeId > RateType.Id
+Ref: ChargeCode.ChargeCategoryId > ChargeCategoryType.Id
+Ref: ProductCharge.ProductId > Product.ProductId
+Ref: ProductCharge.ChargeId > ChargeCode.ChargeId
+Ref: ProductCharge.ChargeConditionId > ChargeConditionType.Id
+Ref: ProductChargeTier.ProductChargeId > ProductCharge.ProductChargeId
+Ref: ProductChargeTier.ChargeBasisId > ChargeBasisType.Id
+Ref: TransactionCode.TransactionCategoryId > TransactionCategoryType.Id
+Ref: TransactionCodeChargeTier.TransactionCodeId > TransactionCode.TransactionCodeId
+Ref: TransactionCodeChargeTier.ChargeBasisId > ChargeBasisType.Id
+Ref: TransactionCodeChargeTier.IncomeLedgerAccountId > LedgerAccount.LedgerAccountId
+Ref: Account.BranchId > Branch.BranchId
+Ref: Account.ProductId > Product.ProductId
+Ref: Account.OpenedByUserId > StaffUser.StaffUserId
+Ref: Account.OperatingModeId > OperatingModeType.Id
+Ref: Account.ClosedByUserId > StaffUser.StaffUserId
+Ref: Account.CloseReasonId > CloseReasonType.Id
+Ref: Account.SupervisedByUserId > StaffUser.StaffUserId
+Ref: AccountHolder.AccountId > Account.AccountId
+Ref: AccountHolder.PartyId > Party.PartyId
+Ref: AccountHolder.AccountHolderRoleId > AccountHolderRoleType.Id
+Ref: AccountHolder.OperatingInstructionId > OperatingInstructionType.Id
+Ref: AccountBalance.AccountId > Account.AccountId
+Ref: AccountBalanceDailySnapshot.AccountId > Account.AccountId
+Ref: AccountSubClassification.AccountClassificationId > AccountClassification.AccountClassificationId
+Ref: AccountClassificationAssignment.AccountId > Account.AccountId
+Ref: AccountClassificationAssignment.AccountClassificationId > AccountClassification.AccountClassificationId
+Ref: AccountClassificationAssignment.AccountSubClassificationId > AccountSubClassification.AccountSubClassificationId
+Ref: AccountCondition.AccountId > Account.AccountId
+Ref: AccountReminder.AccountId > Account.AccountId
+Ref: DormantAccountHistory.AccountId > Account.AccountId
+Ref: DormantAccountHistory.ActivatedByUserId > StaffUser.StaffUserId
+Ref: FreezeReleaseAccountBalance.AccountId > Account.AccountId
+Ref: FreezeReleaseAccountBalance.FreezeReleaseActionId > FreezeReleaseActionType.Id
+Ref: LedgerAccount.BranchId > Branch.BranchId
+Ref: LedgerAccount.LegderAccountTypeId > LedgerAccountType.Id
+Ref: LedgerAccount.CurrencyId > Currency.CurrencyId
+Ref: AccountLedgerEntry.AccountId > Account.AccountId
+Ref: AccountLedgerEntry.TransactionCodeId > TransactionCode.TransactionCodeId
+Ref: AccountLedgerEntry.TellerLedgerAccountId > LedgerAccount.LedgerAccountId
+Ref: AccountLedgerEntry.ReversesEntryId > AccountLedgerEntry.LedgerEntryId
+Ref: AccountLedgerEntry.EntryStatusId > EntryStatusType.Id
+Ref: AccountLedgerEntry.OperatorStaffUserId > StaffUser.StaffUserId
+Ref: AccountLedgerEntry.SupervisorStaffUserId > StaffUser.StaffUserId
+Ref: LedgerEntry.LedgerAccountId > LedgerAccount.LedgerAccountId
+Ref: LedgerEntry.TransactionCodeId > TransactionCode.TransactionCodeId
+Ref: LedgerEntry.ReversesEntryId > LedgerEntry.LedgerEntryId
+Ref: LedgerEntry.EntryStatusId > EntryStatusType.Id
+Ref: LedgerEntry.OperatorStaffUserId > StaffUser.StaffUserId
+Ref: LedgerEntry.SupervisorStaffUserId > StaffUser.StaffUserId
+Ref: PendingInterBranchEntry.AccountId > Account.AccountId
+Ref: PendingInterBranchEntry.ProductId > Product.ProductId
+Ref: PendingInterBranchEntry.TransactionCodeId > TransactionCode.TransactionCodeId
+Ref: PendingInterBranchEntry.OtherBranchId > Branch.BranchId
+Ref: PendingInterBranchEntry.OtherBranchAccountId > Account.AccountId
+Ref: PendingInterBranchEntry.EntryStatusId > EntryStatusType.Id
+Ref: SavedTransferEntry.BranchId > Branch.BranchId
+Ref: SavedTransferEntry.AccountId > Account.AccountId
+Ref: SavedTransferEntry.ProductId > Product.ProductId
+Ref: SavedTransferEntry.TransactionCodeId > TransactionCode.TransactionCodeId
+Ref: SavedTransferEntry.EntryStatusId > EntryStatusType.Id
+Ref: LoanApplication.BranchId > Branch.BranchId
+Ref: LoanApplication.PartyId > Party.PartyId
+Ref: LoanApplication.ProductId > Product.ProductId
+Ref: LoanApplication.CreditOfficerId > CreditOfficer.CreditOfficerId
+Ref: LoanApplication.DebitAccountId > Account.AccountId
+Ref: LoanApplication.LoanAccountId > Account.AccountId
+Ref: LoanApplication.RepaymentFrequencyId > RepaymentFrequencyType.Id
+Ref: LoanApplication.LoanPurposeId > LoanPurposeType.Id
+Ref: LoanApplication.ApplicationStatusId > ApplicationStatusType.Id
+Ref: LoanApplication.AppliedByUserId > StaffUser.StaffUserId
+Ref: LoanApproval.LoanApplicationId > LoanApplication.LoanApplicationId
+Ref: LoanApproval.DecisionId > DecisionType.Id
+Ref: LoanApproval.DecidedByUserId > StaffUser.StaffUserId
+Ref: Loan.BranchId > Branch.BranchId
+Ref: Loan.AccountId > Account.AccountId
+Ref: Loan.LoanApplicationId > LoanApplication.LoanApplicationId
+Ref: Loan.DisbursedByUserId > StaffUser.StaffUserId
+Ref: Loan.LoanStatusId > LoanStatusType.Id
+Ref: Loan.DebitAccountId > Account.AccountId
+Ref: Loan.SupervisedByUserId > StaffUser.StaffUserId
+Ref: LoanInstallmentSchedule.LoanId > Loan.LoanId
+Ref: LoanInstallmentScheduleRevision.InstallmentId > LoanInstallmentSchedule.InstallmentId
+Ref: LoanInstallmentScheduleRevision.RevisedByUserId > StaffUser.StaffUserId
+Ref: LoanLevelDetail.ProductId > Product.ProductId
+Ref: Collateral.LoanApplicationId > LoanApplication.LoanApplicationId
+Ref: Collateral.PartyId > Party.PartyId
+Ref: Collateral.CollateralCategoryId > CollateralCategoryType.Id
+Ref: Guarantor.LoanApplicationId > LoanApplication.LoanApplicationId
+Ref: Guarantor.GuarantorPartyId > Party.PartyId
+Ref: PaidOffLoanDetail.LoanId > Loan.LoanId
+Ref: PaidOffLoanDetail.PaidOffByUserId > StaffUser.StaffUserId
+Ref: GroupLoanMemberAllocation.LoanId > Loan.LoanId
+Ref: GroupLoanMemberAllocation.MemberPartyId > Party.PartyId
+Ref: GroupLoanMemberAllocation.MemberRepaymentStatusId > MemberRepaymentStatusType.Id
+Ref: OverdraftApplication.AccountId > Account.AccountId
+Ref: OverdraftApplication.ApplicationStatusId > ApplicationStatusType.Id
+Ref: OverdraftApproval.OverdraftApplicationId > OverdraftApplication.OverdraftApplicationId
+Ref: OverdraftApproval.DecisionId > DecisionType.Id
+Ref: OverdraftApproval.ApprovedByUserId > StaffUser.StaffUserId
+Ref: Overdraft.AccountId > Account.AccountId
+Ref: Overdraft.OverdraftApprovalId > OverdraftApproval.OverdraftApprovalId
+Ref: FixedDeposit.BranchId > Branch.BranchId
+Ref: FixedDeposit.AccountId > Account.AccountId
+Ref: FixedDeposit.LinkedSavingsAccountId > Account.AccountId
+Ref: FixedDeposit.MaturityInstructionId > MaturityInstructionType.Id
+Ref: FixedDeposit.StatusId > FixedDepositStatusType.Id
+Ref: FixedDeposit.ProcessedOrCancelledByUserId > StaffUser.StaffUserId
+Ref: FixedDeposit.ClosedByUserId > StaffUser.StaffUserId
+Ref: RepresentingBankBranch.RepresentingBankId > RepresentingBank.RepresentingBankId
+Ref: OutwardClearing.BranchId > Branch.BranchId
+Ref: OutwardClearing.AccountId > Account.AccountId
+Ref: OutwardClearing.RepresentingBankId > RepresentingBank.RepresentingBankId
+Ref: OutwardClearing.EntryStatusId > EntryStatusType.Id
+Ref: InwardClearing.BranchId > Branch.BranchId
+Ref: InwardClearing.AccountId > Account.AccountId
+Ref: InwardClearing.RepresentingBankId > RepresentingBank.RepresentingBankId
+Ref: InwardClearing.EntryStatusId > EntryStatusType.Id
+Ref: ClearedChequeHistory.OutwardClearingId > OutwardClearing.OutwardClearingId
+Ref: ClearedChequeHistory.InwardClearingId > InwardClearing.InwardClearingId
+Ref: StoppedCheque.AccountId > Account.AccountId
+Ref: ChequeBookRequest.AccountId > Account.AccountId
+Ref: ChequeBookRequest.ChequeBookCategoryId > ChequeBookCategoryType.Id
+Ref: ChequeBookRequest.RequestStatusId > RequestStatusType.Id
+Ref: ChequeBookIssued.AccountId > Account.AccountId
+Ref: ChequePaid.AccountId > Account.AccountId
+Ref: ChequePaid.PaidByUserId > StaffUser.StaffUserId
+Ref: NotificationTemplate.ChannelId > NotificationChannelType.Id
+Ref: NotificationOutbox.AccountId > Account.AccountId
+Ref: NotificationOutbox.PartyId > Party.PartyId
+Ref: NotificationOutbox.ChannelId > NotificationChannelType.Id
+Ref: NotificationOutbox.TemplateId > NotificationTemplate.NotificationTemplateId
+Ref: NotificationOutbox.StatusId > NotificationStatusType.Id
+Ref: USSDSession.CustomerDigitalAccessId > CustomerDigitalAccess.CustomerDigitalAccessId
+Ref: VerificationCode.BranchId > Branch.BranchId
+Ref: VerificationCode.CustomerDigitalAccessId > CustomerDigitalAccess.CustomerDigitalAccessId
+Ref: VerificationCode.StatusId > VerificationStatusType.Id
+Ref: VerifiedDevice.CustomerDigitalAccessId > CustomerDigitalAccess.CustomerDigitalAccessId
+Ref: ApiMerchant.BranchId > Branch.BranchId
+Ref: ReportPermission.BranchId > Branch.BranchId
+Ref: ReportPermission.StaffUserId > StaffUser.StaffUserId
+Ref: ReportPermission.ReportId > ReportDefinition.ReportId
+Ref: InterestProcedure.ProcedureCategoryId > ProcedureCategoryType.Id
+Ref: ProductLedgerSettingDetail.BranchId > Branch.BranchId
+Ref: ProductLedgerSettingDetail.ProductId > Product.ProductId
+Ref: ProductLedgerSettingDetail.ProductLedgerSettingId > ProductGLSetting.ProductGLSettingId
+Ref: ProductLedgerSettingDetail.LedgerAccountId > LedgerAccount.LedgerAccountId
+Ref: SystemLedgerSetting.BranchId > Branch.BranchId
+Ref: SystemLedgerSetting.LedgerAccountId > LedgerAccount.LedgerAccountId
+
+// Unique indexes declared outside CREATE TABLE
+// BusinessDayStatus: UNIQUE INDEX BusinessDayStatus_index_0 (BranchId, WorkingDate)
+// ProductChargeTier: UNIQUE INDEX ProductChargeTier_index_1 (ProductChargeId, TierNumber)
+// TransactionCodeChargeTier: UNIQUE INDEX TransactionCodeChargeTier_index_2 (TransactionCodeId, TierNumber)
+// AccountHolder: UNIQUE INDEX AccountHolder_index_3 (AccountId, PartyId)
+// AccountBalanceDailySnapshot: UNIQUE INDEX AccountBalanceDailySnapshot_index_4 (AccountId, SnapshotDate)
+// ChequePaid: UNIQUE INDEX ChequePaid_index_5 (AccountId, ChequeNumber)

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Banking.Application</RootNamespace>
+    <AssemblyName>Banking.Application</AssemblyName>
+    <Description>Application services and use cases. Depends on Domain only.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Banking.Domain\Banking.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+</Project>

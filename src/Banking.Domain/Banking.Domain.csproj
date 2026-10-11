@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Banking.Domain</RootNamespace>
+    <AssemblyName>Banking.Domain</AssemblyName>
+    <Description>Core banking domain. No EF or ASP.NET references.</Description>
+  </PropertyGroup>
+</Project>
