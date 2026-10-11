@@ -41,6 +41,7 @@ internal sealed class ConventionProbeConfiguration : IEntityTypeConfiguration<Co
 {
     public void Configure(EntityTypeBuilder<ConventionProbe> builder)
     {
+        builder.ToTable(nameof(ConventionProbe));
         builder.HasKey(entity => entity.ConventionProbeId);
         builder.Property(entity => entity.Label).HasMaxLength(100);
         builder.Property(entity => entity.DetailsJson).HasColumnType("nvarchar(max)");

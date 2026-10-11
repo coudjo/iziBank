@@ -12,3 +12,4 @@ Format: task ID, then a one-line description.
 - A0-04: CI restore/build/test and OpenAPI drift check.
 - A0-05: Schema snapshot, Phase A decision ADR, and this changelog.
 - A1-01: Domain `IAuditable` and `Lookup` base types, `BankingDbContext`, and global EF conventions.
+- A1-02: Phase A entities and EF configurations, including section 2 amendments, audit footer, and ledger append-only guard.

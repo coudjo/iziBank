@@ -7,12 +7,11 @@ namespace Banking.Infrastructure.Tests.Persistence;
 public sealed class BankingModelConventionTests
 {
     [Fact]
-    public void Banking_db_context_uses_dbo_and_builds_an_empty_model()
+    public void Banking_db_context_uses_dbo()
     {
         using var context = CreateContext<BankingDbContext>(static options => new BankingDbContext(options));
 
         context.Model.GetDefaultSchema().ShouldBe(BankingModelConventions.DefaultSchema);
-        context.Model.GetEntityTypes().ShouldBeEmpty();
     }
 
     [Fact]

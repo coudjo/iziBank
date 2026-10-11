@@ -1,5 +1,6 @@
 using Banking.Domain.Auditing;
 using Banking.Domain.Lookups;
+using Banking.Domain.Security;
 using Banking.Infrastructure.Persistence.Conventions;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,6 +14,8 @@ public static class BankingModelConventions
     public const int LookupNameLength = 100;
     public const string DefaultSchema = "dbo";
     public const string CreatedOnDefaultSql = "SYSUTCDATETIME()";
+    public const string PartyNumberSequence = "PartyNumberSequence";
+    public const string AccountNumberSequence = "AccountNumberSequence";
 
     public static void Configure(ModelConfigurationBuilder configurationBuilder)
     {
@@ -28,6 +31,8 @@ public static class BankingModelConventions
     public static void Apply(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(DefaultSchema);
+        modelBuilder.HasSequence<long>(PartyNumberSequence, DefaultSchema).StartsAt(1).IncrementsBy(1);
+        modelBuilder.HasSequence<long>(AccountNumberSequence, DefaultSchema).StartsAt(1).IncrementsBy(1);
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes().ToArray())
         {
@@ -36,7 +41,6 @@ public static class BankingModelConventions
                 continue;
             }
 
-            modelBuilder.Entity(entityType.ClrType).ToTable(entityType.ClrType.Name);
             ApplyAuditable(modelBuilder, entityType.ClrType);
             ApplyLookup(modelBuilder, entityType.ClrType);
         }
@@ -57,6 +61,21 @@ public static class BankingModelConventions
                 .HasDefaultValueSql(CreatedOnDefaultSql);
             builder.Property(nameof(IAuditable.ModifiedByUserId));
             builder.Property(nameof(IAuditable.ModifiedOn));
+
+            if (modelBuilder.Model.FindEntityType(typeof(StaffUser)) is null)
+            {
+                return;
+            }
+
+            builder.HasOne(typeof(StaffUser))
+                .WithMany()
+                .HasForeignKey(nameof(IAuditable.CreatedByUserId))
+                .OnDelete(DeleteBehavior.NoAction);
+
+            builder.HasOne(typeof(StaffUser))
+                .WithMany()
+                .HasForeignKey(nameof(IAuditable.ModifiedByUserId))
+                .OnDelete(DeleteBehavior.NoAction);
         });
     }
 
@@ -69,6 +88,7 @@ public static class BankingModelConventions
 
         modelBuilder.Entity(clrType, builder =>
         {
+            builder.ToTable(clrType.Name);
             builder.HasKey(nameof(Lookup.Id));
             builder.Property(nameof(Lookup.Id)).ValueGeneratedOnAdd();
             builder.Property(nameof(Lookup.Code))
