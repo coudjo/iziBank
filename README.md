@@ -44,6 +44,14 @@ docker compose -f docker/docker-compose.yml --env-file .env up -d
 
 Wait until the `sqlserver` service is healthy, then connect with the connection string in `.env`. The default host port is `14334` so it does not collide with other local SQL Server containers.
 
+Apply schema and seed reference data (never from the API host):
+
+```bash
+dotnet run --project src/Banking.Migrator
+```
+
+The Migrator reads `ConnectionStrings__Banking` and `BOOTSTRAP_*` from the environment, and from a `.env` file in this directory if present. Running it twice leaves existing rows unchanged.
+
 ## Build and test
 
 ```bash

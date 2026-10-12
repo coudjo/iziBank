@@ -6,6 +6,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Banking.Api\Banking.Api.csproj" />
     <ProjectReference Include="..\..\src\Banking.Infrastructure\Banking.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Banking.Migrator\Banking.Migrator.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="coverlet.collector">

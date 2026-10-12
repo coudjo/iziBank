@@ -14,3 +14,4 @@ Format: task ID, then a one-line description.
 - A1-01: Domain `IAuditable` and `Lookup` base types, `BankingDbContext`, and global EF conventions.
 - A1-02: Phase A entities and EF configurations, including section 2 amendments, audit footer, and ledger append-only guard.
 - A1-03: Baseline schema migration, append-only ledger tables, and DBML amendments.
+- A1-04: Migrator applies schema and idempotent reference/bootstrap seed, including admin from environment variables.
