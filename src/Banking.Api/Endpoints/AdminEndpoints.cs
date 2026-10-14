@@ -13,9 +13,22 @@ internal sealed record CreateLookupRequest(string? Code, string? Name);
 
 internal sealed record UpdateLookupRequest(string? Code, string? Name, bool IsActive = true);
 
-internal sealed record CreateStaffRequest(string? StaffCode, string? FullName, int BranchId, bool CanSwitchBranch, string? InitialSecretKey);
+internal sealed record CreateStaffRequest(
+    string? StaffCode,
+    string? FullName,
+    int BranchId,
+    bool CanSwitchBranch,
+    string? InitialSecretKey,
+    bool IsTeller = false,
+    long? TellerGLAccountId = null);
 
-internal sealed record UpdateStaffRequest(string? FullName, bool CanSwitchBranch, bool IsDisabled, short? SecretKeyExpiryDays);
+internal sealed record UpdateStaffRequest(
+    string? FullName,
+    bool CanSwitchBranch,
+    bool IsDisabled,
+    short? SecretKeyExpiryDays,
+    bool IsTeller = false,
+    long? TellerGLAccountId = null);
 
 internal sealed record ResetSecretKeyRequest(string? NewSecretKey);
 
@@ -148,7 +161,14 @@ internal static class AdminEndpoints
     private static async Task<IResult> CreateStaffAsync(CreateStaffRequest request, StaffAdmin admin, CancellationToken cancellationToken)
     {
         var result = await admin.CreateAsync(
-                new NewStaff(request.StaffCode ?? string.Empty, request.FullName ?? string.Empty, request.BranchId, request.CanSwitchBranch, request.InitialSecretKey ?? string.Empty),
+                new NewStaff(
+                    request.StaffCode ?? string.Empty,
+                    request.FullName ?? string.Empty,
+                    request.BranchId,
+                    request.CanSwitchBranch,
+                    request.InitialSecretKey ?? string.Empty,
+                    request.IsTeller,
+                    request.TellerGLAccountId),
                 cancellationToken)
             .ConfigureAwait(false);
         return result.Succeeded
@@ -164,7 +184,13 @@ internal static class AdminEndpoints
     {
         var result = await admin.UpdateAsync(
                 staffUserId,
-                new StaffChanges(request.FullName ?? string.Empty, request.CanSwitchBranch, request.IsDisabled, request.SecretKeyExpiryDays),
+                new StaffChanges(
+                    request.FullName ?? string.Empty,
+                    request.CanSwitchBranch,
+                    request.IsDisabled,
+                    request.SecretKeyExpiryDays,
+                    request.IsTeller,
+                    request.TellerGLAccountId),
                 cancellationToken)
             .ConfigureAwait(false);
         return result.Succeeded ? TypedResults.NoContent() : Failure(result.ProblemCode!, result.Errors);

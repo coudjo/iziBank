@@ -36,6 +36,18 @@ public static class ProblemCodes
     public const string LookupCodedRow = "lookup.coded-row";
     public const string StaffCodeTaken = "staff.code-taken";
     public const string StaffSelfChange = "staff.self-change";
+    public const string ReferenceCodeTaken = "reference.code-taken";
+    public const string ReferenceCodeImmutable = "reference.code-immutable";
+    public const string RecordOtherBranch = "record.other-branch";
+    public const string LocalCurrencyRequired = "currency.local-required";
+    public const string HolidayExists = "holiday.exists";
+    public const string HolidayBusinessDayExists = "holiday.business-day-exists";
+    public const string BusinessDayNotOpen = "business-day.not-open";
+    public const string BusinessDayPreviousOpen = "business-day.previous-open";
+    public const string BusinessDayDateNotAfter = "business-day.date-not-after";
+    public const string BusinessDayNonWorkingDay = "business-day.non-working-day";
+    public const string LedgerFieldLocked = "ledger.field-locked";
+    public const string ConcurrencyConflict = "record.changed";
 
     public static readonly IReadOnlyList<string> All =
     [
@@ -44,6 +56,9 @@ public static class ProblemCodes
         SessionMaxExceeded, SessionForced, MustChangeSecretKey, SecretKeyRules, CurrentSecretKeyWrong,
         PermissionDenied, BranchNotAllowed, ActivityLogUnavailable, SessionNotOpen,
         RoleGroupCodeTaken, RoleGroupInactive, SelfAssignment, LastAdministrator, ChangePendingExists, ChangeNotPending,
-        LookupCodeTaken, LookupCodeImmutable, LookupCodedRow, StaffCodeTaken, StaffSelfChange
+        LookupCodeTaken, LookupCodeImmutable, LookupCodedRow, StaffCodeTaken, StaffSelfChange,
+        ReferenceCodeTaken, ReferenceCodeImmutable, RecordOtherBranch, LocalCurrencyRequired, HolidayExists,
+        HolidayBusinessDayExists, BusinessDayNotOpen, BusinessDayPreviousOpen, BusinessDayDateNotAfter,
+        BusinessDayNonWorkingDay, LedgerFieldLocked, ConcurrencyConflict
     ];
 }

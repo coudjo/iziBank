@@ -33,6 +33,18 @@ Every error response is RFC 7807 problem details. `type` is one of the stable co
 | `lookup.coded-row` | 409 | Deactivating a value the system relies on (listed in `LookupCodes`). |
 | `staff.code-taken` | 409 | The staff code is already used. |
 | `staff.self-change` | 409 | Editing, disabling or resetting your own staff record through the admin API. |
+| `reference.code-taken` | 409 | A branch, currency or ledger account with that code already exists. |
+| `reference.code-immutable` | 400 | The request tried to change a branch, currency or ledger account code. |
+| `record.other-branch` | 409 | The record belongs to another branch; writes need the effective branch to match (D2). |
+| `record.changed` | 409 | Someone else changed the record first (optimistic concurrency). Reload and retry. |
+| `currency.local-required` | 409 | Switching off the local currency. Make another currency local instead; the flag moves in one step. |
+| `holiday.exists` | 409 | A holiday is already defined for that date. |
+| `holiday.business-day-exists` | 409 | Adding or removing a holiday on a date that a branch has already opened. |
+| `business-day.not-open` | 409 | No open business day for the branch (closing a day that is not open, or `IWorkingDateProvider`). |
+| `business-day.previous-open` | 409 | Opening a day while the branch's latest day is not closed. |
+| `business-day.date-not-after` | 409 | The date is on or before the branch's latest business day. |
+| `business-day.non-working-day` | 409 | The date is a weekend day (`Calendar:WeekendDays`) or a defined holiday. |
+| `ledger.field-locked` | 409 | Changing the type or currency of an approved ledger account. |
 | `supervision.permission-denied` | 403 | No supervise permission for the record. |
 | `supervision.self-approval` | 409 | The approver created or last changed the record. |
 | `supervision.not-pending` | 409 | The record is not awaiting approval. |

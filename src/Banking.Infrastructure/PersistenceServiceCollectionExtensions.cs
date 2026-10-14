@@ -58,4 +58,17 @@ public static class PersistenceServiceCollectionExtensions
 
         return services;
     }
+
+    /// <summary>Reference data, business days and the chart of accounts (A3). Options are bound by the host.</summary>
+    public static IServiceCollection AddBankingReference(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.TryAddScoped<Banking.Infrastructure.Reference.ReferenceAdmin>();
+        services.TryAddScoped<Banking.Infrastructure.Reference.BusinessDays>();
+        services.TryAddScoped<Banking.Application.Abstractions.IWorkingDateProvider, Banking.Infrastructure.Reference.WorkingDateProvider>();
+        services.TryAddScoped<Banking.Infrastructure.Ledger.LedgerAccountAdmin>();
+
+        return services;
+    }
 }

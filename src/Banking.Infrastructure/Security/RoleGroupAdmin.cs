@@ -71,6 +71,9 @@ public sealed class RoleGroupAdmin
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
+    // Other modules (for example ledger accounts) keep their own change requests and approval endpoints.
+    private static readonly string[] SecurityEntityTypes = [.. ChangeRequestEntities.Security];
+
     private readonly BankingDbContext _db;
     private readonly ICurrentUser _currentUser;
     private readonly TimeProvider _timeProvider;
@@ -318,7 +321,7 @@ public sealed class RoleGroupAdmin
         string? status,
         CancellationToken cancellationToken)
     {
-        var query = _db.Set<ChangeRequest>().AsNoTracking();
+        var query = _db.Set<ChangeRequest>().AsNoTracking().Where(row => SecurityEntityTypes.Contains(row.EntityType));
         if (!string.IsNullOrWhiteSpace(status))
         {
             var normalized = status.Trim().ToUpperInvariant();
@@ -339,7 +342,7 @@ public sealed class RoleGroupAdmin
     {
         var row = await _db.Set<ChangeRequest>()
             .AsNoTracking()
-            .Where(request => request.ChangeRequestId == changeRequestId)
+            .Where(request => request.ChangeRequestId == changeRequestId && SecurityEntityTypes.Contains(request.EntityType))
             .Select(request => new { Row = request, RequestedByName = request.RequestedByUser!.FullName })
             .SingleOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -716,7 +719,9 @@ public sealed class RoleGroupAdmin
     private Task<ChangeRequest?> PendingRequestAsync(long changeRequestId, CancellationToken cancellationToken) =>
         _db.Set<ChangeRequest>()
             .SingleOrDefaultAsync(
-                row => row.ChangeRequestId == changeRequestId && row.Status == ChangeRequestStatuses.Pending,
+                row => row.ChangeRequestId == changeRequestId
+                       && row.Status == ChangeRequestStatuses.Pending
+                       && SecurityEntityTypes.Contains(row.EntityType),
                 cancellationToken);
 
     private static ChangeRequestView View(ChangeRequest row, string? requestedByName) => new(

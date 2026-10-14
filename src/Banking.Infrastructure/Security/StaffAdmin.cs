@@ -2,6 +2,7 @@ using Banking.Application.Abstractions;
 using Banking.Application.Errors;
 using Banking.Application.Security;
 using Banking.Domain.Institution;
+using Banking.Domain.Ledger;
 using Banking.Domain.Lookups;
 using Banking.Domain.Security;
 using Banking.Infrastructure.Persistence;
@@ -23,11 +24,29 @@ public sealed record StaffSummary(
     bool CanSwitchBranch,
     bool MustChangeSecretKey);
 
-public sealed record StaffDetail(StaffSummary Staff, short? SecretKeyExpiryDays, IReadOnlyList<StaffAssignment> Assignments);
+public sealed record StaffDetail(
+    StaffSummary Staff,
+    short? SecretKeyExpiryDays,
+    IReadOnlyList<StaffAssignment> Assignments,
+    bool IsTeller = false,
+    long? TellerGLAccountId = null);
 
-public sealed record NewStaff(string StaffCode, string FullName, int BranchId, bool CanSwitchBranch, string InitialSecretKey);
+public sealed record NewStaff(
+    string StaffCode,
+    string FullName,
+    int BranchId,
+    bool CanSwitchBranch,
+    string InitialSecretKey,
+    bool IsTeller = false,
+    long? TellerGLAccountId = null);
 
-public sealed record StaffChanges(string FullName, bool CanSwitchBranch, bool IsDisabled, short? SecretKeyExpiryDays);
+public sealed record StaffChanges(
+    string FullName,
+    bool CanSwitchBranch,
+    bool IsDisabled,
+    short? SecretKeyExpiryDays,
+    bool IsTeller = false,
+    long? TellerGLAccountId = null);
 
 /// <summary>Staff user administration (A2-08). Role groups are assigned through <see cref="RoleGroupAdmin"/>.</summary>
 public sealed class StaffAdmin
@@ -110,7 +129,9 @@ public sealed class StaffAdmin
                     row.IsDisabled,
                     row.CanSwitchBranch == true,
                     row.ChangeKeyAtNextLogOn == true),
-                row.SecretKeyExpiryDays
+                row.SecretKeyExpiryDays,
+                row.IsTeller,
+                row.TellerGLAccountId
             })
             .SingleOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -129,7 +150,7 @@ public sealed class StaffAdmin
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return new StaffDetail(staff.Summary, staff.SecretKeyExpiryDays, assignments);
+        return new StaffDetail(staff.Summary, staff.SecretKeyExpiryDays, assignments, staff.IsTeller, staff.TellerGLAccountId);
     }
 
     /// <summary>A new staff member has no role groups and must change the initial password at first sign-in.</summary>
@@ -161,6 +182,10 @@ public sealed class StaffAdmin
         {
             errors["branchId"] = ["Choose an existing branch."];
         }
+        else if (await TellerProblemAsync(draft.IsTeller, draft.TellerGLAccountId, draft.BranchId, cancellationToken).ConfigureAwait(false) is { } tellerProblem)
+        {
+            errors["tellerGLAccountId"] = [tellerProblem];
+        }
 
         if (errors.Count > 0)
         {
@@ -178,6 +203,8 @@ public sealed class StaffAdmin
             FullName = name,
             BranchId = draft.BranchId,
             CanSwitchBranch = draft.CanSwitchBranch,
+            IsTeller = draft.IsTeller,
+            TellerGLAccountId = draft.IsTeller ? draft.TellerGLAccountId : null,
             CanChangeSecretKey = true,
             ChangeKeyAtNextLogOn = true,
             SecretKeyChangedOn = _timeProvider.GetUtcNow().UtcDateTime
@@ -210,11 +237,20 @@ public sealed class StaffAdmin
         }
 
         var name = changes.FullName.Trim();
+        var errors = new Dictionary<string, string[]>(StringComparer.Ordinal);
         if (name.Length is 0 or > 100)
         {
-            return OperationResult.Fail<long>(
-                ProblemCodes.Validation,
-                new Dictionary<string, string[]>(StringComparer.Ordinal) { ["fullName"] = ["Enter a name of up to 100 characters."] });
+            errors["fullName"] = ["Enter a name of up to 100 characters."];
+        }
+
+        if (await TellerProblemAsync(changes.IsTeller, changes.TellerGLAccountId, user.BranchId, cancellationToken).ConfigureAwait(false) is { } tellerProblem)
+        {
+            errors["tellerGLAccountId"] = [tellerProblem];
+        }
+
+        if (errors.Count > 0)
+        {
+            return OperationResult.Fail<long>(ProblemCodes.Validation, errors);
         }
 
         var disabling = changes.IsDisabled && !user.IsDisabled;
@@ -222,6 +258,8 @@ public sealed class StaffAdmin
         user.CanSwitchBranch = changes.CanSwitchBranch;
         user.IsDisabled = changes.IsDisabled;
         user.SecretKeyExpiryDays = changes.SecretKeyExpiryDays;
+        user.IsTeller = changes.IsTeller;
+        user.TellerGLAccountId = changes.IsTeller ? changes.TellerGLAccountId : null;
         _activity.Record(EventCodes.UserAdmin, nameof(StaffUser), user.StaffCode);
 
         var transaction = await _db.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
@@ -280,6 +318,35 @@ public sealed class StaffAdmin
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         closed.ForEach(_sessions.Invalidate);
         return OperationResult.Ok(staffUserId);
+    }
+
+    /// <summary>
+    /// Plan 6.11: a teller's till account must be an approved ASSET ledger account in the teller's own branch.
+    /// Returns the message for the field, or null when the combination is valid.
+    /// </summary>
+    private async Task<string?> TellerProblemAsync(bool isTeller, long? tellerGLAccountId, int branchId, CancellationToken cancellationToken)
+    {
+        if (!isTeller)
+        {
+            return null;
+        }
+
+        if (tellerGLAccountId is not { } accountId)
+        {
+            return "Choose the teller's till account.";
+        }
+
+        var assetId = await _lookups.GetIdAsync<LedgerAccountType>(_db, LookupCodes.LedgerAccountTypes.Asset, cancellationToken).ConfigureAwait(false);
+        var account = await _db.Set<LedgerAccount>()
+            .AsNoTracking()
+            .Where(row => row.LedgerAccountId == accountId)
+            .Select(row => new { row.BranchId, row.LedgerAccountTypeId, Approved = !row.IsSupervisionRequired || row.SupervisedByUserId != null })
+            .SingleOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return account is null || account.LedgerAccountTypeId != assetId || account.BranchId != branchId || !account.Approved
+            ? "Choose an approved asset ledger account in the teller's own branch."
+            : null;
     }
 
     private Task<StaffUser?> FindAsync(long staffUserId, CancellationToken cancellationToken) =>

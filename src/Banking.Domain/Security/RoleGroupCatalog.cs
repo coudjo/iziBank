@@ -49,7 +49,7 @@ public static class RoleGroupCatalog
             Grant(ModuleCatalog.Party, null, View, Add, Edit, Supervise),
             Grant(ModuleCatalog.Accounts, null, View, Add, Edit, Supervise),
             Grant(ModuleCatalog.Accounts, "CONDITION", View, Edit, Supervise),
-            Grant(ModuleCatalog.ReferenceData, "CALENDAR", View, Edit),
+            Grant(ModuleCatalog.ReferenceData, "CALENDAR", View, Edit, Supervise),
             Grant(ModuleCatalog.Ledger, "CHART", View, Add, Supervise)
         ]),
         new(Administrator, "Administrator", "Manages users, role groups, reference data and products.",

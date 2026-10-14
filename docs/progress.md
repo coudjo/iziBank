@@ -9,3 +9,4 @@
 | A2-04, A2-05, A2-06 (+ session viewer from A2-08) | done | 2026-10-14 | owner: dotnet test 87/87 |
 | A2-09, A2-10 | done | 2026-10-14 | owner: dotnet test green (94) |
 | A2-03, A2-08 | done | 2026-10-14 | owner: dotnet test green |
+| A3-01, A3-02, A3-03 | written, waiting on owner build and test | 2026-10-14 | |

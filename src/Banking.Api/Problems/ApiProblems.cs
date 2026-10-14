@@ -36,6 +36,23 @@ internal static class ApiProblems
         [ProblemCodes.LookupCodedRow] = "The system relies on this value, so it cannot be deactivated.",
         [ProblemCodes.StaffCodeTaken] = "That staff code is already in use.",
         [ProblemCodes.StaffSelfChange] = "You cannot change your own staff record here.",
+        [ProblemCodes.ReferenceCodeTaken] = "That code is already in use.",
+        [ProblemCodes.ReferenceCodeImmutable] = "A code cannot be changed once created.",
+        [ProblemCodes.RecordOtherBranch] = "This record belongs to another branch. Switch to that branch to change it.",
+        [ProblemCodes.LocalCurrencyRequired] = "There must always be one local currency. Make another currency local instead.",
+        [ProblemCodes.HolidayExists] = "A holiday is already defined for that date.",
+        [ProblemCodes.HolidayBusinessDayExists] = "A branch has already worked on that date, so its holiday status cannot change.",
+        [ProblemCodes.BusinessDayNotOpen] = "There is no open business day for this branch.",
+        [ProblemCodes.BusinessDayPreviousOpen] = "Close the current business day before opening the next one.",
+        [ProblemCodes.BusinessDayDateNotAfter] = "The new business day must come after the last one.",
+        [ProblemCodes.BusinessDayNonWorkingDay] = "That date is a weekend day or a holiday.",
+        [ProblemCodes.LedgerFieldLocked] = "The type and currency cannot change once the account is approved.",
+        [ProblemCodes.ConcurrencyConflict] = "Someone else changed this record. Reload it and try again.",
+        [Banking.Domain.Supervision.SupervisionProblems.PermissionDenied] = "You cannot approve this record.",
+        [Banking.Domain.Supervision.SupervisionProblems.NotPending] = "This record is not waiting for approval.",
+        [Banking.Domain.Supervision.SupervisionProblems.Pending] = "This record is waiting for approval and cannot be used yet.",
+        [Banking.Domain.Supervision.SupervisionProblems.RejectNotAllowed] = "This record was approved before and cannot be rejected.",
+        [Banking.Domain.Supervision.SupervisionProblems.HasDependents] = "Other records use this one, so it cannot be rejected.",
         [Banking.Domain.Supervision.SupervisionProblems.SelfApproval] = "You cannot approve your own change."
     };
 
