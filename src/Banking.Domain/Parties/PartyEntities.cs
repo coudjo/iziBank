@@ -57,6 +57,8 @@ public sealed class Party : AuditableEntity, ISupervisable
 
     public PartyImage? Photo { get; set; }
 
+    public ICollection<PartySignature> Signatures { get; } = new List<PartySignature>();
+
     public ICollection<GroupMember> GroupMemberships { get; } = new List<GroupMember>();
 
     public ICollection<PartyIdentificationDocument> IdentificationDocuments { get; } = new List<PartyIdentificationDocument>();
@@ -203,6 +205,35 @@ public sealed class PartyImage : AuditableEntity, ISupervisable
     public DateTime? SupervisedOn { get; set; }
 
     public Party? Party { get; set; }
+
+    public StaffUser? SupervisedByUser { get; set; }
+}
+
+/// <summary>
+/// Specimen signature. The effective specimen is the most recent supervised row; a recapture
+/// does not replace it until supervised (addendum section 3).
+/// </summary>
+public sealed class PartySignature : AuditableEntity, ISupervisable
+{
+    public long PartySignatureId { get; set; }
+
+    public long PartyId { get; set; }
+
+    public byte[] ImageValue { get; set; } = [];
+
+    public DateTime CapturedOn { get; set; }
+
+    public long CapturedByUserId { get; set; }
+
+    public bool IsSupervisionRequired { get; set; } = true;
+
+    public long? SupervisedByUserId { get; set; }
+
+    public DateTime? SupervisedOn { get; set; }
+
+    public Party? Party { get; set; }
+
+    public StaffUser? CapturedByUser { get; set; }
 
     public StaffUser? SupervisedByUser { get; set; }
 }

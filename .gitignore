@@ -40,3 +40,4 @@ project.lock.json
 # Logs
 logs/
 *.log
+_*.tar

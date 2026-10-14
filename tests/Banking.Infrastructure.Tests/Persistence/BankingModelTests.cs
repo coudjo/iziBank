@@ -17,10 +17,11 @@ public sealed class BankingModelTests
     private static readonly string[] ExpectedTables =
     [
         nameof(InstitutionProfile), nameof(Branch), nameof(Currency), nameof(BusinessDayStatus), nameof(DefinedHoliday),
-        nameof(Module), nameof(SubModule), nameof(StaffUser), nameof(CustomerDigitalAccess), nameof(UserPermission),
+        nameof(Module), nameof(SubModule), nameof(StaffUser), nameof(CustomerDigitalAccess),
+        nameof(RoleGroup), nameof(RoleGroupPermission), nameof(StaffUserRoleGroup), nameof(IdempotencyKey),
         nameof(UserSession), nameof(EventType), nameof(UserActivityLog), nameof(DataChangeAuditLog),
         nameof(Party), nameof(IndividualDetail), nameof(BusinessDetail), nameof(GroupDetail), nameof(GroupMember),
-        nameof(PartyBeneficialOwner), nameof(PartyIdentificationDocument), nameof(PartyImage), nameof(PartyNextOfKin),
+        nameof(PartyBeneficialOwner), nameof(PartyIdentificationDocument), nameof(PartyImage), nameof(PartySignature), nameof(PartyNextOfKin),
         nameof(PartyRegulatoryAttribute), nameof(CreditOfficer),
         nameof(Product), nameof(ProductInterestRate),
         nameof(Account), nameof(AccountHolder), nameof(AccountBalance), nameof(AccountBalanceDailySnapshot),
@@ -81,6 +82,48 @@ public sealed class BankingModelTests
         Entity<BusinessDetail>(context).FindProperty(nameof(BusinessDetail.BusinessName))!.IsUnicode().ShouldBe(true);
         Entity<GroupDetail>(context).FindProperty(nameof(GroupDetail.GroupName))!.IsUnicode().ShouldBe(true);
         Entity<Party>(context).FindProperty(nameof(Party.Address1))!.IsUnicode().ShouldBe(true);
+    }
+
+    [Fact]
+    public void Role_groups_replace_per_user_permissions()
+    {
+        using var context = CreateContext();
+
+        context.Model.GetEntityTypes().Select(static entity => entity.GetTableName())
+            .ShouldNotContain("UserPermission");
+
+        var permission = Entity<RoleGroupPermission>(context);
+        permission.GetIndexes().ShouldContain(static index =>
+            index.IsUnique && index.Properties.Select(static p => p.Name)
+                .SequenceEqual(new[] { nameof(RoleGroupPermission.RoleGroupId), nameof(RoleGroupPermission.ModuleId), nameof(RoleGroupPermission.SubModuleId) }));
+        permission.FindProperty(nameof(RoleGroupPermission.SubModuleId))!.IsNullable.ShouldBeTrue();
+        CheckNames(permission).ShouldContain("CK_RoleGroupPermission_ViewImplied");
+
+        // The composite FK makes the database refuse a sub-module under the wrong module.
+        permission.GetForeignKeys().ShouldContain(static key =>
+            key.Properties.Count == 2 && key.PrincipalEntityType.ClrType == typeof(SubModule));
+
+        Entity<StaffUserRoleGroup>(context).GetIndexes().ShouldContain(static index =>
+            index.IsUnique && index.Properties.Count == 3);
+        Entity<RoleGroup>(context).FindProperty(nameof(RoleGroup.IsSupervisionRequired)).ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void Signature_and_idempotency_tables_are_shaped_as_specified()
+    {
+        using var context = CreateContext();
+
+        var signature = Entity<PartySignature>(context);
+        signature.FindProperty(nameof(PartySignature.ImageValue))!.IsNullable.ShouldBeFalse();
+        signature.GetIndexes().ShouldContain(static index =>
+            index.Properties.Select(static p => p.Name)
+                .SequenceEqual(new[] { nameof(PartySignature.PartyId), nameof(PartySignature.SupervisedOn) }));
+
+        var key = Entity<IdempotencyKey>(context);
+        key.GetIndexes().ShouldContain(static index =>
+            index.IsUnique && index.Properties.Select(static p => p.Name)
+                .SequenceEqual(new[] { nameof(IdempotencyKey.StaffUserId), nameof(IdempotencyKey.KeyValue) }));
+        typeof(Banking.Domain.Auditing.IAuditable).IsAssignableFrom(typeof(IdempotencyKey)).ShouldBeFalse();
     }
 
     [Fact]

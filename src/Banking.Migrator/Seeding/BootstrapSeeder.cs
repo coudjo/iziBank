@@ -52,7 +52,7 @@ internal static class BootstrapSeeder
                 .ConfigureAwait(false);
         }
 
-        await SeedAdminPermissionsAsync(context, adminId, branchId, createdOn, cancellationToken).ConfigureAwait(false);
+        await SeedAdminRoleGroupsAsync(context, adminId, branchId, createdOn, cancellationToken).ConfigureAwait(false);
 
         if (context.ChangeTracker.HasChanges())
         {
@@ -210,79 +210,44 @@ internal static class BootstrapSeeder
         return 0;
     }
 
-    private static async Task SeedAdminPermissionsAsync(
+    /// <summary>
+    /// The bootstrap administrator holds ADMINISTRATOR and SUPERVISOR in the bootstrap branch, so the
+    /// institution starts with SEC/USERS, SEC/PERMISSIONS and PTY/KYC covered (last-administrator guard).
+    /// These assignments are approved at seed time; later assignment changes need supervision.
+    /// </summary>
+    private static async Task SeedAdminRoleGroupsAsync(
         BankingDbContext context,
         long adminId,
         int branchId,
         DateTime createdOn,
         CancellationToken cancellationToken)
     {
-        var modules = await context.Set<Module>()
+        var codes = RoleGroupCatalog.BootstrapAdministratorGroups.ToArray();
+        var groups = await context.Set<RoleGroup>()
             .AsNoTracking()
-            .Select(module => new { module.ModuleId, module.ModuleCode })
+            .Where(group => codes.Contains(group.RoleGroupCode))
+            .Select(group => new { group.RoleGroupId, group.RoleGroupCode })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        var subModules = await context.Set<SubModule>()
-            .AsNoTracking()
-            .Select(subModule => new { subModule.SubModuleId, subModule.ModuleId, subModule.SubModuleCode })
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        var existing = await context.Set<UserPermission>()
-            .AsNoTracking()
-            .Where(permission => permission.StaffUserId == adminId && permission.BranchId == branchId)
-            .Select(permission => new { permission.ModuleId, permission.SubModuleId })
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        var existingKeys = existing
-            .Select(permission => (permission.ModuleId, permission.SubModuleId))
+        var assigned = (await context.Set<StaffUserRoleGroup>()
+                .AsNoTracking()
+                .Where(row => row.StaffUserId == adminId && row.BranchId == branchId)
+                .Select(row => row.RoleGroupId)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false))
             .ToHashSet();
 
-        foreach (var module in modules)
+        foreach (var group in groups.Where(group => !assigned.Contains(group.RoleGroupId)))
         {
-            TryAddPermission(context, existingKeys, adminId, branchId, module.ModuleId, subModuleId: null, createdOn);
-
-            foreach (var subModule in subModules.Where(candidate => candidate.ModuleId == module.ModuleId))
+            context.Set<StaffUserRoleGroup>().Add(new StaffUserRoleGroup
             {
-                TryAddPermission(
-                    context,
-                    existingKeys,
-                    adminId,
-                    branchId,
-                    module.ModuleId,
-                    subModule.SubModuleId,
-                    createdOn);
-            }
+                StaffUserId = adminId,
+                RoleGroupId = group.RoleGroupId,
+                BranchId = branchId,
+                IsSupervisionRequired = false,
+                CreatedOn = createdOn
+            });
         }
-    }
-
-    private static void TryAddPermission(
-        BankingDbContext context,
-        HashSet<(int ModuleId, int? SubModuleId)> existingKeys,
-        long adminId,
-        int branchId,
-        int moduleId,
-        int? subModuleId,
-        DateTime createdOn)
-    {
-        if (!existingKeys.Add((moduleId, subModuleId)))
-        {
-            return;
-        }
-
-        context.Set<UserPermission>().Add(new UserPermission
-        {
-            StaffUserId = adminId,
-            BranchId = branchId,
-            ModuleId = moduleId,
-            SubModuleId = subModuleId,
-            AllowAdd = true,
-            AllowEdit = true,
-            AllowDelete = true,
-            CanSupervise = true,
-            CreatedOn = createdOn
-        });
     }
 }

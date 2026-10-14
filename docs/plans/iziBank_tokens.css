@@ -1,0 +1,40 @@
+/* iziBank design tokens - proposed palette, pending owner approval */
+:root {
+  --ib-primary: #0F4C5C;
+  --ib-primary-hover: #0B3A47;
+  --ib-primary-tint: #E3F0F2;
+  --ib-accent: #E0A526;
+  --ib-accent-tint: #FBF1D9;
+
+  --ib-ink: #1B2631;
+  --ib-ink-muted: #3D4B57;
+  --ib-ink-meta: #5C6975;
+  --ib-line: #CBD3DA;            /* decorative dividers only */
+  --ib-border-control: #73818B;  /* input, select, checkbox and button borders (3:1 or better) */
+  --ib-surface-subtle: #F1F4F7;
+  --ib-surface: #FFFFFF;
+  --ib-page: #F6F8FA;
+  --ib-focus: #1E4FA8;
+
+  --ib-success-text: #1E6B42;  --ib-success-bg: #E4F3EA;
+  --ib-warning-text: #8A5300;  --ib-warning-bg: #FDF1DC;
+  --ib-danger-text:  #A3271D;  --ib-danger-bg:  #FBE9E7;
+  --ib-info-text:    #1E4FA8;  --ib-info-bg:    #E6EEFB;
+  --ib-neutral-text: #3D4B57;  --ib-neutral-bg: #EDF1F4;
+
+  --ib-font-ui: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  font-family: var(--ib-font-ui);
+  color: var(--ib-ink);
+  background: var(--ib-page);
+  font-size: 14px;
+}
+
+.ib-num { font-variant-numeric: tabular-nums; }
+
+:focus-visible {
+  outline: 2px solid var(--ib-focus);
+  outline-offset: 2px;
+}

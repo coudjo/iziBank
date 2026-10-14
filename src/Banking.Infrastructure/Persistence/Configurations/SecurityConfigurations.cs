@@ -26,6 +26,8 @@ internal sealed class SubModuleConfiguration : IEntityTypeConfiguration<SubModul
         builder.HasKey(entity => entity.SubModuleId);
         builder.Property(entity => entity.SubModuleCode).IsVarchar(20);
         builder.HasIndex(entity => entity.SubModuleCode).IsUnique();
+        builder.HasAlternateKey(entity => new { entity.ModuleId, entity.SubModuleId })
+            .HasName("AK_SubModule_Module_SubModule");
         builder.Property(entity => entity.SubModuleName).IsVarchar(50);
         builder.Property(entity => entity.IsActive).HasDefaultValue(true);
 
@@ -80,24 +82,50 @@ internal sealed class CustomerDigitalAccessConfiguration : IEntityTypeConfigurat
     }
 }
 
-internal sealed class UserPermissionConfiguration : IEntityTypeConfiguration<UserPermission>
+internal sealed class RoleGroupConfiguration : IEntityTypeConfiguration<RoleGroup>
 {
-    public void Configure(EntityTypeBuilder<UserPermission> builder)
+    public void Configure(EntityTypeBuilder<RoleGroup> builder)
     {
-        builder.ToTable(nameof(UserPermission));
-        builder.HasKey(entity => entity.UserPermissionId);
-        builder.HasIndex(entity => new { entity.StaffUserId, entity.BranchId, entity.ModuleId, entity.SubModuleId })
-            .IsUnique()
-            .HasDatabaseName("UX_UserPermission_Staff_Branch_Module_SubModule");
+        builder.ToTable(nameof(RoleGroup));
+        builder.HasKey(entity => entity.RoleGroupId);
+        builder.Property(entity => entity.RoleGroupCode).IsVarchar(30);
+        builder.HasIndex(entity => entity.RoleGroupCode).IsUnique();
+        builder.Property(entity => entity.RoleGroupName).IsNvarchar(100);
+        builder.Property(entity => entity.Description).IsOptionalNvarchar(300);
+        builder.Property(entity => entity.IsSystemGroup).HasDefaultValue(false);
+        builder.Property(entity => entity.IsActive).HasDefaultValue(true);
+        builder.Property(entity => entity.IsSupervisionRequired).HasDefaultValue(true);
 
-        builder.HasOne(entity => entity.StaffUser)
-            .WithMany(user => user.Permissions)
-            .HasForeignKey(entity => entity.StaffUserId)
-            .OnDelete(DeleteBehavior.NoAction);
-
-        builder.HasOne(entity => entity.Branch)
+        builder.HasOne<StaffUser>()
             .WithMany()
-            .HasForeignKey(entity => entity.BranchId)
+            .HasForeignKey(entity => entity.SupervisedByUserId)
+            .OnDelete(DeleteBehavior.NoAction);
+    }
+}
+
+internal sealed class RoleGroupPermissionConfiguration : IEntityTypeConfiguration<RoleGroupPermission>
+{
+    public void Configure(EntityTypeBuilder<RoleGroupPermission> builder)
+    {
+        builder.ToTable(nameof(RoleGroupPermission), table =>
+            table.HasCheckConstraint(
+                "CK_RoleGroupPermission_ViewImplied",
+                "[AllowView] = 1 OR ([AllowAdd] = 0 AND [AllowEdit] = 0 AND [AllowDelete] = 0 AND [AllowSupervise] = 0)"));
+
+        builder.HasKey(entity => entity.RoleGroupPermissionId);
+        builder.Property(entity => entity.AllowView).HasDefaultValue(false);
+        builder.Property(entity => entity.AllowAdd).HasDefaultValue(false);
+        builder.Property(entity => entity.AllowEdit).HasDefaultValue(false);
+        builder.Property(entity => entity.AllowDelete).HasDefaultValue(false);
+        builder.Property(entity => entity.AllowSupervise).HasDefaultValue(false);
+
+        builder.HasIndex(entity => new { entity.RoleGroupId, entity.ModuleId, entity.SubModuleId })
+            .IsUnique()
+            .HasDatabaseName("UX_RoleGroupPermission_Group_Module_SubModule");
+
+        builder.HasOne(entity => entity.RoleGroup)
+            .WithMany(group => group.Permissions)
+            .HasForeignKey(entity => entity.RoleGroupId)
             .OnDelete(DeleteBehavior.NoAction);
 
         builder.HasOne(entity => entity.Module)
@@ -105,9 +133,72 @@ internal sealed class UserPermissionConfiguration : IEntityTypeConfiguration<Use
             .HasForeignKey(entity => entity.ModuleId)
             .OnDelete(DeleteBehavior.NoAction);
 
+        // A sub-module must belong to the stated module.
         builder.HasOne(entity => entity.SubModule)
             .WithMany()
-            .HasForeignKey(entity => entity.SubModuleId)
+            .HasForeignKey(entity => new { entity.ModuleId, entity.SubModuleId })
+            .HasPrincipalKey(subModule => new { subModule.ModuleId, subModule.SubModuleId })
+            .OnDelete(DeleteBehavior.NoAction);
+    }
+}
+
+internal sealed class StaffUserRoleGroupConfiguration : IEntityTypeConfiguration<StaffUserRoleGroup>
+{
+    public void Configure(EntityTypeBuilder<StaffUserRoleGroup> builder)
+    {
+        builder.ToTable(nameof(StaffUserRoleGroup));
+        builder.HasKey(entity => entity.StaffUserRoleGroupId);
+        builder.Property(entity => entity.IsSupervisionRequired).HasDefaultValue(true);
+
+        builder.HasIndex(entity => new { entity.StaffUserId, entity.RoleGroupId, entity.BranchId })
+            .IsUnique()
+            .HasDatabaseName("UX_StaffUserRoleGroup_Staff_Group_Branch");
+        builder.HasIndex(entity => new { entity.BranchId, entity.RoleGroupId })
+            .HasDatabaseName("IX_StaffUserRoleGroup_Branch_Group");
+
+        builder.HasOne(entity => entity.StaffUser)
+            .WithMany(user => user.RoleGroups)
+            .HasForeignKey(entity => entity.StaffUserId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.HasOne(entity => entity.RoleGroup)
+            .WithMany(group => group.Members)
+            .HasForeignKey(entity => entity.RoleGroupId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.HasOne(entity => entity.Branch)
+            .WithMany()
+            .HasForeignKey(entity => entity.BranchId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.HasOne<StaffUser>()
+            .WithMany()
+            .HasForeignKey(entity => entity.SupervisedByUserId)
+            .OnDelete(DeleteBehavior.NoAction);
+    }
+}
+
+internal sealed class IdempotencyKeyConfiguration : IEntityTypeConfiguration<IdempotencyKey>
+{
+    public void Configure(EntityTypeBuilder<IdempotencyKey> builder)
+    {
+        builder.ToTable(nameof(IdempotencyKey));
+        builder.HasKey(entity => entity.IdempotencyKeyId);
+        builder.Property(entity => entity.KeyValue).IsVarchar(100);
+        builder.Property(entity => entity.Route).IsVarchar(200);
+        builder.Property(entity => entity.RequestHash).IsVarchar(64);
+        builder.Property(entity => entity.ResponseBody).IsNvarcharMax();
+        builder.Property(entity => entity.CreatedOn).HasDefaultValueSql(BankingModelConventions.CreatedOnDefaultSql);
+
+        builder.HasIndex(entity => new { entity.StaffUserId, entity.KeyValue })
+            .IsUnique()
+            .HasDatabaseName("UX_IdempotencyKey_Staff_Key");
+        builder.HasIndex(entity => entity.ExpiresOn)
+            .HasDatabaseName("IX_IdempotencyKey_ExpiresOn");
+
+        builder.HasOne(entity => entity.StaffUser)
+            .WithMany()
+            .HasForeignKey(entity => entity.StaffUserId)
             .OnDelete(DeleteBehavior.NoAction);
     }
 }

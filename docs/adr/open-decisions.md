@@ -7,7 +7,7 @@ Use this file when the plan has no default. Pick the most restrictive behaviour,
 | # | Question | Current default | Owner decision |
 |---|---|---|---|
 | Q1 | Is a product defined per branch or for the whole institution? | Institution-wide (D4). `ProductCode` is globally unique. | Pending |
-| Q2 | Should customers need both supervision and KYC verification, or should one approval cover both? | Both, separately (D3). | Pending |
+| Q2 | Should customers need both supervision and KYC verification, or should one approval cover both? | One action covers both (D3, R13). | Decided by owner |
 | Q3 | Which of `Account.OperatingModeId` and `AccountHolder.OperatingInstructionId` is authoritative? | Account-level mode. Holder-level field unused in Phase A. | Pending |
 | Q4 | Can an individual belong to more than one group at once? | No (D8). | Pending |
 | Q5 | Should staff see parties and accounts from all branches or only their own? | All branches for reads (D2). | Pending |

@@ -99,6 +99,10 @@ Table SubModule {
   CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
   ModifiedByUserId bigint
   ModifiedOn datetime
+
+  indexes {
+    (ModuleId, SubModuleId) [unique, name: 'AK_SubModule_Module_SubModule']
+  }
 }
 
 Table StaffUser {
@@ -134,24 +138,78 @@ Table CustomerDigitalAccess {
   ModifiedOn datetime
 }
 
-Table UserPermission {
-  UserPermissionId bigint [pk, increment]
-  StaffUserId bigint [not null]
-  BranchId int [not null]
-  ModuleId int [not null]
-  SubModuleId int
-  AllowAdd bool
-  AllowEdit bool
-  AllowDelete bool
-  CanSupervise bool
-  CreditLimit decimal(19,4)
-  DebitLimit decimal(19,4)
-  CreditSupervisionLimit decimal(19,4)
-  DebitSupervisionLimit decimal(19,4)
+Table RoleGroup {
+  RoleGroupId int [pk, increment]
+  RoleGroupCode varchar(30) [not null, unique, note: 'Immutable after creation']
+  RoleGroupName nvarchar(100) [not null]
+  Description nvarchar(300)
+  IsSystemGroup bool [not null, default: false, note: 'Seeded groups: editable, not deletable']
+  IsActive bool [not null, default: true]
+  IsSupervisionRequired bool [not null, default: true]
+  SupervisedByUserId bigint
+  SupervisedOn datetime
   CreatedByUserId bigint
   CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
   ModifiedByUserId bigint
   ModifiedOn datetime
+}
+
+Table RoleGroupPermission {
+  RoleGroupPermissionId bigint [pk, increment]
+  RoleGroupId int [not null]
+  ModuleId int [not null]
+  SubModuleId int [note: 'NULL = whole module']
+  AllowView bool [not null, default: false]
+  AllowAdd bool [not null, default: false]
+  AllowEdit bool [not null, default: false]
+  AllowDelete bool [not null, default: false]
+  AllowSupervise bool [not null, default: false]
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
+
+  indexes {
+    (RoleGroupId, ModuleId, SubModuleId) [unique, name: 'UX_RoleGroupPermission_Group_Module_SubModule']
+  }
+  Note: 'CK_RoleGroupPermission_ViewImplied: any of Add/Edit/Delete/Supervise requires AllowView. Composite FK (ModuleId, SubModuleId) to SubModule. Union across groups, no deny rows.'
+}
+
+Table StaffUserRoleGroup {
+  StaffUserRoleGroupId bigint [pk, increment]
+  StaffUserId bigint [not null]
+  RoleGroupId int [not null]
+  BranchId int [not null]
+  IsSupervisionRequired bool [not null, default: true]
+  SupervisedByUserId bigint
+  SupervisedOn datetime
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
+
+  indexes {
+    (StaffUserId, RoleGroupId, BranchId) [unique, name: 'UX_StaffUserRoleGroup_Staff_Group_Branch']
+    (BranchId, RoleGroupId) [name: 'IX_StaffUserRoleGroup_Branch_Group']
+  }
+}
+
+Table IdempotencyKey {
+  IdempotencyKeyId bigint [pk, increment]
+  KeyValue varchar(100) [not null]
+  StaffUserId bigint [not null]
+  Route varchar(200) [not null]
+  RequestHash varchar(64) [not null]
+  ResponseStatus int [not null]
+  ResponseBody nvarchar(max)
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ExpiresOn datetime [not null]
+
+  indexes {
+    (StaffUserId, KeyValue) [unique, name: 'UX_IdempotencyKey_Staff_Key']
+    ExpiresOn [name: 'IX_IdempotencyKey_ExpiresOn']
+  }
+  Note: 'Not audited. Purged after ExpiresOn (24 hours).'
 }
 
 Table UserSession {
@@ -315,6 +373,26 @@ Table PartyImage {
   CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
   ModifiedByUserId bigint
   ModifiedOn datetime
+}
+
+Table PartySignature {
+  PartySignatureId bigint [pk, increment]
+  PartyId bigint [not null]
+  ImageValue varbinary(max) [not null, note: 'PNG']
+  CapturedOn datetime [not null]
+  CapturedByUserId bigint [not null]
+  IsSupervisionRequired bool [not null, default: true]
+  SupervisedByUserId bigint
+  SupervisedOn datetime
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
+
+  indexes {
+    (PartyId, SupervisedOn) [name: 'IX_PartySignature_PartyId_SupervisedOn']
+  }
+  Note: 'Effective specimen = most recent supervised row. Image never returned in lists or written to the change audit.'
 }
 
 Table PartyNextOfKin {
@@ -1265,10 +1343,18 @@ Ref: SubModule.ModuleId > Module.ModuleId
 Ref: StaffUser.BranchId > Branch.BranchId
 Ref: StaffUser.TellerGLAccountId > LedgerAccount.LedgerAccountId
 Ref: CustomerDigitalAccess.PartyId > Party.PartyId
-Ref: UserPermission.StaffUserId > StaffUser.StaffUserId
-Ref: UserPermission.BranchId > Branch.BranchId
-Ref: UserPermission.ModuleId > Module.ModuleId
-Ref: UserPermission.SubModuleId > SubModule.SubModuleId
+Ref: RoleGroup.SupervisedByUserId > StaffUser.StaffUserId
+Ref: RoleGroupPermission.RoleGroupId > RoleGroup.RoleGroupId
+Ref: RoleGroupPermission.ModuleId > Module.ModuleId
+Ref: RoleGroupPermission.(ModuleId, SubModuleId) > SubModule.(ModuleId, SubModuleId)
+Ref: StaffUserRoleGroup.StaffUserId > StaffUser.StaffUserId
+Ref: StaffUserRoleGroup.RoleGroupId > RoleGroup.RoleGroupId
+Ref: StaffUserRoleGroup.BranchId > Branch.BranchId
+Ref: StaffUserRoleGroup.SupervisedByUserId > StaffUser.StaffUserId
+Ref: IdempotencyKey.StaffUserId > StaffUser.StaffUserId
+Ref: PartySignature.PartyId > Party.PartyId
+Ref: PartySignature.CapturedByUserId > StaffUser.StaffUserId
+Ref: PartySignature.SupervisedByUserId > StaffUser.StaffUserId
 Ref: UserSession.StaffUserId > StaffUser.StaffUserId
 Ref: UserSession.CustomerDigitalAccessId > CustomerDigitalAccess.CustomerDigitalAccessId
 Ref: UserSession.LogoutReasonId > LogoutReasonType.Id

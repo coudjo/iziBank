@@ -57,6 +57,77 @@ internal static class ReferenceDataSeeder
         {
             await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
+
+        await SeedRoleGroupsAsync(context, createdOn, cancellationToken).ConfigureAwait(false);
+
+        if (context.ChangeTracker.HasChanges())
+        {
+            await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Creates missing seeded role groups only. An existing group is never touched, so edits made by
+    /// administrators survive a re-run. Seeded rows are approved (no supervision pending).
+    /// </summary>
+    private static async Task SeedRoleGroupsAsync(
+        BankingDbContext context,
+        DateTime createdOn,
+        CancellationToken cancellationToken)
+    {
+        var existing = (await context.Set<RoleGroup>()
+                .AsNoTracking()
+                .Select(group => group.RoleGroupCode)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false))
+            .ToHashSet(StringComparer.Ordinal);
+
+        var modules = await context.Set<Module>()
+            .AsNoTracking()
+            .ToDictionaryAsync(module => module.ModuleCode, module => module.ModuleId, StringComparer.Ordinal, cancellationToken)
+            .ConfigureAwait(false);
+
+        var subModules = (await context.Set<SubModule>()
+                .AsNoTracking()
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false))
+            .ToDictionary(subModule => subModule.SubModuleCode, subModule => subModule.SubModuleId, StringComparer.Ordinal);
+
+        foreach (var definition in RoleGroupCatalog.All)
+        {
+            if (existing.Contains(definition.Code))
+            {
+                continue;
+            }
+
+            var group = new RoleGroup
+            {
+                RoleGroupCode = definition.Code,
+                RoleGroupName = definition.Name,
+                Description = definition.Description,
+                IsSystemGroup = true,
+                IsActive = true,
+                IsSupervisionRequired = false,
+                CreatedOn = createdOn
+            };
+
+            foreach (var grant in definition.Permissions)
+            {
+                group.Permissions.Add(new RoleGroupPermission
+                {
+                    ModuleId = modules[grant.ModuleCode],
+                    SubModuleId = grant.SubModuleCode is null ? null : subModules[grant.SubModuleCode],
+                    AllowView = grant.AllowView,
+                    AllowAdd = grant.AllowAdd,
+                    AllowEdit = grant.AllowEdit,
+                    AllowDelete = grant.AllowDelete,
+                    AllowSupervise = grant.AllowSupervise,
+                    CreatedOn = createdOn
+                });
+            }
+
+            context.Set<RoleGroup>().Add(group);
+        }
     }
 
     private static async Task SeedLookupAsync<TLookup>(

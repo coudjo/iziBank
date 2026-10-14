@@ -237,6 +237,34 @@ internal sealed class PartyImageConfiguration : IEntityTypeConfiguration<PartyIm
     }
 }
 
+internal sealed class PartySignatureConfiguration : IEntityTypeConfiguration<PartySignature>
+{
+    public void Configure(EntityTypeBuilder<PartySignature> builder)
+    {
+        builder.ToTable(nameof(PartySignature));
+        builder.HasKey(entity => entity.PartySignatureId);
+        builder.Property(entity => entity.ImageValue).HasColumnType("varbinary(max)").IsRequired();
+        builder.Property(entity => entity.IsSupervisionRequired).HasDefaultValue(true);
+        builder.HasIndex(entity => new { entity.PartyId, entity.SupervisedOn })
+            .HasDatabaseName("IX_PartySignature_PartyId_SupervisedOn");
+
+        builder.HasOne(entity => entity.Party)
+            .WithMany(party => party.Signatures)
+            .HasForeignKey(entity => entity.PartyId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.HasOne(entity => entity.CapturedByUser)
+            .WithMany()
+            .HasForeignKey(entity => entity.CapturedByUserId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.HasOne(entity => entity.SupervisedByUser)
+            .WithMany()
+            .HasForeignKey(entity => entity.SupervisedByUserId)
+            .OnDelete(DeleteBehavior.NoAction);
+    }
+}
+
 internal sealed class PartyNextOfKinConfiguration : IEntityTypeConfiguration<PartyNextOfKin>
 {
     public void Configure(EntityTypeBuilder<PartyNextOfKin> builder)

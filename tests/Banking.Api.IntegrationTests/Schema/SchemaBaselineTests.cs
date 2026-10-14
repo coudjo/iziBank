@@ -11,10 +11,11 @@ public sealed class SchemaBaselineTests
     private static readonly string[] ExpectedTables =
     [
         "InstitutionProfile", "Branch", "Currency", "BusinessDayStatus", "DefinedHoliday",
-        "Module", "SubModule", "StaffUser", "CustomerDigitalAccess", "UserPermission",
+        "Module", "SubModule", "StaffUser", "CustomerDigitalAccess",
+        "RoleGroup", "RoleGroupPermission", "StaffUserRoleGroup", "IdempotencyKey",
         "UserSession", "EventType", "UserActivityLog", "DataChangeAuditLog",
         "Party", "IndividualDetail", "BusinessDetail", "GroupDetail", "GroupMember",
-        "PartyBeneficialOwner", "PartyIdentificationDocument", "PartyImage", "PartyNextOfKin",
+        "PartyBeneficialOwner", "PartyIdentificationDocument", "PartyImage", "PartySignature", "PartyNextOfKin",
         "PartyRegulatoryAttribute", "CreditOfficer",
         "Product", "ProductInterestRate",
         "Account", "AccountHolder", "AccountBalance", "AccountBalanceDailySnapshot",
@@ -138,6 +139,7 @@ public sealed class SchemaBaselineTests
         checks.ShouldContain("CK_FreezeReleaseAccountBalance_Amount");
         checks.ShouldContain("CK_ProductInterestRate_EffectiveDates");
         checks.ShouldContain("CK_ProductInterestRate_AmountBand");
+        checks.ShouldContain("CK_RoleGroupPermission_ViewImplied");
 
         var indexes = await QueryStringsAsync(
             connection,
@@ -156,7 +158,11 @@ public sealed class SchemaBaselineTests
         indexes.ShouldContain("UX_GroupMember_ActiveGroupMember");
         indexes.ShouldContain("UX_CreditOfficer_ActiveStaffUser");
         indexes.ShouldContain("UX_AccountClassificationAssignment_Account_Classification");
-        indexes.ShouldContain("UX_UserPermission_Staff_Branch_Module_SubModule");
+        indexes.ShouldContain("UX_RoleGroupPermission_Group_Module_SubModule");
+        indexes.ShouldContain("UX_StaffUserRoleGroup_Staff_Group_Branch");
+        indexes.ShouldContain("UX_IdempotencyKey_Staff_Key");
+        indexes.ShouldContain("IX_PartySignature_PartyId_SupervisedOn");
+        indexes.ShouldNotContain("UX_UserPermission_Staff_Branch_Module_SubModule");
         indexes.ShouldContain("IX_UserSession_StaffUserId_Open");
         indexes.ShouldContain("IX_PartyRegulatoryAttribute_PartyId_AttributeCode_RecordedOn");
         indexes.ShouldContain("IX_UserActivityLog_SessionId_EventTimestamp");

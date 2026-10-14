@@ -116,18 +116,24 @@ public sealed class MigratorSeedTests
         hasher.VerifyHashedPassword(admin, admin.SecretKeyHash, settings.AdminSecret)
             .ShouldBe(PasswordVerificationResult.Success);
 
-        var permissions = await context.Set<UserPermission>()
-            .Where(permission => permission.StaffUserId == admin.StaffUserId)
+        var groups = await context.Set<RoleGroup>().Include(group => group.Permissions).ToListAsync();
+        groups.Select(group => group.RoleGroupCode).ShouldBe(
+            RoleGroupCatalog.All.Select(definition => definition.Code), ignoreOrder: true);
+        groups.ShouldAllBe(group => group.IsSystemGroup && group.IsActive && !group.IsSupervisionRequired);
+        foreach (var definition in RoleGroupCatalog.All)
+        {
+            groups.Single(group => group.RoleGroupCode == definition.Code)
+                .Permissions.Count.ShouldBe(definition.Permissions.Count);
+        }
+
+        var assignments = await context.Set<StaffUserRoleGroup>()
+            .Where(row => row.StaffUserId == admin.StaffUserId)
+            .Include(row => row.RoleGroup)
             .ToListAsync();
-        permissions.Count.ShouldBe(24);
-        permissions.ShouldAllBe(permission =>
-            permission.BranchId == branch.BranchId
-            && permission.AllowAdd == true
-            && permission.AllowEdit == true
-            && permission.AllowDelete == true
-            && permission.CanSupervise == true
-            && permission.CreatedByUserId == null);
-        permissions.Count(permission => permission.SubModuleId is null).ShouldBe(5);
+        assignments.Select(row => row.RoleGroup!.RoleGroupCode).ShouldBe(
+            RoleGroupCatalog.BootstrapAdministratorGroups, ignoreOrder: true);
+        assignments.ShouldAllBe(row =>
+            row.BranchId == branch.BranchId && !row.IsSupervisionRequired && row.CreatedByUserId == null);
     }
 
     private static async Task<string> CaptureSnapshotAsync(string connectionString)
@@ -172,11 +178,21 @@ public sealed class MigratorSeedTests
             .Select(user =>
                 $"{user.StaffCode}:{user.IsDisabled}:{user.SecretKeyHash}:{user.ChangeKeyAtNextLogOn}:{user.ModifiedOn:O}"));
 
-        var permissions = string.Join('|', (await context.Set<UserPermission>().AsNoTracking().ToListAsync())
-            .OrderBy(permission => permission.ModuleId)
+        var roleGroups = string.Join('|', (await context.Set<RoleGroup>().AsNoTracking().ToListAsync())
+            .OrderBy(group => group.RoleGroupCode, StringComparer.Ordinal)
+            .Select(group => $"{group.RoleGroupCode}:{group.RoleGroupName}:{group.IsActive}:{group.ModifiedOn:O}"));
+
+        var permissions = string.Join('|', (await context.Set<RoleGroupPermission>().AsNoTracking().ToListAsync())
+            .OrderBy(permission => permission.RoleGroupId)
+            .ThenBy(permission => permission.ModuleId)
             .ThenBy(permission => permission.SubModuleId)
             .Select(permission =>
-                $"{permission.StaffUserId}:{permission.BranchId}:{permission.ModuleId}:{permission.SubModuleId}:{permission.AllowAdd}{permission.AllowEdit}{permission.AllowDelete}{permission.CanSupervise}"));
+                $"{permission.RoleGroupId}:{permission.ModuleId}:{permission.SubModuleId}:{permission.AllowView}{permission.AllowAdd}{permission.AllowEdit}{permission.AllowDelete}{permission.AllowSupervise}"));
+
+        var assignmentRows = string.Join('|', (await context.Set<StaffUserRoleGroup>().AsNoTracking().ToListAsync())
+            .OrderBy(row => row.StaffUserId)
+            .ThenBy(row => row.RoleGroupId)
+            .Select(row => $"{row.StaffUserId}:{row.RoleGroupId}:{row.BranchId}"));
 
         var currency = await context.Set<Currency>().AsNoTracking().SingleAsync(row => row.IsLocalCurrency);
         var institution = await context.Set<InstitutionProfile>().AsNoTracking().SingleAsync();
@@ -189,12 +205,16 @@ public sealed class MigratorSeedTests
             modules,
             subModules,
             staff,
+            roleGroups,
             permissions,
+            assignmentRows,
             $"{currency.CurrencyCode}:{currency.IsLocalCurrency}:{currency.ModifiedOn:O}",
             $"{institution.InstitutionProfileId}:{institution.InstitutionName}:{institution.ModifiedOn:O}",
             $"{branch.BranchCode}:{branch.BranchName}:{branch.ModifiedOn:O}",
             $"staff:{(await context.Set<StaffUser>().CountAsync())}",
-            $"permissions:{(await context.Set<UserPermission>().CountAsync())}");
+            $"roleGroups:{(await context.Set<RoleGroup>().CountAsync())}",
+            $"permissions:{(await context.Set<RoleGroupPermission>().CountAsync())}",
+            $"assignments:{(await context.Set<StaffUserRoleGroup>().CountAsync())}");
     }
 
     private static BankingDbContext CreateContext(string connectionString)
