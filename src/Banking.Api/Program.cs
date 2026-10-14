@@ -43,6 +43,9 @@ try
     builder.Services.AddBankingSecurity();
     builder.Services.AddSingleton<TokenIssuer>();
     builder.Services.AddBankingJwt(jwt);
+    // Numbers are numbers on the wire; this also keeps OpenAPI from typing integers as "number | string".
+    builder.Services.ConfigureHttpJsonOptions(options =>
+        options.SerializerOptions.NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.Strict);
     builder.Services.AddProblemDetails();
     builder.Services.AddOpenApi();
 
