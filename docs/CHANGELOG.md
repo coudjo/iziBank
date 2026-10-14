@@ -16,3 +16,6 @@ Format: task ID, then a one-line description.
 - A1-03: Baseline schema migration, append-only ledger tables, and DBML amendments.
 - A1-04: Migrator applies schema and idempotent reference/bootstrap seed, including admin from environment variables.
 - S1: `UserPermission` replaced by `RoleGroup`, `RoleGroupPermission`, `StaffUserRoleGroup`; added `PartySignature` and `IdempotencyKey`; composite key on `SubModule`; six seeded role groups; bootstrap admin assigned `ADMINISTRATOR` and `SUPERVISOR`; ADR D3 and Q2 updated (KYC verify and approve is one action). Migration `0003`.
+- A2-01: `ICurrentUser`, `AuditFooterInterceptor` (Created/Modified On and By; created values immutable).
+- A2-02: `DataChangeAuditInterceptor` writes `DataChangeAuditLog` in the same transaction as the change; secrets redacted, binary written as size.
+- A2-07: `SupervisionRules` (maker-checker R1 to R5) and the startup guard for `Supervision:AllowSelfApproval`.

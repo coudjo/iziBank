@@ -252,7 +252,12 @@ internal sealed class UserActivityLogConfiguration : IEntityTypeConfiguration<Us
 {
     public void Configure(EntityTypeBuilder<UserActivityLog> builder)
     {
-        builder.ToTable(nameof(UserActivityLog), table => table.ExcludeFromMigrations());
+        // Ledger tables reject MERGE, which EF uses for multi-row inserts with OUTPUT. Plain INSERTs only.
+        builder.ToTable(nameof(UserActivityLog), table =>
+        {
+            table.ExcludeFromMigrations();
+            table.UseSqlOutputClause(false);
+        });
         builder.HasKey(entity => entity.EventId);
         builder.Property(entity => entity.EntityType).IsOptionalVarchar(50);
         builder.Property(entity => entity.EntityId).IsOptionalVarchar(50);
@@ -287,7 +292,12 @@ internal sealed class DataChangeAuditLogConfiguration : IEntityTypeConfiguration
 {
     public void Configure(EntityTypeBuilder<DataChangeAuditLog> builder)
     {
-        builder.ToTable(nameof(DataChangeAuditLog), table => table.ExcludeFromMigrations());
+        // Ledger tables reject MERGE, which EF uses for multi-row inserts with OUTPUT. Plain INSERTs only.
+        builder.ToTable(nameof(DataChangeAuditLog), table =>
+        {
+            table.ExcludeFromMigrations();
+            table.UseSqlOutputClause(false);
+        });
         builder.HasKey(entity => entity.AuditId);
         builder.Property(entity => entity.TableName).IsVarchar(100);
         builder.Property(entity => entity.RecordId).IsOptionalVarchar(50);

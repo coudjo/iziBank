@@ -1,4 +1,6 @@
 using System.Globalization;
+using Banking.Application.Supervision;
+using Banking.Infrastructure;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -15,6 +17,12 @@ try
             .Enrich.FromLogContext()
             .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture));
 
+    var supervision = builder.Configuration.GetSection(SupervisionOptions.SectionName).Get<SupervisionOptions>()
+        ?? new SupervisionOptions();
+    SupervisionOptions.EnsureSafeFor(supervision, builder.Environment.EnvironmentName);
+    builder.Services.Configure<SupervisionOptions>(builder.Configuration.GetSection(SupervisionOptions.SectionName));
+
+    builder.Services.AddBankingPersistence(builder.Configuration.GetConnectionString("Banking"));
     builder.Services.AddOpenApi();
 
     var app = builder.Build();
