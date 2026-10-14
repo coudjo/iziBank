@@ -97,7 +97,9 @@ public sealed class BankingModelTests
             index.IsUnique && index.Properties.Select(static p => p.Name)
                 .SequenceEqual(new[] { nameof(RoleGroupPermission.RoleGroupId), nameof(RoleGroupPermission.ModuleId), nameof(RoleGroupPermission.SubModuleId) }));
         permission.FindProperty(nameof(RoleGroupPermission.SubModuleId))!.IsNullable.ShouldBeTrue();
-        CheckNames(permission).ShouldContain("CK_RoleGroupPermission_ViewImplied");
+        var designModel = context.GetService<IDesignTimeModel>().Model;
+        CheckNames(designModel.FindEntityType(typeof(RoleGroupPermission))!)
+            .ShouldContain("CK_RoleGroupPermission_ViewImplied");
 
         // The composite FK makes the database refuse a sub-module under the wrong module.
         permission.GetForeignKeys().ShouldContain(static key =>

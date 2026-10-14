@@ -14,7 +14,7 @@ Core banking system for one institution (microfinance and savings-and-loans tier
 dotnet tool restore
 dotnet build            # warnings are errors
 dotnet test             # integration tests need Docker (Testcontainers SQL Server 2022)
-dotnet ef migrations add <Name> -p src/Banking.Infrastructure -s src/Banking.Migrator
+dotnet ef migrations add <Name> -p src/Banking.Infrastructure -s src/Banking.Infrastructure -o Persistence/Migrations
 dotnet run --project src/Banking.Migrator   # apply schema and seed
 ```
 

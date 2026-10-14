@@ -2201,6 +2201,68 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.ToTable("PartyRegulatoryAttribute", "dbo");
                 });
 
+            modelBuilder.Entity("Banking.Domain.Parties.PartySignature", b =>
+                {
+                    b.Property<long>("PartySignatureId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("PartySignatureId"));
+
+                    b.Property<long>("CapturedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CapturedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<byte[]>("ImageValue")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<bool>("IsSupervisionRequired")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("PartyId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("SupervisedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("SupervisedOn")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("PartySignatureId");
+
+                    b.HasIndex("CapturedByUserId");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("ModifiedByUserId");
+
+                    b.HasIndex("SupervisedByUserId");
+
+                    b.HasIndex("PartyId", "SupervisedOn")
+                        .HasDatabaseName("IX_PartySignature_PartyId_SupervisedOn");
+
+                    b.ToTable("PartySignature", "dbo");
+                });
+
             modelBuilder.Entity("Banking.Domain.Products.Product", b =>
                 {
                     b.Property<int>("ProductId")
@@ -2536,6 +2598,62 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.ToTable("EventType", "dbo");
                 });
 
+            modelBuilder.Entity("Banking.Domain.Security.IdempotencyKey", b =>
+                {
+                    b.Property<long>("IdempotencyKeyId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("IdempotencyKeyId"));
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<DateTime>("ExpiresOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("KeyValue")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("RequestHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<string>("ResponseBody")
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ResponseStatus")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Route")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<long>("StaffUserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("IdempotencyKeyId");
+
+                    b.HasIndex("ExpiresOn")
+                        .HasDatabaseName("IX_IdempotencyKey_ExpiresOn");
+
+                    b.HasIndex("StaffUserId", "KeyValue")
+                        .IsUnique()
+                        .HasDatabaseName("UX_IdempotencyKey_Staff_Key");
+
+                    b.ToTable("IdempotencyKey", "dbo");
+                });
+
             modelBuilder.Entity("Banking.Domain.Security.Module", b =>
                 {
                     b.Property<int>("ModuleId")
@@ -2590,6 +2708,155 @@ namespace Banking.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("Module", "dbo");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Security.RoleGroup", b =>
+                {
+                    b.Property<int>("RoleGroupId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RoleGroupId"));
+
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(300)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsSupervisionRequired")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsSystemGroup")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RoleGroupCode")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<string>("RoleGroupName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<long?>("SupervisedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("SupervisedOn")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("RoleGroupId");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("ModifiedByUserId");
+
+                    b.HasIndex("RoleGroupCode")
+                        .IsUnique();
+
+                    b.HasIndex("SupervisedByUserId");
+
+                    b.ToTable("RoleGroup", "dbo");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Security.RoleGroupPermission", b =>
+                {
+                    b.Property<long>("RoleGroupPermissionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("RoleGroupPermissionId"));
+
+                    b.Property<bool>("AllowAdd")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("AllowDelete")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("AllowEdit")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("AllowSupervise")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("AllowView")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ModuleId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RoleGroupId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SubModuleId")
+                        .HasColumnType("int");
+
+                    b.HasKey("RoleGroupPermissionId");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("ModifiedByUserId");
+
+                    b.HasIndex("ModuleId", "SubModuleId");
+
+                    b.HasIndex("RoleGroupId", "ModuleId", "SubModuleId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_RoleGroupPermission_Group_Module_SubModule")
+                        .HasFilter("[SubModuleId] IS NOT NULL");
+
+                    b.ToTable("RoleGroupPermission", "dbo", t =>
+                        {
+                            t.HasCheckConstraint("CK_RoleGroupPermission_ViewImplied", "[AllowView] = 1 OR ([AllowAdd] = 0 AND [AllowEdit] = 0 AND [AllowDelete] = 0 AND [AllowSupervise] = 0)");
+                        });
                 });
 
             modelBuilder.Entity("Banking.Domain.Security.StaffUser", b =>
@@ -2684,6 +2951,68 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.ToTable("StaffUser", "dbo");
                 });
 
+            modelBuilder.Entity("Banking.Domain.Security.StaffUserRoleGroup", b =>
+                {
+                    b.Property<long>("StaffUserRoleGroupId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("StaffUserRoleGroupId"));
+
+                    b.Property<int>("BranchId")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<bool>("IsSupervisionRequired")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("RoleGroupId")
+                        .HasColumnType("int");
+
+                    b.Property<long>("StaffUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("SupervisedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("SupervisedOn")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("StaffUserRoleGroupId");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("ModifiedByUserId");
+
+                    b.HasIndex("RoleGroupId");
+
+                    b.HasIndex("SupervisedByUserId");
+
+                    b.HasIndex("BranchId", "RoleGroupId")
+                        .HasDatabaseName("IX_StaffUserRoleGroup_Branch_Group");
+
+                    b.HasIndex("StaffUserId", "RoleGroupId", "BranchId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_StaffUserRoleGroup_Staff_Group_Branch");
+
+                    b.ToTable("StaffUserRoleGroup", "dbo");
+                });
+
             modelBuilder.Entity("Banking.Domain.Security.SubModule", b =>
                 {
                     b.Property<int>("SubModuleId")
@@ -2728,11 +3057,12 @@ namespace Banking.Infrastructure.Persistence.Migrations
 
                     b.HasKey("SubModuleId");
 
+                    b.HasAlternateKey("ModuleId", "SubModuleId")
+                        .HasName("AK_SubModule_Module_SubModule");
+
                     b.HasIndex("CreatedByUserId");
 
                     b.HasIndex("ModifiedByUserId");
-
-                    b.HasIndex("ModuleId");
 
                     b.HasIndex("SubModuleCode")
                         .IsUnique();
@@ -2797,88 +3127,6 @@ namespace Banking.Infrastructure.Persistence.Migrations
                         {
                             t.ExcludeFromMigrations();
                         });
-                });
-
-            modelBuilder.Entity("Banking.Domain.Security.UserPermission", b =>
-                {
-                    b.Property<long>("UserPermissionId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("UserPermissionId"));
-
-                    b.Property<bool?>("AllowAdd")
-                        .HasColumnType("bit");
-
-                    b.Property<bool?>("AllowDelete")
-                        .HasColumnType("bit");
-
-                    b.Property<bool?>("AllowEdit")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("BranchId")
-                        .HasColumnType("int");
-
-                    b.Property<bool?>("CanSupervise")
-                        .HasColumnType("bit");
-
-                    b.Property<long?>("CreatedByUserId")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
-
-                    b.Property<decimal?>("CreditLimit")
-                        .HasPrecision(19, 4)
-                        .HasColumnType("decimal(19,4)");
-
-                    b.Property<decimal?>("CreditSupervisionLimit")
-                        .HasPrecision(19, 4)
-                        .HasColumnType("decimal(19,4)");
-
-                    b.Property<decimal?>("DebitLimit")
-                        .HasPrecision(19, 4)
-                        .HasColumnType("decimal(19,4)");
-
-                    b.Property<decimal?>("DebitSupervisionLimit")
-                        .HasPrecision(19, 4)
-                        .HasColumnType("decimal(19,4)");
-
-                    b.Property<long?>("ModifiedByUserId")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime?>("ModifiedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("ModuleId")
-                        .HasColumnType("int");
-
-                    b.Property<long>("StaffUserId")
-                        .HasColumnType("bigint");
-
-                    b.Property<int?>("SubModuleId")
-                        .HasColumnType("int");
-
-                    b.HasKey("UserPermissionId");
-
-                    b.HasIndex("BranchId");
-
-                    b.HasIndex("CreatedByUserId");
-
-                    b.HasIndex("ModifiedByUserId");
-
-                    b.HasIndex("ModuleId");
-
-                    b.HasIndex("SubModuleId");
-
-                    b.HasIndex("StaffUserId", "BranchId", "ModuleId", "SubModuleId")
-                        .IsUnique()
-                        .HasDatabaseName("UX_UserPermission_Staff_Branch_Module_SubModule")
-                        .HasFilter("[SubModuleId] IS NOT NULL");
-
-                    b.ToTable("UserPermission", "dbo");
                 });
 
             modelBuilder.Entity("Banking.Domain.Security.UserSession", b =>
@@ -3684,6 +3932,42 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.Navigation("Party");
                 });
 
+            modelBuilder.Entity("Banking.Domain.Parties.PartySignature", b =>
+                {
+                    b.HasOne("Banking.Domain.Security.StaffUser", "CapturedByUser")
+                        .WithMany()
+                        .HasForeignKey("CapturedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("ModifiedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Parties.Party", "Party")
+                        .WithMany("Signatures")
+                        .HasForeignKey("PartyId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", "SupervisedByUser")
+                        .WithMany()
+                        .HasForeignKey("SupervisedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("CapturedByUser");
+
+                    b.Navigation("Party");
+
+                    b.Navigation("SupervisedByUser");
+                });
+
             modelBuilder.Entity("Banking.Domain.Products.Product", b =>
                 {
                     b.HasOne("Banking.Domain.Institution.Branch", "Branch")
@@ -3814,6 +4098,17 @@ namespace Banking.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.NoAction);
                 });
 
+            modelBuilder.Entity("Banking.Domain.Security.IdempotencyKey", b =>
+                {
+                    b.HasOne("Banking.Domain.Security.StaffUser", "StaffUser")
+                        .WithMany()
+                        .HasForeignKey("StaffUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("StaffUser");
+                });
+
             modelBuilder.Entity("Banking.Domain.Security.Module", b =>
                 {
                     b.HasOne("Banking.Domain.Security.StaffUser", null)
@@ -3825,6 +4120,61 @@ namespace Banking.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("ModifiedByUserId")
                         .OnDelete(DeleteBehavior.NoAction);
+                });
+
+            modelBuilder.Entity("Banking.Domain.Security.RoleGroup", b =>
+                {
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("ModifiedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("SupervisedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+                });
+
+            modelBuilder.Entity("Banking.Domain.Security.RoleGroupPermission", b =>
+                {
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("ModifiedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Security.Module", "Module")
+                        .WithMany()
+                        .HasForeignKey("ModuleId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Security.RoleGroup", "RoleGroup")
+                        .WithMany("Permissions")
+                        .HasForeignKey("RoleGroupId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Security.SubModule", "SubModule")
+                        .WithMany()
+                        .HasForeignKey("ModuleId", "SubModuleId")
+                        .HasPrincipalKey("ModuleId", "SubModuleId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("Module");
+
+                    b.Navigation("RoleGroup");
+
+                    b.Navigation("SubModule");
                 });
 
             modelBuilder.Entity("Banking.Domain.Security.StaffUser", b =>
@@ -3853,6 +4203,48 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.Navigation("Branch");
 
                     b.Navigation("TellerGLAccount");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Security.StaffUserRoleGroup", b =>
+                {
+                    b.HasOne("Banking.Domain.Institution.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("ModifiedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Security.RoleGroup", "RoleGroup")
+                        .WithMany("Members")
+                        .HasForeignKey("RoleGroupId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", "StaffUser")
+                        .WithMany("RoleGroups")
+                        .HasForeignKey("StaffUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("SupervisedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("Branch");
+
+                    b.Navigation("RoleGroup");
+
+                    b.Navigation("StaffUser");
                 });
 
             modelBuilder.Entity("Banking.Domain.Security.SubModule", b =>
@@ -3899,50 +4291,6 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.Navigation("EventType");
 
                     b.Navigation("Session");
-                });
-
-            modelBuilder.Entity("Banking.Domain.Security.UserPermission", b =>
-                {
-                    b.HasOne("Banking.Domain.Institution.Branch", "Branch")
-                        .WithMany()
-                        .HasForeignKey("BranchId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("Banking.Domain.Security.StaffUser", null)
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("Banking.Domain.Security.StaffUser", null)
-                        .WithMany()
-                        .HasForeignKey("ModifiedByUserId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("Banking.Domain.Security.Module", "Module")
-                        .WithMany()
-                        .HasForeignKey("ModuleId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("Banking.Domain.Security.StaffUser", "StaffUser")
-                        .WithMany("Permissions")
-                        .HasForeignKey("StaffUserId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("Banking.Domain.Security.SubModule", "SubModule")
-                        .WithMany()
-                        .HasForeignKey("SubModuleId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.Navigation("Branch");
-
-                    b.Navigation("Module");
-
-                    b.Navigation("StaffUser");
-
-                    b.Navigation("SubModule");
                 });
 
             modelBuilder.Entity("Banking.Domain.Security.UserSession", b =>
@@ -4018,6 +4366,8 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.Navigation("Photo");
 
                     b.Navigation("RegulatoryAttributes");
+
+                    b.Navigation("Signatures");
                 });
 
             modelBuilder.Entity("Banking.Domain.Products.Product", b =>
@@ -4030,9 +4380,16 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.Navigation("SubModules");
                 });
 
+            modelBuilder.Entity("Banking.Domain.Security.RoleGroup", b =>
+                {
+                    b.Navigation("Members");
+
+                    b.Navigation("Permissions");
+                });
+
             modelBuilder.Entity("Banking.Domain.Security.StaffUser", b =>
                 {
-                    b.Navigation("Permissions");
+                    b.Navigation("RoleGroups");
                 });
 #pragma warning restore 612, 618
         }
