@@ -21,7 +21,8 @@ trap cleanup EXIT
 
 mkdir -p "$(dirname "${output}")"
 
-dotnet run --project src/Banking.Api --no-launch-profile --urls "${url}" > /tmp/iziBank-openapi-export.log 2>&1 &
+Jwt__SigningKey="${Jwt__SigningKey:-openapi-export-only-signing-key-not-secret}" Sessions__SweeperEnabled=false \
+  dotnet run --project src/Banking.Api --no-launch-profile --urls "${url}" > /tmp/iziBank-openapi-export.log 2>&1 &
 pid="$!"
 
 for _ in $(seq 1 60); do

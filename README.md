@@ -52,6 +52,17 @@ dotnet run --project src/Banking.Migrator
 
 The Migrator reads `ConnectionStrings__Banking` and `BOOTSTRAP_*` from the environment, and from a `.env` file in this directory if present. Running it twice leaves existing rows unchanged.
 
+## Running the API
+
+The API refuses to start without a signing key of at least 32 characters. Set it in the environment or with user secrets, never in a file in the repository:
+
+```bash
+dotnet user-secrets init --project src/Banking.Api   # once
+dotnet user-secrets --project src/Banking.Api set "Jwt:SigningKey" "<at least 32 random characters>"
+dotnet user-secrets --project src/Banking.Api set "ConnectionStrings:Banking" "<connection string from .env>"
+dotnet run --project src/Banking.Api
+```
+
 ## Build and test
 
 ```bash

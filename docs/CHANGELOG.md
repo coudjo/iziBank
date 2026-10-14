@@ -19,3 +19,7 @@ Format: task ID, then a one-line description.
 - A2-01: `ICurrentUser`, `AuditFooterInterceptor` (Created/Modified On and By; created values immutable).
 - A2-02: `DataChangeAuditInterceptor` writes `DataChangeAuditLog` in the same transaction as the change; secrets redacted, binary written as size.
 - A2-07: `SupervisionRules` (maker-checker R1 to R5) and the startup guard for `Supervision:AllowSelfApproval`.
+- A2-04: JWT login, refresh, logout, change secret key, derived lockout, superseded sessions, per-request session check (30 s cache), `SessionSweeper` for idle and maximum length; `/auth/me`.
+- A2-05: `PermissionResolver` (union of approved role groups per branch, 30 s cache), `[RequirePermission]` via an endpoint filter with deny by default, `X-Branch-Id` switching, forced password change gate.
+- A2-06: one `UserActivityLog` row per authenticated request; writes join the business transaction; denials and failed logins logged with the attempted staff code; sensitive reads fail closed. Problem codes listed in `docs/api/problem-types.md`.
+- Sessions: `GET /sessions`, `POST /sessions/{id}/end` (SEC/SESSIONS).

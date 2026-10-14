@@ -65,3 +65,7 @@ dotnet_diagnostic.CA1707.severity = none
 dotnet_diagnostic.CA1515.severity = none
 dotnet_diagnostic.CA1711.severity = none
 dotnet_diagnostic.CA2007.severity = none
+
+# Banking.Api is an executable: its types are internal (CA1515) and many are created only by DI or ASP.NET.
+[src/Banking.Api/**/*.cs]
+dotnet_diagnostic.CA1812.severity = none

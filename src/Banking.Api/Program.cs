@@ -1,4 +1,9 @@
 using System.Globalization;
+using Banking.Api.Activity;
+using Banking.Api.Endpoints;
+using Banking.Api.Security;
+using Banking.Application.Abstractions;
+using Banking.Application.Security;
 using Banking.Application.Supervision;
 using Banking.Infrastructure;
 using Serilog;
@@ -20,18 +25,53 @@ try
     var supervision = builder.Configuration.GetSection(SupervisionOptions.SectionName).Get<SupervisionOptions>()
         ?? new SupervisionOptions();
     SupervisionOptions.EnsureSafeFor(supervision, builder.Environment.EnvironmentName);
-    builder.Services.Configure<SupervisionOptions>(builder.Configuration.GetSection(SupervisionOptions.SectionName));
 
+    var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+    if (jwt.SigningKey.Length < 32)
+    {
+        throw new InvalidOperationException(
+            "Jwt:SigningKey must be supplied from the environment (Jwt__SigningKey) and be at least 32 characters.");
+    }
+
+    builder.Services.Configure<SupervisionOptions>(builder.Configuration.GetSection(SupervisionOptions.SectionName));
+    builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
+    builder.Services.Configure<SecurityOptions>(builder.Configuration.GetSection(SecurityOptions.SectionName));
+
+    builder.Services.AddHttpContextAccessor();
+    builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
     builder.Services.AddBankingPersistence(builder.Configuration.GetConnectionString("Banking"));
+    builder.Services.AddBankingSecurity();
+    builder.Services.AddSingleton<TokenIssuer>();
+    builder.Services.AddBankingJwt(jwt);
+    builder.Services.AddProblemDetails();
     builder.Services.AddOpenApi();
+
+    if (builder.Configuration.GetValue("Sessions:SweeperEnabled", true))
+    {
+        builder.Services.AddHostedService<SessionSweeperService>();
+    }
 
     var app = builder.Build();
 
+    app.UseExceptionHandler();
+    app.UseRouting();
+    app.UseAuthentication();
+    app.UseMiddleware<BranchContextMiddleware>();
+    app.UseMiddleware<ActivityLoggingMiddleware>();
+    app.UseAuthorization();
+
     app.MapOpenApi();
+
+    var api = app.MapGroup("/api/v1")
+        .RequireAuthorization()
+        .AddEndpointFilter<AccessFilter>();
+
+    api.MapAuthEndpoints();
+    api.MapSessionEndpoints();
 
     await app.RunAsync().ConfigureAwait(false);
 }
-catch (Exception exception)
+catch (Exception exception) when (exception is not HostAbortedException)
 {
     Log.Fatal(exception, "Host terminated unexpectedly");
     throw;

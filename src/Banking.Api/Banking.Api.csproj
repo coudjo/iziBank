@@ -9,6 +9,7 @@
     <ProjectReference Include="..\Banking.Infrastructure\Banking.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Serilog.AspNetCore" />
   </ItemGroup>
