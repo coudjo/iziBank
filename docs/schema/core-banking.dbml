@@ -212,6 +212,31 @@ Table IdempotencyKey {
   Note: 'Not audited. Purged after ExpiresOn (24 hours).'
 }
 
+Table ChangeRequest {
+  ChangeRequestId bigint [pk, increment]
+  EntityType varchar(50) [not null, note: 'RoleGroup, StaffBranchAssignment; more later']
+  EntityId varchar(50) [not null, note: 'Target id, or new:CODE for a create']
+  ChangeType varchar(30) [not null]
+  Status varchar(10) [not null, note: 'PENDING, APPROVED, REJECTED']
+  BeforeJson nvarchar(max)
+  PayloadJson nvarchar(max) [not null]
+  RequestedByUserId bigint [not null]
+  RequestedOn datetime [not null]
+  DecidedByUserId bigint
+  DecidedOn datetime
+  DecisionNote nvarchar(300)
+  CreatedByUserId bigint
+  CreatedOn datetime [not null, default: `SYSUTCDATETIME()`]
+  ModifiedByUserId bigint
+  ModifiedOn datetime
+
+  indexes {
+    (Status, RequestedOn) [name: 'IX_ChangeRequest_Status_RequestedOn']
+    (EntityType, EntityId) [unique, name: 'UX_ChangeRequest_OnePendingPerEntity', note: 'filtered: Status = PENDING']
+  }
+  Note: 'Pending changes that apply only when a different supervisor approves (R10, ADR S1-d).'
+}
+
 Table UserSession {
   SessionId bigint [pk, increment]
   StaffUserId bigint
@@ -1352,6 +1377,8 @@ Ref: StaffUserRoleGroup.RoleGroupId > RoleGroup.RoleGroupId
 Ref: StaffUserRoleGroup.BranchId > Branch.BranchId
 Ref: StaffUserRoleGroup.SupervisedByUserId > StaffUser.StaffUserId
 Ref: IdempotencyKey.StaffUserId > StaffUser.StaffUserId
+Ref: ChangeRequest.RequestedByUserId > StaffUser.StaffUserId
+Ref: ChangeRequest.DecidedByUserId > StaffUser.StaffUserId
 Ref: PartySignature.PartyId > Party.PartyId
 Ref: PartySignature.CapturedByUserId > StaffUser.StaffUserId
 Ref: PartySignature.SupervisedByUserId > StaffUser.StaffUserId

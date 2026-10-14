@@ -18,7 +18,7 @@ public sealed class BankingModelTests
     [
         nameof(InstitutionProfile), nameof(Branch), nameof(Currency), nameof(BusinessDayStatus), nameof(DefinedHoliday),
         nameof(Module), nameof(SubModule), nameof(StaffUser), nameof(CustomerDigitalAccess),
-        nameof(RoleGroup), nameof(RoleGroupPermission), nameof(StaffUserRoleGroup), nameof(IdempotencyKey),
+        nameof(RoleGroup), nameof(RoleGroupPermission), nameof(StaffUserRoleGroup), nameof(IdempotencyKey), nameof(Banking.Domain.Supervision.ChangeRequest),
         nameof(UserSession), nameof(EventType), nameof(UserActivityLog), nameof(DataChangeAuditLog),
         nameof(Party), nameof(IndividualDetail), nameof(BusinessDetail), nameof(GroupDetail), nameof(GroupMember),
         nameof(PartyBeneficialOwner), nameof(PartyIdentificationDocument), nameof(PartyImage), nameof(PartySignature), nameof(PartyNextOfKin),

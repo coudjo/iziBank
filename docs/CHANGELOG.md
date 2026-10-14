@@ -23,3 +23,7 @@ Format: task ID, then a one-line description.
 - A2-05: `PermissionResolver` (union of approved role groups per branch, 30 s cache), `[RequirePermission]` via an endpoint filter with deny by default, `X-Branch-Id` switching, forced password change gate.
 - A2-06: one `UserActivityLog` row per authenticated request; writes join the business transaction; denials and failed logins logged with the attempted staff code; sensitive reads fail closed. Problem codes listed in `docs/api/problem-types.md`.
 - Sessions: `GET /sessions`, `POST /sessions/{id}/end` (SEC/SESSIONS).
+- A2-09: `ChangeRequest` table (migration `0004`); role-group API (`/modules`, `/role-groups`, `/staff-users/{id}/role-groups`, `/change-requests` with approve and reject). Changes apply only on four-eyes approval; permission cache cleared on approval.
+- A2-10: safety rules: no self-assignment, last-administrator guard in the approval transaction, one pending change per record, deactivation removes access on the next request. Role groups are deactivated, never deleted.
+- A2-03: lookup API (`/lookups`, `/lookups/{type}` read for any signed-in user; add and edit with REF/LOOKUPS). Codes immutable, coded rows cannot be deactivated, no delete.
+- A2-08: staff users (`/staff-users` list, detail, create with forced first change, edit, disable ends sessions, reset password), last-administrator guard on disable, no self-change; audit viewers `/audit/activity` and `/audit/changes` (sensitive reads, logged as AUDIT_VIEW).

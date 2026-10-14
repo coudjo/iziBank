@@ -24,7 +24,19 @@ internal static class ApiProblems
         [ProblemCodes.PermissionDenied] = "You do not have permission to do that.",
         [ProblemCodes.BranchNotAllowed] = "You cannot work in that branch.",
         [ProblemCodes.ActivityLogUnavailable] = "This record could not be opened safely.",
-        [ProblemCodes.SessionNotOpen] = "That session is not open."
+        [ProblemCodes.SessionNotOpen] = "That session is not open.",
+        [ProblemCodes.RoleGroupCodeTaken] = "A role group with that code already exists.",
+        [ProblemCodes.RoleGroupInactive] = "That role group is already inactive.",
+        [ProblemCodes.SelfAssignment] = "You cannot change your own role groups.",
+        [ProblemCodes.LastAdministrator] = "This change would leave nobody able to manage users, permissions and KYC.",
+        [ProblemCodes.ChangePendingExists] = "A change to this record is already waiting for approval.",
+        [ProblemCodes.ChangeNotPending] = "That change is not waiting for approval.",
+        [ProblemCodes.LookupCodeTaken] = "That code is already in the list.",
+        [ProblemCodes.LookupCodeImmutable] = "A code cannot be changed once created.",
+        [ProblemCodes.LookupCodedRow] = "The system relies on this value, so it cannot be deactivated.",
+        [ProblemCodes.StaffCodeTaken] = "That staff code is already in use.",
+        [ProblemCodes.StaffSelfChange] = "You cannot change your own staff record here.",
+        [Banking.Domain.Supervision.SupervisionProblems.SelfApproval] = "You cannot approve your own change."
     };
 
     public static string TitleFor(string code) => Titles.TryGetValue(code, out var title) ? title : code;

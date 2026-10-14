@@ -25,12 +25,25 @@ public static class ProblemCodes
     public const string BranchNotAllowed = "auth.branch-not-allowed";
     public const string ActivityLogUnavailable = "audit.activity-log-unavailable";
     public const string SessionNotOpen = "session.not-open";
+    public const string RoleGroupCodeTaken = "rolegroup.code-taken";
+    public const string RoleGroupInactive = "rolegroup.inactive";
+    public const string SelfAssignment = "security.self-assignment";
+    public const string LastAdministrator = "security.last-administrator";
+    public const string ChangePendingExists = "change.pending-exists";
+    public const string ChangeNotPending = "change.not-pending";
+    public const string LookupCodeTaken = "lookup.code-taken";
+    public const string LookupCodeImmutable = "lookup.code-immutable";
+    public const string LookupCodedRow = "lookup.coded-row";
+    public const string StaffCodeTaken = "staff.code-taken";
+    public const string StaffSelfChange = "staff.self-change";
 
     public static readonly IReadOnlyList<string> All =
     [
         Validation, NotFound, Unexpected,
         InvalidCredentials, Locked, Unauthenticated, SessionEnded, SessionSuperseded, SessionTimedOut,
         SessionMaxExceeded, SessionForced, MustChangeSecretKey, SecretKeyRules, CurrentSecretKeyWrong,
-        PermissionDenied, BranchNotAllowed, ActivityLogUnavailable, SessionNotOpen
+        PermissionDenied, BranchNotAllowed, ActivityLogUnavailable, SessionNotOpen,
+        RoleGroupCodeTaken, RoleGroupInactive, SelfAssignment, LastAdministrator, ChangePendingExists, ChangeNotPending,
+        LookupCodeTaken, LookupCodeImmutable, LookupCodedRow, StaffCodeTaken, StaffSelfChange
     ];
 }

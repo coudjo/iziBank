@@ -2550,6 +2550,8 @@ namespace Banking.Infrastructure.Persistence.Migrations
                         {
                             t.ExcludeFromMigrations();
                         });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("Banking.Domain.Security.EventType", b =>
@@ -3127,6 +3129,8 @@ namespace Banking.Infrastructure.Persistence.Migrations
                         {
                             t.ExcludeFromMigrations();
                         });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("Banking.Domain.Security.UserSession", b =>
@@ -3176,6 +3180,99 @@ namespace Banking.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("CK_UserSession_ExactlyOnePrincipal", "([StaffUserId] IS NOT NULL AND [CustomerDigitalAccessId] IS NULL) OR ([StaffUserId] IS NULL AND [CustomerDigitalAccessId] IS NOT NULL)");
                         });
+                });
+
+            modelBuilder.Entity("Banking.Domain.Supervision.ChangeRequest", b =>
+                {
+                    b.Property<long>("ChangeRequestId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("ChangeRequestId"));
+
+                    b.Property<string>("BeforeJson")
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ChangeType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<long?>("DecidedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("DecidedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DecisionNote")
+                        .HasMaxLength(300)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PayloadJson")
+                        .IsRequired()
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("RequestedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("RequestedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(10)");
+
+                    b.HasKey("ChangeRequestId");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("DecidedByUserId");
+
+                    b.HasIndex("ModifiedByUserId");
+
+                    b.HasIndex("RequestedByUserId");
+
+                    b.HasIndex("EntityType", "EntityId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ChangeRequest_OnePendingPerEntity")
+                        .HasFilter("[Status] = 'PENDING'");
+
+                    b.HasIndex("Status", "RequestedOn")
+                        .HasDatabaseName("IX_ChangeRequest_Status_RequestedOn");
+
+                    b.ToTable("ChangeRequest", "dbo");
                 });
 
             modelBuilder.Entity("Banking.Domain.Accounts.Account", b =>
@@ -4315,6 +4412,34 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.Navigation("LogoutReason");
 
                     b.Navigation("StaffUser");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Supervision.ChangeRequest", b =>
+                {
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", "DecidedByUser")
+                        .WithMany()
+                        .HasForeignKey("DecidedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("ModifiedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", "RequestedByUser")
+                        .WithMany()
+                        .HasForeignKey("RequestedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("DecidedByUser");
+
+                    b.Navigation("RequestedByUser");
                 });
 
             modelBuilder.Entity("Banking.Domain.Accounts.Account", b =>

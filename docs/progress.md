@@ -6,4 +6,6 @@
 | A1-01 to A1-04 | done (earlier agent) | 2026-10-11 | not re-verified |
 | S1 corrections (role groups, signatures, idempotency, KYC ADR) | done | 2026-10-14 | owner: dotnet test 39/39 |
 | A2-01, A2-02, A2-07 | done | 2026-10-14 | owner: dotnet test 66/66 |
-| A2-04, A2-05, A2-06 (+ session viewer from A2-08) | code written, awaiting owner build and tests | 2026-10-14 | pending |
+| A2-04, A2-05, A2-06 (+ session viewer from A2-08) | done | 2026-10-14 | owner: dotnet test 87/87 |
+| A2-09, A2-10 | done | 2026-10-14 | owner: dotnet test green (94) |
+| A2-03, A2-08 | code written, awaiting owner build and tests | 2026-10-14 | pending |

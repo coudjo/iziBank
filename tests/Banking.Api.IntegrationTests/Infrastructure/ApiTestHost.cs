@@ -17,11 +17,11 @@ public sealed class ApiTestHost : IAsyncDisposable
     public const string AdminSecret = "ReplaceWithAStrongSecret1";
     public const string StaffSecret = "Teller-Pass1";
 
-    private ApiTestHost(string connectionString, int homeBranchId)
+    private ApiTestHost(string connectionString, int homeBranchId, IReadOnlyDictionary<string, string?>? settings)
     {
         ConnectionString = connectionString;
         HomeBranchId = homeBranchId;
-        Factory = new BankingApiFactory(connectionString);
+        Factory = new BankingApiFactory(connectionString, settings);
     }
 
     public string ConnectionString { get; }
@@ -30,7 +30,10 @@ public sealed class ApiTestHost : IAsyncDisposable
 
     public BankingApiFactory Factory { get; }
 
-    public static async Task<ApiTestHost> CreateAsync(MsSqlContainerFixture fixture, string name)
+    public static async Task<ApiTestHost> CreateAsync(
+        MsSqlContainerFixture fixture,
+        string name,
+        IReadOnlyDictionary<string, string?>? hostSettings = null)
     {
         ArgumentNullException.ThrowIfNull(fixture);
         var connectionString = await fixture.CreateDatabaseAsync($"iziBank_{name}_{Guid.NewGuid():N}");
@@ -39,7 +42,7 @@ public sealed class ApiTestHost : IAsyncDisposable
         await using var context = NewContext(connectionString);
         await DatabaseInitializer.ApplyAsync(context, settings);
         var branchId = await context.Set<Branch>().Where(row => row.BranchCode == "001").Select(row => row.BranchId).SingleAsync();
-        return new ApiTestHost(connectionString, branchId);
+        return new ApiTestHost(connectionString, branchId, hostSettings);
     }
 
     public BankingDbContext NewContext() => NewContext(ConnectionString);

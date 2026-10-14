@@ -51,6 +51,10 @@ public static class PersistenceServiceCollectionExtensions
         services.TryAddScoped<PermissionResolver>();
         services.TryAddScoped<AuthService>();
         services.TryAddScoped<SessionAdmin>();
+        services.TryAddScoped<RoleGroupAdmin>();
+        services.TryAddScoped<StaffAdmin>();
+        services.TryAddScoped<AuditQueries>();
+        services.TryAddScoped<Banking.Infrastructure.Reference.LookupAdmin>();
 
         return services;
     }

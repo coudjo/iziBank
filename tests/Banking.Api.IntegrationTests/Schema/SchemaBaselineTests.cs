@@ -12,7 +12,7 @@ public sealed class SchemaBaselineTests
     [
         "InstitutionProfile", "Branch", "Currency", "BusinessDayStatus", "DefinedHoliday",
         "Module", "SubModule", "StaffUser", "CustomerDigitalAccess",
-        "RoleGroup", "RoleGroupPermission", "StaffUserRoleGroup", "IdempotencyKey",
+        "RoleGroup", "RoleGroupPermission", "StaffUserRoleGroup", "IdempotencyKey", "ChangeRequest",
         "UserSession", "EventType", "UserActivityLog", "DataChangeAuditLog",
         "Party", "IndividualDetail", "BusinessDetail", "GroupDetail", "GroupMember",
         "PartyBeneficialOwner", "PartyIdentificationDocument", "PartyImage", "PartySignature", "PartyNextOfKin",
@@ -161,6 +161,7 @@ public sealed class SchemaBaselineTests
         indexes.ShouldContain("UX_RoleGroupPermission_Group_Module_SubModule");
         indexes.ShouldContain("UX_StaffUserRoleGroup_Staff_Group_Branch");
         indexes.ShouldContain("UX_IdempotencyKey_Staff_Key");
+        indexes.ShouldContain("UX_ChangeRequest_OnePendingPerEntity");
         indexes.ShouldContain("IX_PartySignature_PartyId_SupervisedOn");
         indexes.ShouldNotContain("UX_UserPermission_Staff_Branch_Module_SubModule");
         indexes.ShouldContain("IX_UserSession_StaffUserId_Open");

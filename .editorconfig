@@ -61,6 +61,8 @@ dotnet_diagnostic.CA1861.severity = none
 
 # Test method names may use underscores
 [tests/**/*.cs]
+# Request bodies in tests are built inline for readability.
+dotnet_diagnostic.CA1861.severity = none
 dotnet_diagnostic.CA1707.severity = none
 dotnet_diagnostic.CA1515.severity = none
 dotnet_diagnostic.CA1711.severity = none

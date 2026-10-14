@@ -29,5 +29,5 @@ Related: [open-decisions.md](open-decisions.md).
 | S1-a | `RoleGroup` and `StaffUserRoleGroup` carry the supervision columns; changes take effect only once approved. Seeded rows are created already approved (`IsSupervisionRequired = 0`). |
 | S1-b | The bootstrap administrator holds `ADMINISTRATOR` and `SUPERVISOR` in the bootstrap branch, so `SEC/USERS`, `SEC/PERMISSIONS` and `PTY/KYC` are covered from the first day. |
 | S1-c | The addendum gives no group supervise on `SEC/PERMISSIONS`, yet R10 needs someone to approve role-group changes. `ADMINISTRATOR` gets supervise on `SEC/PERMISSIONS`. Four-eyes means a second administrator is needed to approve changes. |
-| S1-d | How a pending edit to a group's permission matrix is stored is decided in A2-09. This change only adds the tables. |
+| S1-d | Owner decision (2026-10-14): pending role-group changes live in a `ChangeRequest` table (proposed state + before snapshot). Live tables change only on approval, inside one transaction with the last-administrator check. One pending change per record. Party edits may reuse it later. |
 | S1-e | `IdempotencyKey` is unique on `(StaffUserId, KeyValue)` and stores a request hash, so a reused key with a different body returns 409. |

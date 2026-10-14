@@ -68,6 +68,8 @@ try
 
     api.MapAuthEndpoints();
     api.MapSessionEndpoints();
+    api.MapRoleGroupEndpoints();
+    api.MapAdminEndpoints();
 
     await app.RunAsync().ConfigureAwait(false);
 }
