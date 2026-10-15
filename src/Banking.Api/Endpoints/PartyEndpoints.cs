@@ -72,6 +72,7 @@ internal static class PartyEndpoints
 {
     private const string PartySubModule = "PARTY";
     private const string GroupsSubModule = "GROUPS";
+    private const string KycSubModule = "KYC";
 
     public static RouteGroupBuilder MapPartyEndpoints(this RouteGroupBuilder api)
     {
@@ -88,6 +89,47 @@ internal static class PartyEndpoints
             .SensitiveRead()
             .Produces<PartyDetail>()
             .ProducesProblem(StatusCodes.Status404NotFound);
+
+        parties.MapPut("/{partyId:long}/individual", UpdateIndividualAsync)
+            .RequirePermission(ModuleCatalog.Party, PartySubModule, PermissionAction.Edit)
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        parties.MapPut("/{partyId:long}/business", UpdateBusinessAsync)
+            .RequirePermission(ModuleCatalog.Party, PartySubModule, PermissionAction.Edit)
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        parties.MapPut("/{partyId:long}/group", UpdateGroupAsync)
+            .RequirePermission(ModuleCatalog.Party, GroupsSubModule, PermissionAction.Edit)
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        parties.MapGet("/{partyId:long}/kyc/checklist", ChecklistAsync)
+            .RequirePermission(ModuleCatalog.Party, PartySubModule, PermissionAction.View)
+            .WithTags("KYC")
+            .Produces<KycChecklist>()
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        parties.MapPost("/{partyId:long}/kyc/verify", VerifyAsync)
+            .RequirePermission(ModuleCatalog.Party, KycSubModule, PermissionAction.Supervise)
+            .WithTags("KYC")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        parties.MapPost("/{partyId:long}/kyc/reject", RejectKycAsync)
+            .RequirePermission(ModuleCatalog.Party, KycSubModule, PermissionAction.Supervise)
+            .WithTags("KYC")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         parties.MapPost("/businesses", CreateBusinessAsync)
             .RequirePermission(ModuleCatalog.Party, PartySubModule, PermissionAction.Add)
@@ -224,6 +266,93 @@ internal static class PartyEndpoints
 
     private static List<OwnerShare> Shares(IReadOnlyList<OwnerShareRequest>? owners) =>
         (owners ?? []).Select(owner => new OwnerShare(owner.OwnerPartyId, owner.OwnershipPercentage)).ToList();
+
+    private static async Task<IResult> UpdateIndividualAsync(long partyId, CreateIndividualRequest request, PartyAdmin admin, CancellationToken cancellationToken)
+    {
+        var result = await admin.UpdateIndividualAsync(partyId, ToIndividual(request), cancellationToken).ConfigureAwait(false);
+        return result.Succeeded ? TypedResults.NoContent() : ResultProblems.From(result);
+    }
+
+    private static async Task<IResult> UpdateBusinessAsync(long partyId, CreateBusinessRequest request, BusinessAdmin admin, CancellationToken cancellationToken)
+    {
+        var result = await admin.UpdateAsync(partyId, ToBusiness(request), cancellationToken).ConfigureAwait(false);
+        return result.Succeeded ? TypedResults.NoContent() : ResultProblems.From(result);
+    }
+
+    private static async Task<IResult> UpdateGroupAsync(long partyId, CreateGroupRequest request, GroupAdmin admin, CancellationToken cancellationToken)
+    {
+        var result = await admin.UpdateAsync(partyId, ToGroup(request), cancellationToken).ConfigureAwait(false);
+        return result.Succeeded ? TypedResults.NoContent() : ResultProblems.From(result);
+    }
+
+    private static async Task<IResult> ChecklistAsync(long partyId, KycService kyc, CancellationToken cancellationToken)
+    {
+        var checklist = await kyc.ChecklistAsync(partyId, cancellationToken).ConfigureAwait(false);
+        return checklist is null ? ApiProblems.Result(StatusCodes.Status404NotFound, ProblemCodes.NotFound) : TypedResults.Ok(checklist);
+    }
+
+    private static async Task<IResult> VerifyAsync(long partyId, KycService kyc, CancellationToken cancellationToken)
+    {
+        var result = await kyc.VerifyAsync(partyId, cancellationToken).ConfigureAwait(false);
+        return result.Succeeded ? TypedResults.NoContent() : ResultProblems.From(result);
+    }
+
+    private static async Task<IResult> RejectKycAsync(long partyId, RejectRequest request, KycService kyc, CancellationToken cancellationToken)
+    {
+        var result = await kyc.RejectAsync(partyId, request.Reason, cancellationToken).ConfigureAwait(false);
+        return result.Succeeded ? TypedResults.NoContent() : ResultProblems.From(result);
+    }
+
+    private static NewIndividual ToIndividual(CreateIndividualRequest request) =>
+        new(
+            request.Title,
+            request.FirstName ?? string.Empty,
+            request.LastName ?? string.Empty,
+            request.DateOfBirth,
+            request.GenderId,
+            request.Nationality,
+            request.Mobile,
+            request.Phone,
+            request.EmailAddress,
+            request.Address1,
+            request.Address2,
+            request.IdentificationTypeId,
+            request.IdentificationNumber,
+            request.IdentificationIssuedOn,
+            request.IdentificationExpiresOn,
+            request.SourceOfFunds,
+            request.OccupationOrSector,
+            request.IsPoliticallyExposed);
+
+    private static NewBusiness ToBusiness(CreateBusinessRequest request) =>
+        new(
+            request.BusinessName ?? string.Empty,
+            request.RegistrationNumber,
+            request.TaxIdentificationNumber,
+            request.IncorporationDate,
+            request.BusinessCategoryId,
+            request.Mobile,
+            request.Phone,
+            request.EmailAddress,
+            request.Address1,
+            request.Address2,
+            request.SourceOfFunds,
+            request.OccupationOrSector,
+            request.IsPoliticallyExposed,
+            request.Document is { } doc ? new NewDocument(doc.DocumentTypeId, doc.DocumentNumber, doc.IssuedOn, doc.ExpiresOn) : null,
+            Shares(request.BeneficialOwners));
+
+    private static NewGroup ToGroup(CreateGroupRequest request) =>
+        new(
+            request.GroupName ?? string.Empty,
+            request.FormationDate,
+            request.MeetingFrequency,
+            request.Mobile,
+            request.Phone,
+            request.EmailAddress,
+            request.Address1,
+            request.Address2,
+            (request.Members ?? []).Select(member => new NewMember(member.MemberPartyId, member.GroupMemberRoleId, member.JoinedOn)).ToList());
 
     private static async Task<IResult> CreateIndividualAsync(CreateIndividualRequest request, PartyAdmin admin, CancellationToken cancellationToken)
     {

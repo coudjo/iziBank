@@ -59,6 +59,8 @@ public static class ProblemCodes
     public const string UploadTypeMismatch = "upload.type-mismatch";
     public const string UploadDimensions = "upload.dimensions";
     public const string CreditOfficerExists = "credit-officer.exists";
+    public const string KycChecklistIncomplete = "kyc.checklist-incomplete";
+    public const string KycNotPending = "kyc.not-pending";
     public const string IdempotencyKeyInvalid = "idempotency.key-invalid";
     public const string IdempotencyKeyReused = "idempotency.key-reused";
     public const string IdempotencyInProgress = "idempotency.in-progress";
@@ -76,6 +78,7 @@ public static class ProblemCodes
         BusinessDayNonWorkingDay, LedgerFieldLocked, ConcurrencyConflict, PartyDuplicateIdentification,
         PartyDuplicateRegistration, GroupMemberInOtherGroup, GroupChairpersonExists, PartyPrimaryDocument,
         UploadEmpty, UploadTooLarge, UploadTypeNotAllowed, UploadTypeMismatch, UploadDimensions,
-        IdempotencyKeyInvalid, IdempotencyKeyReused, IdempotencyInProgress, CreditOfficerExists
+        IdempotencyKeyInvalid, IdempotencyKeyReused, IdempotencyInProgress, CreditOfficerExists,
+        KycChecklistIncomplete, KycNotPending
     ];
 }

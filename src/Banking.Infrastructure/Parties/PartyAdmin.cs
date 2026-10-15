@@ -68,7 +68,11 @@ public sealed record PartyDetail(
     long? SupervisedByUserId,
     IndividualView? Individual,
     BusinessView? Business,
-    GroupView? Group);
+    GroupView? Group)
+{
+    /// <summary>KYC as it applies today: VERIFIED reads EXPIRED while the required document has expired.</summary>
+    public string? EffectiveKycStatusCode { get; init; }
+}
 
 public sealed record BusinessView(
     string BusinessName,
@@ -110,6 +114,8 @@ public sealed class PartyAdmin
     private readonly SupervisionOptions _supervision;
     private readonly PartyNumberOptions _partyNumbers;
     private readonly KycOptions _kyc;
+    private readonly PartyCommon _common;
+    private readonly KycService _kycService;
 
     public PartyAdmin(
         BankingDbContext db,
@@ -118,7 +124,9 @@ public sealed class PartyAdmin
         TimeProvider timeProvider,
         IOptions<SupervisionOptions> supervision,
         IOptions<PartyNumberOptions> partyNumbers,
-        IOptions<KycOptions> kyc)
+        IOptions<KycOptions> kyc,
+        PartyCommon common,
+        KycService kycService)
     {
         ArgumentNullException.ThrowIfNull(supervision);
         ArgumentNullException.ThrowIfNull(partyNumbers);
@@ -130,6 +138,8 @@ public sealed class PartyAdmin
         _supervision = supervision.Value;
         _partyNumbers = partyNumbers.Value;
         _kyc = kyc.Value;
+        _common = common;
+        _kycService = kycService;
     }
 
     public async Task<OperationResult<CreatedParty>> CreateIndividualAsync(NewIndividual draft, CancellationToken cancellationToken)
@@ -213,6 +223,109 @@ public sealed class PartyAdmin
         return OperationResult.Ok(new CreatedParty(party.PartyId, party.PartyNumber));
     }
 
+    /// <summary>
+    /// A4-06: edits an individual. Changing a controlled field (names, date of birth, ID type or number) is a material
+    /// change: KYC back to PENDING and the record back to Pending approval (R4). Other fields change in place.
+    /// The primary ID document row follows the details.
+    /// </summary>
+    public async Task<OperationResult<long>> UpdateIndividualAsync(long partyId, NewIndividual draft, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(draft);
+
+        var party = await _db.Set<Party>()
+            .Include(row => row.IndividualDetail)
+            .SingleOrDefaultAsync(row => row.PartyId == partyId && row.IndividualDetail != null, cancellationToken)
+            .ConfigureAwait(false);
+        if (party is null)
+        {
+            return OperationResult.Fail<long>(ProblemCodes.NotFound);
+        }
+
+        var firstName = draft.FirstName.Trim();
+        var lastName = draft.LastName.Trim();
+        var idNumber = PartyRules.NormalizeIdentificationNumber(draft.IdentificationNumber ?? string.Empty);
+        var mobile = PartyRules.NormalizePhone(draft.Mobile);
+        var phone = PartyRules.NormalizePhone(draft.Phone);
+        var errors = await ValidateIndividualAsync(draft, firstName, lastName, idNumber, mobile, phone, cancellationToken).ConfigureAwait(false);
+        if (errors.Count > 0)
+        {
+            return OperationResult.Fail<long>(ProblemCodes.Validation, errors);
+        }
+
+        var detail = party.IndividualDetail!;
+        var idTypeId = draft.IdentificationTypeId!.Value;
+        var idChanged = detail.IdentificationTypeId != idTypeId || detail.IdentificationNumber != idNumber;
+        if (idChanged && await OtherHolderAsync(idTypeId, idNumber, partyId, cancellationToken).ConfigureAwait(false) is { } holder)
+        {
+            return PartyCommon.Conflict<long>(ProblemCodes.PartyDuplicateIdentification, "existingPartyNumber", holder);
+        }
+
+        var controlled = idChanged
+            || !string.Equals(detail.FirstName, firstName, StringComparison.Ordinal)
+            || !string.Equals(detail.LastName, lastName, StringComparison.Ordinal)
+            || detail.DateOfBirth != draft.DateOfBirth;
+
+        var primary = await _db.Set<PartyIdentificationDocument>()
+            .FirstOrDefaultAsync(
+                row => row.PartyId == partyId && row.DocumentTypeId == detail.IdentificationTypeId && row.DocumentNumber == detail.IdentificationNumber,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (primary is null)
+        {
+            primary = new PartyIdentificationDocument { PartyId = partyId };
+            _db.Set<PartyIdentificationDocument>().Add(primary);
+        }
+
+        primary.DocumentTypeId = idTypeId;
+        primary.DocumentNumber = idNumber;
+        primary.IssuedOn = draft.IdentificationIssuedOn ?? primary.IssuedOn;
+        primary.ExpiresOn = draft.IdentificationExpiresOn ?? primary.ExpiresOn;
+
+        detail.Title = Blank(draft.Title);
+        detail.FirstName = firstName;
+        detail.LastName = lastName;
+        detail.DateOfBirth = draft.DateOfBirth;
+        detail.GenderId = draft.GenderId;
+        detail.Nationality = Blank(draft.Nationality);
+        detail.IdentificationTypeId = idTypeId;
+        detail.IdentificationNumber = idNumber;
+
+        party.DisplayName = PartyRules.IndividualDisplayName(firstName, lastName);
+        party.Mobile = mobile;
+        party.Phone = phone;
+        party.EmailAddress = Blank(draft.EmailAddress);
+        party.Address1 = Blank(draft.Address1);
+        party.Address2 = Blank(draft.Address2);
+        party.SourceOfFunds = Blank(draft.SourceOfFunds);
+        party.OccupationOrSector = Blank(draft.OccupationOrSector);
+        party.IsPoliticallyExposed = draft.IsPoliticallyExposed;
+
+        if (controlled)
+        {
+            await _common.MarkMaterialChangeAsync(party, cancellationToken).ConfigureAwait(false);
+        }
+
+        _activity.Record(EventCodes.UpdateRecord, nameof(Party), party.PartyNumber, new Dictionary<string, object?> { ["controlled"] = controlled });
+
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (DbUpdateException)
+        {
+            _db.ChangeTracker.Clear();
+            _activity.Written = false;
+            if (await OtherHolderAsync(idTypeId, idNumber, partyId, cancellationToken).ConfigureAwait(false) is { } winner)
+            {
+                return PartyCommon.Conflict<long>(ProblemCodes.PartyDuplicateIdentification, "existingPartyNumber", winner);
+            }
+
+            throw;
+        }
+
+        return OperationResult.Ok(partyId);
+    }
+
     /// <summary>Full detail, including the full identification number (plan 6.6). Callers log it as a sensitive read.</summary>
     public async Task<PartyDetail?> GetAsync(long partyId, CancellationToken cancellationToken)
     {
@@ -263,7 +376,8 @@ public sealed class PartyAdmin
             detail = detail with
             {
                 Business = await BusinessViewAsync(partyId, cancellationToken).ConfigureAwait(false),
-                Group = await GroupViewAsync(partyId, cancellationToken).ConfigureAwait(false)
+                Group = await GroupViewAsync(partyId, cancellationToken).ConfigureAwait(false),
+                EffectiveKycStatusCode = (await _kycService.EffectiveStatusesAsync([partyId], cancellationToken).ConfigureAwait(false))[partyId]
             };
             _activity.Record(EventCodes.ViewRecord, nameof(Party), detail.PartyNumber);
         }
@@ -467,6 +581,23 @@ public sealed class PartyAdmin
         return onDetail ?? await _db.Set<PartyIdentificationDocument>()
             .AsNoTracking()
             .Where(row => row.DocumentTypeId == idTypeId && row.DocumentNumber == idNumber)
+            .Select(row => row.Party!.PartyNumber)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    private async Task<string?> OtherHolderAsync(int idTypeId, string idNumber, long partyId, CancellationToken cancellationToken)
+    {
+        var onDetail = await _db.Set<IndividualDetail>()
+            .AsNoTracking()
+            .Where(row => row.IdentificationTypeId == idTypeId && row.IdentificationNumber == idNumber && row.PartyId != partyId)
+            .Select(row => row.Party!.PartyNumber)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return onDetail ?? await _db.Set<PartyIdentificationDocument>()
+            .AsNoTracking()
+            .Where(row => row.DocumentTypeId == idTypeId && row.DocumentNumber == idNumber && row.PartyId != partyId)
             .Select(row => row.Party!.PartyNumber)
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);

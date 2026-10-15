@@ -149,6 +149,64 @@ public sealed class GroupAdmin
         return saved ?? OperationResult.Ok(new CreatedParty(party.PartyId, party.PartyNumber));
     }
 
+    /// <summary>A4-06: edits a group. The name is controlled (KYC back to PENDING); members have their own endpoints.</summary>
+    public async Task<OperationResult<long>> UpdateAsync(long groupPartyId, NewGroup draft, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(draft);
+
+        var group = await LoadGroupAsync(groupPartyId, cancellationToken).ConfigureAwait(false);
+        if (group is null)
+        {
+            return OperationResult.Fail<long>(ProblemCodes.NotFound);
+        }
+
+        var name = draft.GroupName.Trim();
+        var mobile = PartyRules.NormalizePhone(draft.Mobile);
+        var phone = PartyRules.NormalizePhone(draft.Phone);
+        var errors = PartyCommon.NewErrors();
+        if (name.Length is 0 or > 100)
+        {
+            errors["groupName"] = ["Enter the group name (up to 100 characters)."];
+        }
+
+        if (draft.FormationDate is { } formed && formed > Today())
+        {
+            errors["formationDate"] = ["The formation date cannot be in the future."];
+        }
+
+        if (PartyCommon.Blank(draft.MeetingFrequency) is { Length: > 30 })
+        {
+            errors["meetingFrequency"] = ["Keep the meeting frequency to 30 characters."];
+        }
+
+        PartyCommon.ValidateContact(errors, mobile, phone, draft.EmailAddress, draft.Address1, draft.Address2, requireAddress: false, requireNumber: false);
+        if (errors.Count > 0)
+        {
+            return OperationResult.Fail<long>(ProblemCodes.Validation, errors);
+        }
+
+        var detail = group.GroupDetail!;
+        var controlled = !string.Equals(detail.GroupName, name, StringComparison.Ordinal);
+        detail.GroupName = name;
+        detail.FormationDate = draft.FormationDate;
+        detail.MeetingFrequency = PartyCommon.Blank(draft.MeetingFrequency);
+        group.DisplayName = name;
+        group.Mobile = mobile;
+        group.Phone = phone;
+        group.EmailAddress = PartyCommon.Blank(draft.EmailAddress);
+        group.Address1 = PartyCommon.Blank(draft.Address1);
+        group.Address2 = PartyCommon.Blank(draft.Address2);
+
+        if (controlled)
+        {
+            await _common.MarkMaterialChangeAsync(group, cancellationToken).ConfigureAwait(false);
+        }
+
+        _activity.Record(EventCodes.UpdateRecord, nameof(Party), group.PartyNumber, new Dictionary<string, object?> { ["controlled"] = controlled });
+        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return OperationResult.Ok(groupPartyId);
+    }
+
     public async Task<IReadOnlyList<GroupMemberView>?> MembersAsync(long groupPartyId, bool includeFormer, CancellationToken cancellationToken)
     {
         var chairperson = await _db.Set<GroupDetail>()

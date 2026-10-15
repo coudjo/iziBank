@@ -197,6 +197,130 @@ public sealed class BusinessAdmin
         return OperationResult.Ok(new CreatedParty(party.PartyId, party.PartyNumber));
     }
 
+    /// <summary>
+    /// A4-06: edits a business. Name, registration number and TIN are controlled: changing one sends KYC back to
+    /// PENDING and the record back to Pending approval. Owners and documents have their own endpoints.
+    /// </summary>
+    public async Task<OperationResult<long>> UpdateAsync(long partyId, NewBusiness draft, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(draft);
+
+        var party = await _db.Set<Party>()
+            .Include(row => row.BusinessDetail)
+            .SingleOrDefaultAsync(row => row.PartyId == partyId && row.BusinessDetail != null, cancellationToken)
+            .ConfigureAwait(false);
+        if (party is null)
+        {
+            return OperationResult.Fail<long>(ProblemCodes.NotFound);
+        }
+
+        var name = draft.BusinessName.Trim();
+        var registration = PartyRules.NormalizeIdentificationNumber(draft.RegistrationNumber ?? string.Empty);
+        var tin = PartyCommon.Blank(draft.TaxIdentificationNumber) is { } rawTin ? PartyRules.NormalizeIdentificationNumber(rawTin) : null;
+        var mobile = PartyRules.NormalizePhone(draft.Mobile);
+        var phone = PartyRules.NormalizePhone(draft.Phone);
+        var today = DateOnly.FromDateTime(_timeProvider.GetUtcNow().UtcDateTime);
+
+        var errors = PartyCommon.NewErrors();
+        if (name.Length is 0 or > 150)
+        {
+            errors["businessName"] = ["Enter the business name (up to 150 characters)."];
+        }
+
+        if (registration.Length is 0 or > 40)
+        {
+            errors["registrationNumber"] = ["Enter the registration number (up to 40 characters)."];
+        }
+
+        if (tin is { Length: > 30 })
+        {
+            errors["taxIdentificationNumber"] = ["Keep the TIN to 30 characters."];
+        }
+
+        if (draft.IncorporationDate is { } incorporated && incorporated > today)
+        {
+            errors["incorporationDate"] = ["The incorporation date cannot be in the future."];
+        }
+
+        if (draft.BusinessCategoryId is not { } categoryId
+            || !await _db.Set<BusinessCategoryType>().AnyAsync(row => row.Id == categoryId && row.IsActive, cancellationToken).ConfigureAwait(false))
+        {
+            errors["businessCategoryId"] = ["Choose the legal form from the list."];
+        }
+
+        PartyCommon.ValidateContact(errors, mobile, phone, draft.EmailAddress, draft.Address1, draft.Address2, requireAddress: true, requireNumber: true);
+
+        if (PartyCommon.Blank(draft.SourceOfFunds) is not { Length: <= 200 })
+        {
+            errors["sourceOfFunds"] = ["Enter the source of funds (up to 200 characters)."];
+        }
+
+        if (PartyCommon.Blank(draft.OccupationOrSector) is { Length: > 100 })
+        {
+            errors["occupationOrSector"] = ["Keep the sector to 100 characters."];
+        }
+
+        if (errors.Count > 0)
+        {
+            return OperationResult.Fail<long>(ProblemCodes.Validation, errors);
+        }
+
+        var detail = party.BusinessDetail!;
+        if (registration != detail.RegistrationNumber
+            && await _db.Set<BusinessDetail>().AsNoTracking()
+                .Where(row => row.RegistrationNumber == registration && row.PartyId != partyId)
+                .Select(row => row.Party!.PartyNumber)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false) is { } holder)
+        {
+            return PartyCommon.Conflict<long>(ProblemCodes.PartyDuplicateRegistration, "existingPartyNumber", holder);
+        }
+
+        var controlled = !string.Equals(detail.BusinessName, name, StringComparison.Ordinal)
+            || registration != detail.RegistrationNumber
+            || tin != detail.TaxIdentificationNumber;
+
+        detail.BusinessName = name;
+        detail.RegistrationNumber = registration;
+        detail.TaxIdentificationNumber = tin;
+        detail.IncorporationDate = draft.IncorporationDate;
+        detail.BusinessCategoryId = draft.BusinessCategoryId;
+        party.DisplayName = name;
+        party.Mobile = mobile;
+        party.Phone = phone;
+        party.EmailAddress = PartyCommon.Blank(draft.EmailAddress);
+        party.Address1 = PartyCommon.Blank(draft.Address1);
+        party.Address2 = PartyCommon.Blank(draft.Address2);
+        party.SourceOfFunds = PartyCommon.Blank(draft.SourceOfFunds);
+        party.OccupationOrSector = PartyCommon.Blank(draft.OccupationOrSector);
+        party.IsPoliticallyExposed = draft.IsPoliticallyExposed;
+
+        if (controlled)
+        {
+            await _common.MarkMaterialChangeAsync(party, cancellationToken).ConfigureAwait(false);
+        }
+
+        _activity.Record(EventCodes.UpdateRecord, nameof(Party), party.PartyNumber, new Dictionary<string, object?> { ["controlled"] = controlled });
+
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (DbUpdateException)
+        {
+            _db.ChangeTracker.Clear();
+            _activity.Written = false;
+            if (await RegistrationHolderAsync(registration, cancellationToken).ConfigureAwait(false) is { } winner)
+            {
+                return PartyCommon.Conflict<long>(ProblemCodes.PartyDuplicateRegistration, "existingPartyNumber", winner);
+            }
+
+            throw;
+        }
+
+        return OperationResult.Ok(partyId);
+    }
+
     public async Task<IReadOnlyList<BeneficialOwnerView>?> OwnersAsync(long businessPartyId, CancellationToken cancellationToken)
     {
         if (!await _db.Set<BusinessDetail>().AnyAsync(row => row.PartyId == businessPartyId, cancellationToken).ConfigureAwait(false))

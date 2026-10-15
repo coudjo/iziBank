@@ -59,6 +59,8 @@ internal static class ApiProblems
         [ProblemCodes.UploadTypeMismatch] = "The file's content does not match its stated type.",
         [ProblemCodes.UploadDimensions] = "The image is larger than the allowed width and height.",
         [ProblemCodes.CreditOfficerExists] = "This staff member is already an active credit officer.",
+        [ProblemCodes.KycChecklistIncomplete] = "The KYC checklist is not complete.",
+        [ProblemCodes.KycNotPending] = "This customer's KYC is not waiting for verification.",
         [ProblemCodes.IdempotencyKeyInvalid] = "The Idempotency-Key header is not valid.",
         [ProblemCodes.IdempotencyKeyReused] = "This Idempotency-Key was already used for a different request.",
         [ProblemCodes.IdempotencyInProgress] = "The first request with this Idempotency-Key is still running.",
