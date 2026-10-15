@@ -57,6 +57,7 @@ internal static class ApiProblems
         [ProblemCodes.UploadTooLarge] = "The file is too large.",
         [ProblemCodes.UploadTypeNotAllowed] = "This kind of file is not accepted.",
         [ProblemCodes.UploadTypeMismatch] = "The file's content does not match its stated type.",
+        [ProblemCodes.UploadDimensions] = "The image is larger than the allowed width and height.",
         [ProblemCodes.IdempotencyKeyInvalid] = "The Idempotency-Key header is not valid.",
         [ProblemCodes.IdempotencyKeyReused] = "This Idempotency-Key was already used for a different request.",
         [ProblemCodes.IdempotencyInProgress] = "The first request with this Idempotency-Key is still running.",

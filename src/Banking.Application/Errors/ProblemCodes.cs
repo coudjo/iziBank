@@ -57,6 +57,7 @@ public static class ProblemCodes
     public const string UploadTooLarge = "upload.too-large";
     public const string UploadTypeNotAllowed = "upload.type-not-allowed";
     public const string UploadTypeMismatch = "upload.type-mismatch";
+    public const string UploadDimensions = "upload.dimensions";
     public const string IdempotencyKeyInvalid = "idempotency.key-invalid";
     public const string IdempotencyKeyReused = "idempotency.key-reused";
     public const string IdempotencyInProgress = "idempotency.in-progress";
@@ -73,7 +74,7 @@ public static class ProblemCodes
         HolidayBusinessDayExists, BusinessDayNotOpen, BusinessDayPreviousOpen, BusinessDayDateNotAfter,
         BusinessDayNonWorkingDay, LedgerFieldLocked, ConcurrencyConflict, PartyDuplicateIdentification,
         PartyDuplicateRegistration, GroupMemberInOtherGroup, GroupChairpersonExists, PartyPrimaryDocument,
-        UploadEmpty, UploadTooLarge, UploadTypeNotAllowed, UploadTypeMismatch,
+        UploadEmpty, UploadTooLarge, UploadTypeNotAllowed, UploadTypeMismatch, UploadDimensions,
         IdempotencyKeyInvalid, IdempotencyKeyReused, IdempotencyInProgress
     ];
 }

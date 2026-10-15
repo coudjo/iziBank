@@ -103,6 +103,43 @@ internal static class PartyDocumentEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
+        // Addendum 3: specimen signatures (A4-09, A4-11).
+        parties.MapGet("/signature", GetSignatureAsync)
+            .RequirePermission(ModuleCatalog.Party, PartySubModule, PermissionAction.View)
+            .WithTags("Signatures")
+            .Produces<SignatureView>()
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        parties.MapPut("/signature", CaptureSignatureAsync)
+            .RequirePermission(ModuleCatalog.Party, Documents, PermissionAction.Edit)
+            .WithTags("Signatures")
+            .Accepts(typeof(byte[]), ImageTypes[1], AnyType)
+            .Produces<CreatedId>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        parties.MapGet("/signature/image", GetSignatureImageAsync)
+            .RequirePermission(ModuleCatalog.Party, PartySubModule, PermissionAction.View)
+            .WithTags("Signatures")
+            .SensitiveRead()
+            .Produces(StatusCodes.Status200OK, contentType: ImageTypes[1])
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        parties.MapPost("/signature/supervise", SuperviseSignatureAsync)
+            .RequirePermission(ModuleCatalog.Party, PartySubModule, PermissionAction.Supervise)
+            .WithTags("Signatures")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        parties.MapPost("/signature/reject", RejectSignatureAsync)
+            .RequirePermission(ModuleCatalog.Party, PartySubModule, PermissionAction.Supervise)
+            .WithTags("Signatures")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
         return api;
     }
 
@@ -229,8 +266,63 @@ internal static class PartyDocumentEndpoints
         return result.Succeeded ? TypedResults.NoContent() : ResultProblems.From(result);
     }
 
+    private static async Task<IResult> GetSignatureAsync(long partyId, PartySignatures signatures, CancellationToken cancellationToken)
+    {
+        var view = await signatures.GetAsync(partyId, cancellationToken).ConfigureAwait(false);
+        return view is null ? NotFound() : TypedResults.Ok(view);
+    }
+
+    private static async Task<IResult> CaptureSignatureAsync(
+        long partyId,
+        HttpRequest http,
+        PartySignatures signatures,
+        IdempotencyStore idempotency,
+        CancellationToken cancellationToken)
+    {
+        var content = await RequestBody.ReadAsync(http, PartySignatures.MaxBytes, cancellationToken).ConfigureAwait(false);
+        return await IdempotentRequest.RunAsync(
+                http,
+                idempotency,
+                content ?? [],
+                async () =>
+                {
+                    var result = await signatures.CaptureAsync(partyId, content, http.ContentType, cancellationToken).ConfigureAwait(false);
+                    return result.Succeeded
+                        ? IdempotentOutcome.Store(StatusCodes.Status200OK, new CreatedId(result.Value))
+                        : IdempotentOutcome.DoNotStore(UploadProblem(result, PartySignatures.MaxBytes));
+                },
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> GetSignatureImageAsync(
+        long partyId,
+        PartySignatures signatures,
+        bool pending = false,
+        CancellationToken cancellationToken = default)
+    {
+        var image = await signatures.GetImageAsync(partyId, pending, cancellationToken).ConfigureAwait(false);
+        return image is null ? NotFound() : TypedResults.File(image.Content, image.ContentType);
+    }
+
+    private static async Task<IResult> SuperviseSignatureAsync(long partyId, PartySignatures signatures, CancellationToken cancellationToken)
+    {
+        var result = await signatures.SuperviseAsync(partyId, cancellationToken).ConfigureAwait(false);
+        return result.Succeeded ? TypedResults.NoContent() : ResultProblems.From(result);
+    }
+
+    private static async Task<IResult> RejectSignatureAsync(long partyId, RejectRequest? request, PartySignatures signatures, CancellationToken cancellationToken)
+    {
+        var result = await signatures.RejectAsync(partyId, request?.Reason, cancellationToken).ConfigureAwait(false);
+        return result.Succeeded ? TypedResults.NoContent() : ResultProblems.From(result);
+    }
+
     private static IResult UploadProblem(OperationResult<long> result, int maxBytes) => result.ProblemCode switch
     {
+        ProblemCodes.UploadDimensions => ApiProblems.Result(
+            StatusCodes.Status400BadRequest,
+            ProblemCodes.UploadDimensions,
+            new Dictionary<string, object?>(StringComparer.Ordinal) { ["maxWidth"] = PartySignatures.MaxWidth, ["maxHeight"] = PartySignatures.MaxHeight }),
         ProblemCodes.UploadTooLarge => ApiProblems.Result(
             StatusCodes.Status400BadRequest,
             ProblemCodes.UploadTooLarge,
