@@ -4,6 +4,7 @@ using Banking.Api.Endpoints;
 using Banking.Api.Problems;
 using Banking.Api.Security;
 using Banking.Application.Abstractions;
+using Banking.Application.Parties;
 using Banking.Application.Reference;
 using Banking.Application.Security;
 using Banking.Application.Supervision;
@@ -39,6 +40,8 @@ try
     builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
     builder.Services.Configure<SecurityOptions>(builder.Configuration.GetSection(SecurityOptions.SectionName));
     builder.Services.Configure<CalendarOptions>(builder.Configuration.GetSection(CalendarOptions.SectionName));
+    builder.Services.Configure<PartyNumberOptions>(builder.Configuration.GetSection(PartyNumberOptions.SectionName));
+    builder.Services.Configure<KycOptions>(builder.Configuration.GetSection(KycOptions.SectionName));
 
     // Fail at start-up, not on the first business-day request, if the weekend setting is wrong.
     _ = (builder.Configuration.GetSection(CalendarOptions.SectionName).Get<CalendarOptions>() ?? new CalendarOptions()).ParseWeekendDays();
@@ -48,6 +51,7 @@ try
     builder.Services.AddBankingPersistence(builder.Configuration.GetConnectionString("Banking"));
     builder.Services.AddBankingSecurity();
     builder.Services.AddBankingReference();
+    builder.Services.AddBankingParties();
     builder.Services.AddSingleton<TokenIssuer>();
     builder.Services.AddBankingJwt(jwt);
     // Numbers are numbers on the wire; this also keeps OpenAPI from typing integers as "number | string".
@@ -83,6 +87,7 @@ try
     api.MapAdminEndpoints();
     api.MapReferenceEndpoints();
     api.MapLedgerEndpoints();
+    api.MapPartyEndpoints();
 
     await app.RunAsync().ConfigureAwait(false);
 }

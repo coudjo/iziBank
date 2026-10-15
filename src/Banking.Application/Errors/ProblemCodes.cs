@@ -48,6 +48,7 @@ public static class ProblemCodes
     public const string BusinessDayNonWorkingDay = "business-day.non-working-day";
     public const string LedgerFieldLocked = "ledger.field-locked";
     public const string ConcurrencyConflict = "record.changed";
+    public const string PartyDuplicateIdentification = "party.duplicate-identification";
 
     public static readonly IReadOnlyList<string> All =
     [
@@ -59,6 +60,6 @@ public static class ProblemCodes
         LookupCodeTaken, LookupCodeImmutable, LookupCodedRow, StaffCodeTaken, StaffSelfChange,
         ReferenceCodeTaken, ReferenceCodeImmutable, RecordOtherBranch, LocalCurrencyRequired, HolidayExists,
         HolidayBusinessDayExists, BusinessDayNotOpen, BusinessDayPreviousOpen, BusinessDayDateNotAfter,
-        BusinessDayNonWorkingDay, LedgerFieldLocked, ConcurrencyConflict
+        BusinessDayNonWorkingDay, LedgerFieldLocked, ConcurrencyConflict, PartyDuplicateIdentification
     ];
 }

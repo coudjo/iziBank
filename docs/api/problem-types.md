@@ -45,6 +45,7 @@ Every error response is RFC 7807 problem details. `type` is one of the stable co
 | `business-day.date-not-after` | 409 | The date is on or before the branch's latest business day. |
 | `business-day.non-working-day` | 409 | The date is a weekend day (`Calendar:WeekendDays`) or a defined holiday. |
 | `ledger.field-locked` | 409 | Changing the type or currency of an approved ledger account. |
+| `party.duplicate-identification` | 409 | A customer already holds this identification type and number. `existingPartyNumber` names them. |
 | `supervision.permission-denied` | 403 | No supervise permission for the record. |
 | `supervision.self-approval` | 409 | The approver created or last changed the record. |
 | `supervision.not-pending` | 409 | The record is not awaiting approval. |

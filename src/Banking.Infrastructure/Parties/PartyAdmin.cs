@@ -1,0 +1,419 @@
+using System.Globalization;
+using Banking.Application.Abstractions;
+using Banking.Application.Errors;
+using Banking.Application.Parties;
+using Banking.Application.Supervision;
+using Banking.Domain.Lookups;
+using Banking.Domain.Parties;
+using Banking.Domain.Supervision;
+using Banking.Infrastructure.Persistence;
+using Banking.Infrastructure.Security;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+
+namespace Banking.Infrastructure.Parties;
+
+public sealed record NewIndividual(
+    string? Title,
+    string FirstName,
+    string LastName,
+    DateOnly? DateOfBirth,
+    int? GenderId,
+    string? Nationality,
+    string? Mobile,
+    string? Phone,
+    string? EmailAddress,
+    string? Address1,
+    string? Address2,
+    int? IdentificationTypeId,
+    string? IdentificationNumber,
+    DateOnly? IdentificationIssuedOn,
+    DateOnly? IdentificationExpiresOn,
+    string? SourceOfFunds,
+    string? OccupationOrSector,
+    bool IsPoliticallyExposed);
+
+public sealed record CreatedParty(long PartyId, string PartyNumber);
+
+public sealed record IndividualView(
+    string? Title,
+    string FirstName,
+    string LastName,
+    int? GenderId,
+    string? GenderCode,
+    DateOnly? DateOfBirth,
+    string? Nationality,
+    int? IdentificationTypeId,
+    string? IdentificationTypeCode,
+    string? IdentificationNumber);
+
+public sealed record PartyDetail(
+    long PartyId,
+    string PartyNumber,
+    string DisplayName,
+    string PartyTypeCode,
+    string? KycStatusCode,
+    string SupervisionState,
+    string? Mobile,
+    string? Phone,
+    string? EmailAddress,
+    string? Address1,
+    string? Address2,
+    string? SourceOfFunds,
+    string? OccupationOrSector,
+    bool IsPoliticallyExposed,
+    DateTime CreatedOn,
+    long? CreatedByUserId,
+    long? ModifiedByUserId,
+    long? SupervisedByUserId,
+    IndividualView? Individual);
+
+public static class PartySupervisionStates
+{
+    public const string Pending = "PENDING";
+    public const string Approved = "APPROVED";
+    public const string NotRequired = "NOT_REQUIRED";
+}
+
+/// <summary>
+/// A4-01: customer numbers, display names, and creating an individual (plan 6.1, 6.2). A new party is KYC
+/// <c>PENDING</c> and Pending supervision; KYC verification approves it in the same step (D3).
+/// </summary>
+public sealed class PartyAdmin
+{
+    private const string NextPartyNumberSql = "SELECT NEXT VALUE FOR [dbo].[PartyNumberSequence] AS [Value]";
+
+    private readonly BankingDbContext _db;
+    private readonly IActivityContext _activity;
+    private readonly LookupIdCache _lookups;
+    private readonly TimeProvider _timeProvider;
+    private readonly SupervisionOptions _supervision;
+    private readonly PartyNumberOptions _partyNumbers;
+    private readonly KycOptions _kyc;
+
+    public PartyAdmin(
+        BankingDbContext db,
+        IActivityContext activity,
+        LookupIdCache lookups,
+        TimeProvider timeProvider,
+        IOptions<SupervisionOptions> supervision,
+        IOptions<PartyNumberOptions> partyNumbers,
+        IOptions<KycOptions> kyc)
+    {
+        ArgumentNullException.ThrowIfNull(supervision);
+        ArgumentNullException.ThrowIfNull(partyNumbers);
+        ArgumentNullException.ThrowIfNull(kyc);
+        _db = db;
+        _activity = activity;
+        _lookups = lookups;
+        _timeProvider = timeProvider;
+        _supervision = supervision.Value;
+        _partyNumbers = partyNumbers.Value;
+        _kyc = kyc.Value;
+    }
+
+    public async Task<OperationResult<CreatedParty>> CreateIndividualAsync(NewIndividual draft, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(draft);
+
+        var firstName = draft.FirstName.Trim();
+        var lastName = draft.LastName.Trim();
+        var idNumber = PartyRules.NormalizeIdentificationNumber(draft.IdentificationNumber ?? string.Empty);
+        var mobile = PartyRules.NormalizePhone(draft.Mobile);
+        var phone = PartyRules.NormalizePhone(draft.Phone);
+        var errors = await ValidateIndividualAsync(draft, firstName, lastName, idNumber, mobile, phone, cancellationToken).ConfigureAwait(false);
+        if (errors.Count > 0)
+        {
+            return OperationResult.Fail<CreatedParty>(ProblemCodes.Validation, errors);
+        }
+
+        var idTypeId = draft.IdentificationTypeId!.Value;
+        if (await ExistingHolderAsync(idTypeId, idNumber, cancellationToken).ConfigureAwait(false) is { } existing)
+        {
+            return Duplicate(existing);
+        }
+
+        var party = new Party
+        {
+            PartyNumber = await NextPartyNumberAsync(cancellationToken).ConfigureAwait(false),
+            DisplayName = PartyRules.IndividualDisplayName(firstName, lastName),
+            PartyTypeId = await _lookups.GetIdAsync<PartyType>(_db, LookupCodes.PartyTypes.Individual, cancellationToken).ConfigureAwait(false),
+            KYCStatusId = await _lookups.GetIdAsync<KYCStatusType>(_db, LookupCodes.KycStatuses.Pending, cancellationToken).ConfigureAwait(false),
+            Address1 = Blank(draft.Address1),
+            Address2 = Blank(draft.Address2),
+            Mobile = mobile,
+            Phone = phone,
+            EmailAddress = Blank(draft.EmailAddress),
+            SourceOfFunds = Blank(draft.SourceOfFunds),
+            OccupationOrSector = Blank(draft.OccupationOrSector),
+            IsPoliticallyExposed = draft.IsPoliticallyExposed,
+            IndividualDetail = new IndividualDetail
+            {
+                Title = Blank(draft.Title),
+                FirstName = firstName,
+                LastName = lastName,
+                GenderId = draft.GenderId,
+                DateOfBirth = draft.DateOfBirth,
+                Nationality = Blank(draft.Nationality),
+                IdentificationTypeId = idTypeId,
+                IdentificationNumber = idNumber
+            }
+        };
+
+        // The primary ID lives on IndividualDetail and as a document row; the row carries images and expiry (6.2).
+        party.IdentificationDocuments.Add(new PartyIdentificationDocument
+        {
+            DocumentTypeId = idTypeId,
+            DocumentNumber = idNumber,
+            IssuedOn = draft.IdentificationIssuedOn,
+            ExpiresOn = draft.IdentificationExpiresOn
+        });
+        SupervisionRules.StartNew(party, _supervision.Enabled);
+
+        _db.Set<Party>().Add(party);
+        _activity.Record(EventCodes.CreateRecord, nameof(Party), party.PartyNumber);
+
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (DbUpdateException)
+        {
+            // A concurrent create with the same identification won the unique index.
+            _db.ChangeTracker.Clear();
+            _activity.Written = false;
+            if (await ExistingHolderAsync(idTypeId, idNumber, cancellationToken).ConfigureAwait(false) is { } winner)
+            {
+                return Duplicate(winner);
+            }
+
+            throw;
+        }
+
+        return OperationResult.Ok(new CreatedParty(party.PartyId, party.PartyNumber));
+    }
+
+    /// <summary>Full detail, including the full identification number (plan 6.6). Callers log it as a sensitive read.</summary>
+    public async Task<PartyDetail?> GetAsync(long partyId, CancellationToken cancellationToken)
+    {
+        var detail = await _db.Set<Party>()
+            .AsNoTracking()
+            .Where(row => row.PartyId == partyId)
+            .Select(row => new PartyDetail(
+                row.PartyId,
+                row.PartyNumber,
+                row.DisplayName,
+                row.PartyType!.Code,
+                row.KYCStatusId == null ? null : row.KYCStatus!.Code,
+                !row.IsSupervisionRequired
+                    ? PartySupervisionStates.NotRequired
+                    : row.SupervisedByUserId == null ? PartySupervisionStates.Pending : PartySupervisionStates.Approved,
+                row.Mobile,
+                row.Phone,
+                row.EmailAddress,
+                row.Address1,
+                row.Address2,
+                row.SourceOfFunds,
+                row.OccupationOrSector,
+                row.IsPoliticallyExposed,
+                row.CreatedOn,
+                row.CreatedByUserId,
+                row.ModifiedByUserId,
+                row.SupervisedByUserId,
+                row.IndividualDetail == null
+                    ? null
+                    : new IndividualView(
+                        row.IndividualDetail.Title,
+                        row.IndividualDetail.FirstName,
+                        row.IndividualDetail.LastName,
+                        row.IndividualDetail.GenderId,
+                        row.IndividualDetail.GenderId == null ? null : row.IndividualDetail.Gender!.Code,
+                        row.IndividualDetail.DateOfBirth,
+                        row.IndividualDetail.Nationality,
+                        row.IndividualDetail.IdentificationTypeId,
+                        row.IndividualDetail.IdentificationTypeId == null ? null : row.IndividualDetail.IdentificationType!.Code,
+                        row.IndividualDetail.IdentificationNumber)))
+            .SingleOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (detail is not null)
+        {
+            _activity.Record(EventCodes.ViewRecord, nameof(Party), detail.PartyNumber);
+        }
+
+        return detail;
+    }
+
+    private async Task<Dictionary<string, string[]>> ValidateIndividualAsync(
+        NewIndividual draft,
+        string firstName,
+        string lastName,
+        string idNumber,
+        string? mobile,
+        string? phone,
+        CancellationToken cancellationToken)
+    {
+        var errors = new Dictionary<string, string[]>(StringComparer.Ordinal);
+        var today = DateOnly.FromDateTime(_timeProvider.GetUtcNow().UtcDateTime);
+
+        if (Blank(draft.Title) is { Length: > 10 })
+        {
+            errors["title"] = ["Keep the title to 10 characters."];
+        }
+
+        if (firstName.Length is 0 or > 60)
+        {
+            errors["firstName"] = ["Enter the first name (up to 60 characters)."];
+        }
+
+        if (lastName.Length is 0 or > 60)
+        {
+            errors["lastName"] = ["Enter the last name (up to 60 characters)."];
+        }
+
+        if (draft.DateOfBirth is not { } dateOfBirth)
+        {
+            errors["dateOfBirth"] = ["Enter the date of birth."];
+        }
+        else if (dateOfBirth > today)
+        {
+            errors["dateOfBirth"] = ["The date of birth cannot be in the future."];
+        }
+        else if (PartyRules.AgeOn(dateOfBirth, today) < _kyc.MinimumAgeYears)
+        {
+            errors["dateOfBirth"] = [string.Create(CultureInfo.InvariantCulture, $"The customer must be at least {_kyc.MinimumAgeYears} years old.")];
+        }
+
+        if (draft.GenderId is not { } genderId
+            || !await _db.Set<GenderType>().AnyAsync(row => row.Id == genderId && row.IsActive, cancellationToken).ConfigureAwait(false))
+        {
+            errors["genderId"] = ["Choose a gender from the list."];
+        }
+
+        if (Blank(draft.Nationality) is not { Length: <= 50 })
+        {
+            errors["nationality"] = ["Enter the nationality (up to 50 characters)."];
+        }
+
+        if (string.IsNullOrEmpty(mobile))
+        {
+            errors["mobile"] = ["Enter a mobile number of 9 to 15 digits, for example 0241234567."];
+        }
+
+        if (phone is { Length: 0 })
+        {
+            errors["phone"] = ["Enter a phone number of 9 to 15 digits, or leave it empty."];
+        }
+
+        if (Blank(draft.EmailAddress) is { } email && (email.Length > 100 || !LooksLikeEmail(email)))
+        {
+            errors["emailAddress"] = ["Enter an email address such as name@example.com, or leave it empty."];
+        }
+
+        if (Blank(draft.Address1) is not { Length: <= 200 })
+        {
+            errors["address1"] = ["Enter the address (up to 200 characters)."];
+        }
+
+        if (Blank(draft.Address2) is { Length: > 200 })
+        {
+            errors["address2"] = ["Keep the second address line to 200 characters."];
+        }
+
+        if (Blank(draft.SourceOfFunds) is { Length: > 200 })
+        {
+            errors["sourceOfFunds"] = ["Keep the source of funds to 200 characters."];
+        }
+
+        if (Blank(draft.OccupationOrSector) is { Length: > 100 })
+        {
+            errors["occupationOrSector"] = ["Keep the occupation to 100 characters."];
+        }
+
+        if (draft.IdentificationTypeId is not { } idTypeId
+            || !await IsIndividualIdTypeAsync(idTypeId, cancellationToken).ConfigureAwait(false))
+        {
+            errors["identificationTypeId"] = ["Choose an identification type for a person."];
+        }
+
+        if (idNumber.Length is 0 or > 30)
+        {
+            errors["identificationNumber"] = ["Enter the identification number (up to 30 characters)."];
+        }
+
+        if (draft.IdentificationExpiresOn is { } expires)
+        {
+            if (expires < today)
+            {
+                errors["identificationExpiresOn"] = ["This document has expired. Use a valid document."];
+            }
+            else if (draft.IdentificationIssuedOn is { } issued && expires < issued)
+            {
+                errors["identificationExpiresOn"] = ["The expiry date must be after the issue date."];
+            }
+        }
+
+        if (draft.IdentificationIssuedOn is { } issuedOn && issuedOn > today)
+        {
+            errors["identificationIssuedOn"] = ["The issue date cannot be in the future."];
+        }
+
+        return errors;
+    }
+
+    private async Task<bool> IsIndividualIdTypeAsync(int idTypeId, CancellationToken cancellationToken)
+    {
+        var code = await _db.Set<IdentificationDocumentType>()
+            .AsNoTracking()
+            .Where(row => row.Id == idTypeId && row.IsActive)
+            .Select(row => row.Code)
+            .SingleOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return code is not null && LookupCodes.IdentificationDocumentTypes.Individual.Contains(code);
+    }
+
+    /// <summary>The party number of whoever already holds this document, on the detail row or as any document.</summary>
+    private async Task<string?> ExistingHolderAsync(int idTypeId, string idNumber, CancellationToken cancellationToken)
+    {
+        var onDetail = await _db.Set<IndividualDetail>()
+            .AsNoTracking()
+            .Where(row => row.IdentificationTypeId == idTypeId && row.IdentificationNumber == idNumber)
+            .Select(row => row.Party!.PartyNumber)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return onDetail ?? await _db.Set<PartyIdentificationDocument>()
+            .AsNoTracking()
+            .Where(row => row.DocumentTypeId == idTypeId && row.DocumentNumber == idNumber)
+            .Select(row => row.Party!.PartyNumber)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>Plan 5.9: <c>NEXT VALUE FOR PartyNumberSequence</c>, zero padded. Gaps are acceptable.</summary>
+    private async Task<string> NextPartyNumberAsync(CancellationToken cancellationToken)
+    {
+        // Not composed (no Single/First): SQL Server does not allow NEXT VALUE FOR inside a derived table.
+        var values = await _db.Database
+            .SqlQueryRaw<long>(NextPartyNumberSql)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return PartyRules.FormatPartyNumber(values[0], _partyNumbers.Length);
+    }
+
+    private static OperationResult<CreatedParty> Duplicate(string existingPartyNumber) =>
+        OperationResult.FailWith<CreatedParty>(
+            ProblemCodes.PartyDuplicateIdentification,
+            new Dictionary<string, object?>(StringComparer.Ordinal) { ["existingPartyNumber"] = existingPartyNumber });
+
+    private static bool LooksLikeEmail(string value)
+    {
+        var at = value.IndexOf('@', StringComparison.Ordinal);
+        return at > 0 && at == value.LastIndexOf('@') && value.IndexOf('.', at) > at + 1
+               && !value.EndsWith('.') && !value.Any(char.IsWhiteSpace);
+    }
+
+    private static string? Blank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+}

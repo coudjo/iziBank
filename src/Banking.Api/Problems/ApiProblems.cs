@@ -48,6 +48,7 @@ internal static class ApiProblems
         [ProblemCodes.BusinessDayNonWorkingDay] = "That date is a weekend day or a holiday.",
         [ProblemCodes.LedgerFieldLocked] = "The type and currency cannot change once the account is approved.",
         [ProblemCodes.ConcurrencyConflict] = "Someone else changed this record. Reload it and try again.",
+        [ProblemCodes.PartyDuplicateIdentification] = "A customer with this identification document already exists.",
         [Banking.Domain.Supervision.SupervisionProblems.PermissionDenied] = "You cannot approve this record.",
         [Banking.Domain.Supervision.SupervisionProblems.NotPending] = "This record is not waiting for approval.",
         [Banking.Domain.Supervision.SupervisionProblems.Pending] = "This record is waiting for approval and cannot be used yet.",

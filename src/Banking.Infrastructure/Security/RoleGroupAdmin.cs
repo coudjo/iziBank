@@ -13,7 +13,11 @@ using Microsoft.Extensions.Options;
 
 namespace Banking.Infrastructure.Security;
 
-public sealed record OperationResult<T>(T? Value, string? ProblemCode, IReadOnlyDictionary<string, string[]>? Errors = null)
+public sealed record OperationResult<T>(
+    T? Value,
+    string? ProblemCode,
+    IReadOnlyDictionary<string, string[]>? Errors = null,
+    IReadOnlyDictionary<string, object?>? Extensions = null)
 {
     public bool Succeeded => ProblemCode is null;
 }
@@ -24,6 +28,10 @@ public static class OperationResult
 
     public static OperationResult<T> Fail<T>(string problemCode, IReadOnlyDictionary<string, string[]>? errors = null) =>
         new(default, problemCode, errors);
+
+    /// <summary>A failure that carries extra problem-details members, e.g. the existing record's number.</summary>
+    public static OperationResult<T> FailWith<T>(string problemCode, IReadOnlyDictionary<string, object?> extensions) =>
+        new(default, problemCode, null, extensions);
 }
 
 public sealed record RoleGroupDraft(string Code, string Name, string? Description, IReadOnlyList<PermissionGrant> Permissions);

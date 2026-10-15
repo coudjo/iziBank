@@ -71,4 +71,14 @@ public static class PersistenceServiceCollectionExtensions
 
         return services;
     }
+
+    /// <summary>Parties and KYC (A4). Options are bound by the host.</summary>
+    public static IServiceCollection AddBankingParties(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.TryAddScoped<Banking.Infrastructure.Parties.PartyAdmin>();
+
+        return services;
+    }
 }
