@@ -47,4 +47,14 @@ public sealed class PartyRulesTests
     [InlineData("  ", null)]
     public void Phone_numbers_are_compacted_and_checked(string value, string? expected) =>
         PartyRules.NormalizePhone(value).ShouldBe(expected);
+
+    [Theory]
+    [InlineData("RISK_RATING", true)]
+    [InlineData("SECTOR_2", true)]
+    [InlineData("risk_rating", false)]
+    [InlineData("2FA", false)]
+    [InlineData("RISK-RATING", false)]
+    [InlineData("", false)]
+    public void Attribute_codes_are_upper_snake_case(string code, bool valid) =>
+        PartyRules.IsAttributeCode(code).ShouldBe(valid);
 }

@@ -98,6 +98,12 @@ public static class PartyRules
         return digits.Length is >= 9 and <= 15 && digits.All(char.IsAsciiDigit) ? text : string.Empty;
     }
 
+    /// <summary>Plan 6.6: upper snake case, starting with a letter, at most 50 characters.</summary>
+    public static bool IsAttributeCode(string? code) =>
+        code is { Length: > 0 and <= 50 }
+        && char.IsAsciiLetterUpper(code[0])
+        && code.All(static character => char.IsAsciiLetterUpper(character) || char.IsAsciiDigit(character) || character == '_');
+
     private static string CollapseSpaces(string value) =>
         string.Join(' ', value.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
 }

@@ -55,6 +55,7 @@ Every error response is RFC 7807 problem details. `type` is one of the stable co
 | `upload.type-not-allowed` | 400 | The file's leading bytes are not an allowed type (JPEG or PNG for photos; JPEG, PNG or PDF for documents). |
 | `upload.type-mismatch` | 400 | The `Content-Type` header names a different type from the file's content (for example a PDF sent as `image/png`). |
 | `upload.dimensions` | 400 | A signature PNG is wider than 2000 or taller than 1000 pixels. `maxWidth` and `maxHeight` give the limits. |
+| `credit-officer.exists` | 409 | Designating (or re-enabling) a staff member who is already an active credit officer. |
 | `idempotency.key-invalid` | 400 | The `Idempotency-Key` header is empty, longer than 100 characters or has spaces or control characters. |
 | `idempotency.key-reused` | 409 | The same key was used earlier by this user for a different request (route or body). |
 | `idempotency.in-progress` | 409 | The first request with this key has not finished yet. Retry shortly. |

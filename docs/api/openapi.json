@@ -3767,6 +3767,557 @@
           }
         }
       }
+    },
+    "/api/v1/parties/{partyId}/next-of-kin": {
+      "get": {
+        "tags": [
+          "Party profile"
+        ],
+        "parameters": [
+          {
+            "name": "partyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NextOfKinView"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Party profile"
+        ],
+        "parameters": [
+          {
+            "name": "partyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NextOfKinRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedId"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parties/{partyId}/next-of-kin/{nextOfKinId}": {
+      "put": {
+        "tags": [
+          "Party profile"
+        ],
+        "parameters": [
+          {
+            "name": "partyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "nextOfKinId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NextOfKinRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Party profile"
+        ],
+        "parameters": [
+          {
+            "name": "partyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "nextOfKinId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parties/{partyId}/regulatory-attributes": {
+      "get": {
+        "tags": [
+          "Party profile"
+        ],
+        "parameters": [
+          {
+            "name": "partyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RegulatoryAttributeView"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parties/{partyId}/regulatory-attributes/{code}/history": {
+      "get": {
+        "tags": [
+          "Party profile"
+        ],
+        "parameters": [
+          {
+            "name": "partyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RegulatoryAttributeView"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parties/{partyId}/regulatory-attributes/{code}": {
+      "put": {
+        "tags": [
+          "Party profile"
+        ],
+        "parameters": [
+          {
+            "name": "partyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttributeValueRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parties/{partyId}/credit-officer": {
+      "put": {
+        "tags": [
+          "Party profile"
+        ],
+        "parameters": [
+          {
+            "name": "partyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignCreditOfficerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/credit-officers": {
+      "get": {
+        "tags": [
+          "Credit officers"
+        ],
+        "parameters": [
+          {
+            "name": "branchId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "includeDisabled",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CreditOfficerView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Credit officers"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DesignateCreditOfficerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedId"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/credit-officers/{creditOfficerId}": {
+      "put": {
+        "tags": [
+          "Credit officers"
+        ],
+        "parameters": [
+          {
+            "name": "creditOfficerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreditOfficerStateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3848,6 +4399,21 @@
           }
         }
       },
+      "AssignCreditOfficerRequest": {
+        "required": [
+          "creditOfficerId"
+        ],
+        "type": "object",
+        "properties": {
+          "creditOfficerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          }
+        }
+      },
       "AssignmentRequest": {
         "required": [
           "branchId",
@@ -3867,6 +4433,20 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "AttributeValueRequest": {
+        "required": [
+          "attributeValue"
+        ],
+        "type": "object",
+        "properties": {
+          "attributeValue": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -4726,6 +5306,55 @@
           }
         }
       },
+      "CreditOfficerStateRequest": {
+        "required": [
+          "isDisabled"
+        ],
+        "type": "object",
+        "properties": {
+          "isDisabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CreditOfficerView": {
+        "required": [
+          "creditOfficerId",
+          "staffUserId",
+          "staffCode",
+          "fullName",
+          "branchId",
+          "branchCode",
+          "isDisabled"
+        ],
+        "type": "object",
+        "properties": {
+          "creditOfficerId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "staffUserId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "staffCode": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "branchCode": {
+            "type": "string"
+          },
+          "isDisabled": {
+            "type": "boolean"
+          }
+        }
+      },
       "CurrencyRequest": {
         "required": [
           "currencyCode",
@@ -4823,6 +5452,18 @@
           },
           "isOpen": {
             "type": "boolean"
+          }
+        }
+      },
+      "DesignateCreditOfficerRequest": {
+        "required": [
+          "staffUserId"
+        ],
+        "type": "object",
+        "properties": {
+          "staffUserId": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -5638,6 +6279,64 @@
           }
         }
       },
+      "NextOfKinRequest": {
+        "required": [
+          "fullName",
+          "relationship",
+          "mobileNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "relationship": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mobileNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "NextOfKinView": {
+        "required": [
+          "partyNextOfKinId",
+          "fullName",
+          "relationship",
+          "mobileNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "partyNextOfKinId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "relationship": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mobileNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "OpenBusinessDayRequest": {
         "required": [
           "workingDate"
@@ -6133,6 +6832,37 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "RegulatoryAttributeView": {
+        "required": [
+          "attributeCode",
+          "attributeValue",
+          "recordedOn",
+          "recordedByUserId"
+        ],
+        "type": "object",
+        "properties": {
+          "attributeCode": {
+            "type": "string"
+          },
+          "attributeValue": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "recordedOn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "recordedByUserId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
           }
         }
       },
@@ -6765,6 +7495,12 @@
     },
     {
       "name": "Signatures"
+    },
+    {
+      "name": "Party profile"
+    },
+    {
+      "name": "Credit officers"
     }
   ]
 }

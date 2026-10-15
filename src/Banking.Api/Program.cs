@@ -90,6 +90,7 @@ try
     api.MapLedgerEndpoints();
     api.MapPartyEndpoints();
     api.MapPartyDocumentEndpoints();
+    api.MapPartyProfileEndpoints();
 
     await app.RunAsync().ConfigureAwait(false);
 }
