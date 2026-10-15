@@ -15,4 +15,5 @@
 | A4-04 (+ idempotency for photo and documents) | done | 2026-10-15 | owner: dotnet test green |
 | A4-09, A4-11 | done | 2026-10-15 | owner: dotnet test green |
 | A4-05 | done | 2026-10-15 | owner: dotnet test green |
-| A4-06, A4-07 | written, waiting on owner build and test | 2026-10-15 | |
+| A4-06, A4-07 | done | 2026-10-15 | owner: dotnet test green |
+| A4-08 | written, waiting on owner build and test | 2026-10-15 | |

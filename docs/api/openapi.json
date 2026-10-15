@@ -2409,6 +2409,400 @@
         }
       }
     },
+    "/api/v1/parties/search": {
+      "post": {
+        "tags": [
+          "Parties"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartySearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfPartySearchRow"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parties/{partyId}/overview": {
+      "get": {
+        "tags": [
+          "Parties"
+        ],
+        "parameters": [
+          {
+            "name": "partyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartyOverview"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parties/{partyId}/individual": {
+      "put": {
+        "tags": [
+          "Parties"
+        ],
+        "parameters": [
+          {
+            "name": "partyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateIndividualRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parties/{partyId}/business": {
+      "put": {
+        "tags": [
+          "Parties"
+        ],
+        "parameters": [
+          {
+            "name": "partyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBusinessRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parties/{partyId}/group": {
+      "put": {
+        "tags": [
+          "Parties"
+        ],
+        "parameters": [
+          {
+            "name": "partyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGroupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parties/{partyId}/kyc/checklist": {
+      "get": {
+        "tags": [
+          "KYC"
+        ],
+        "parameters": [
+          {
+            "name": "partyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KycChecklist"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parties/{partyId}/kyc/verify": {
+      "post": {
+        "tags": [
+          "KYC"
+        ],
+        "parameters": [
+          {
+            "name": "partyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parties/{partyId}/kyc/reject": {
+      "post": {
+        "tags": [
+          "KYC"
+        ],
+        "parameters": [
+          {
+            "name": "partyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/parties/businesses": {
       "post": {
         "tags": [
@@ -5942,6 +6336,71 @@
         }
       },
       "JsonElement": {},
+      "KycChecklist": {
+        "required": [
+          "partyId",
+          "partyTypeCode",
+          "storedStatus",
+          "effectiveStatus",
+          "supervisionState",
+          "isComplete",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "partyId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "partyTypeCode": {
+            "type": "string"
+          },
+          "storedStatus": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "effectiveStatus": {
+            "type": "string"
+          },
+          "supervisionState": {
+            "type": "string"
+          },
+          "isComplete": {
+            "type": "boolean"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KycChecklistItem"
+            }
+          }
+        }
+      },
+      "KycChecklistItem": {
+        "required": [
+          "code",
+          "label",
+          "done"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "done": {
+            "type": "boolean"
+          },
+          "requiredForKyc": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
       "LeaveGroupRequest": {
         "required": [
           "leftOn"
@@ -6485,6 +6944,35 @@
           }
         }
       },
+      "PagedResultOfPartySearchRow": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PartySearchRow"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "PagedResultOfSessionRow": {
         "required": [
           "items",
@@ -6690,6 +7178,229 @@
                 "$ref": "#/components/schemas/GroupView"
               }
             ]
+          },
+          "effectiveKycStatusCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "PartyOverview": {
+        "required": [
+          "party",
+          "checklist",
+          "photo",
+          "signature",
+          "documentCount",
+          "nextOfKinCount",
+          "creditOfficerName",
+          "activeGroup",
+          "accounts"
+        ],
+        "type": "object",
+        "properties": {
+          "party": {
+            "$ref": "#/components/schemas/PartyDetail"
+          },
+          "checklist": {
+            "$ref": "#/components/schemas/KycChecklist"
+          },
+          "photo": {
+            "$ref": "#/components/schemas/PhotoView"
+          },
+          "signature": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SignatureView"
+              }
+            ]
+          },
+          "documentCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nextOfKinCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "creditOfficerName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "activeGroup": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PartyReference"
+              }
+            ]
+          },
+          "accounts": {
+            "type": "array"
+          }
+        }
+      },
+      "PartyReference": {
+        "required": [
+          "partyId",
+          "partyNumber",
+          "displayName",
+          "partyTypeCode"
+        ],
+        "type": "object",
+        "properties": {
+          "partyId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "partyNumber": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "partyTypeCode": {
+            "type": "string"
+          }
+        }
+      },
+      "PartySearchRequest": {
+        "required": [
+          "q",
+          "partyType",
+          "kycStatus",
+          "supervision",
+          "creditOfficerId"
+        ],
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "partyType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "kycStatus": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "supervision": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "creditOfficerId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "oldestFirst": {
+            "type": "boolean",
+            "default": false
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32",
+            "default": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32",
+            "default": 25
+          }
+        }
+      },
+      "PartySearchRow": {
+        "required": [
+          "partyId",
+          "partyNumber",
+          "displayName",
+          "partyTypeCode",
+          "mobile",
+          "identificationNumberMasked",
+          "effectiveKycStatusCode",
+          "supervisionState",
+          "creditOfficerName",
+          "createdOn",
+          "hasEffectiveSignature",
+          "canBePrimaryHolder",
+          "canBeJointHolder",
+          "canBeSignatory"
+        ],
+        "type": "object",
+        "properties": {
+          "partyId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "partyNumber": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "partyTypeCode": {
+            "type": "string"
+          },
+          "mobile": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "identificationNumberMasked": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "effectiveKycStatusCode": {
+            "type": "string"
+          },
+          "supervisionState": {
+            "type": "string"
+          },
+          "creditOfficerName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdOn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "hasEffectiveSignature": {
+            "type": "boolean"
+          },
+          "canBePrimaryHolder": {
+            "type": "boolean"
+          },
+          "canBeJointHolder": {
+            "type": "boolean"
+          },
+          "canBeSignatory": {
+            "type": "boolean"
           }
         }
       },
@@ -7489,6 +8200,9 @@
     },
     {
       "name": "Parties"
+    },
+    {
+      "name": "KYC"
     },
     {
       "name": "Party documents"

@@ -65,6 +65,17 @@ internal sealed record CreateGroupRequest(
 
 internal sealed record LeaveGroupRequest(DateOnly? LeftOn);
 
+/// <summary>A search is a POST so that names and ID numbers never appear in URLs or server logs.</summary>
+internal sealed record PartySearchRequest(
+    string? Q,
+    string? PartyType,
+    string? KycStatus,
+    string? Supervision,
+    long? CreditOfficerId,
+    bool OldestFirst = false,
+    int Page = 1,
+    int PageSize = 25);
+
 internal sealed record ChangeRoleRequest(int? GroupMemberRoleId);
 
 /// <summary>A4: parties (customers).</summary>
@@ -88,6 +99,16 @@ internal static class PartyEndpoints
             .RequirePermission(ModuleCatalog.Party, PartySubModule, PermissionAction.View)
             .SensitiveRead()
             .Produces<PartyDetail>()
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        parties.MapPost("/search", SearchAsync)
+            .RequirePermission(ModuleCatalog.Party, PartySubModule, PermissionAction.View)
+            .Produces<Banking.Infrastructure.Security.PagedResult<PartySearchRow>>();
+
+        parties.MapGet("/{partyId:long}/overview", OverviewAsync)
+            .RequirePermission(ModuleCatalog.Party, PartySubModule, PermissionAction.View)
+            .SensitiveRead()
+            .Produces<PartyOverview>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         parties.MapPut("/{partyId:long}/individual", UpdateIndividualAsync)
@@ -266,6 +287,23 @@ internal static class PartyEndpoints
 
     private static List<OwnerShare> Shares(IReadOnlyList<OwnerShareRequest>? owners) =>
         (owners ?? []).Select(owner => new OwnerShare(owner.OwnerPartyId, owner.OwnershipPercentage)).ToList();
+
+    private static async Task<IResult> SearchAsync(PartySearchRequest request, PartySearch search, CancellationToken cancellationToken)
+    {
+        var result = await search.SearchAsync(
+                new PartySearchFilter(request.Q, request.PartyType, request.KycStatus, request.Supervision, request.CreditOfficerId, request.OldestFirst),
+                Math.Max(1, request.Page),
+                Math.Clamp(request.PageSize, 1, 100),
+                cancellationToken)
+            .ConfigureAwait(false);
+        return TypedResults.Ok(result);
+    }
+
+    private static async Task<IResult> OverviewAsync(long partyId, PartySearch search, CancellationToken cancellationToken)
+    {
+        var overview = await search.OverviewAsync(partyId, cancellationToken).ConfigureAwait(false);
+        return overview is null ? ApiProblems.Result(StatusCodes.Status404NotFound, ProblemCodes.NotFound) : TypedResults.Ok(overview);
+    }
 
     private static async Task<IResult> UpdateIndividualAsync(long partyId, CreateIndividualRequest request, PartyAdmin admin, CancellationToken cancellationToken)
     {
