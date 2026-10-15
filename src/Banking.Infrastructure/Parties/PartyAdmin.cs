@@ -66,7 +66,27 @@ public sealed record PartyDetail(
     long? CreatedByUserId,
     long? ModifiedByUserId,
     long? SupervisedByUserId,
-    IndividualView? Individual);
+    IndividualView? Individual,
+    BusinessView? Business,
+    GroupView? Group);
+
+public sealed record BusinessView(
+    string BusinessName,
+    string? RegistrationNumber,
+    string? TaxIdentificationNumber,
+    DateOnly? IncorporationDate,
+    int? BusinessCategoryId,
+    string? BusinessCategoryCode,
+    IReadOnlyList<BeneficialOwnerView> BeneficialOwners);
+
+public sealed record GroupView(
+    string GroupName,
+    DateOnly? FormationDate,
+    string? MeetingFrequency,
+    long? ChairpersonPartyId,
+    string? ChairpersonPartyNumber,
+    string? ChairpersonName,
+    int ActiveMemberCount);
 
 public static class PartySupervisionStates
 {
@@ -232,17 +252,78 @@ public sealed class PartyAdmin
                         row.IndividualDetail.Nationality,
                         row.IndividualDetail.IdentificationTypeId,
                         row.IndividualDetail.IdentificationTypeId == null ? null : row.IndividualDetail.IdentificationType!.Code,
-                        row.IndividualDetail.IdentificationNumber)))
+                        row.IndividualDetail.IdentificationNumber),
+                null,
+                null))
             .SingleOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
         if (detail is not null)
         {
+            detail = detail with
+            {
+                Business = await BusinessViewAsync(partyId, cancellationToken).ConfigureAwait(false),
+                Group = await GroupViewAsync(partyId, cancellationToken).ConfigureAwait(false)
+            };
             _activity.Record(EventCodes.ViewRecord, nameof(Party), detail.PartyNumber);
         }
 
         return detail;
     }
+
+    private async Task<BusinessView?> BusinessViewAsync(long partyId, CancellationToken cancellationToken)
+    {
+        var business = await _db.Set<BusinessDetail>()
+            .AsNoTracking()
+            .Where(row => row.PartyId == partyId)
+            .Select(row => new
+            {
+                row.BusinessName,
+                row.RegistrationNumber,
+                row.TaxIdentificationNumber,
+                row.IncorporationDate,
+                row.BusinessCategoryId,
+                CategoryCode = row.BusinessCategoryId == null ? null : row.BusinessCategory!.Code
+            })
+            .SingleOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+        if (business is null)
+        {
+            return null;
+        }
+
+        var owners = await _db.Set<PartyBeneficialOwner>()
+            .AsNoTracking()
+            .Where(row => row.BusinessPartyId == partyId)
+            .OrderByDescending(row => row.OwnershipPercentage)
+            .Select(row => new BeneficialOwnerView(row.OwnerPartyId, row.Owner!.PartyNumber, row.Owner.DisplayName, row.OwnershipPercentage))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return new BusinessView(
+            business.BusinessName,
+            business.RegistrationNumber,
+            business.TaxIdentificationNumber,
+            business.IncorporationDate,
+            business.BusinessCategoryId,
+            business.CategoryCode,
+            owners);
+    }
+
+    private async Task<GroupView?> GroupViewAsync(long partyId, CancellationToken cancellationToken) =>
+        await _db.Set<GroupDetail>()
+            .AsNoTracking()
+            .Where(row => row.PartyId == partyId)
+            .Select(row => new GroupView(
+                row.GroupName,
+                row.FormationDate,
+                row.MeetingFrequency,
+                row.ChairpersonPartyId,
+                row.ChairpersonPartyId == null ? null : row.Chairperson!.PartyNumber,
+                row.ChairpersonPartyId == null ? null : row.Chairperson!.DisplayName,
+                _db.Set<GroupMember>().Count(member => member.GroupPartyId == row.PartyId && member.LeftOn == null)))
+            .SingleOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
 
     private async Task<Dictionary<string, string[]>> ValidateIndividualAsync(
         NewIndividual draft,

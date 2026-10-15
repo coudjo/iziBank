@@ -2319,6 +2319,546 @@
           }
         }
       }
+    },
+    "/api/v1/parties/individuals": {
+      "post": {
+        "tags": [
+          "Parties"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateIndividualRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedParty"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parties/{partyId}": {
+      "get": {
+        "tags": [
+          "Parties"
+        ],
+        "parameters": [
+          {
+            "name": "partyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartyDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parties/businesses": {
+      "post": {
+        "tags": [
+          "Parties"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBusinessRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedParty"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parties/{partyId}/beneficial-owners": {
+      "get": {
+        "tags": [
+          "Parties"
+        ],
+        "parameters": [
+          {
+            "name": "partyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BeneficialOwnerView"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Parties"
+        ],
+        "parameters": [
+          {
+            "name": "partyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplaceOwnersRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parties/groups": {
+      "post": {
+        "tags": [
+          "Parties"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGroupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedParty"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parties/{partyId}/members": {
+      "get": {
+        "tags": [
+          "Parties"
+        ],
+        "parameters": [
+          {
+            "name": "partyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "includeFormer",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GroupMemberView"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Parties"
+        ],
+        "parameters": [
+          {
+            "name": "partyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedId"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parties/{partyId}/members/{memberPartyId}/leave": {
+      "post": {
+        "tags": [
+          "Parties"
+        ],
+        "parameters": [
+          {
+            "name": "partyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "memberPartyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/LeaveGroupRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parties/{partyId}/members/{memberPartyId}/role": {
+      "put": {
+        "tags": [
+          "Parties"
+        ],
+        "parameters": [
+          {
+            "name": "partyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "memberPartyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2419,6 +2959,31 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "BeneficialOwnerView": {
+        "required": [
+          "ownerPartyId",
+          "partyNumber",
+          "displayName",
+          "ownershipPercentage"
+        ],
+        "type": "object",
+        "properties": {
+          "ownerPartyId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "partyNumber": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "ownershipPercentage": {
+            "type": "number",
+            "format": "double"
           }
         }
       },
@@ -2577,6 +3142,61 @@
           }
         }
       },
+      "BusinessView": {
+        "required": [
+          "businessName",
+          "registrationNumber",
+          "taxIdentificationNumber",
+          "incorporationDate",
+          "businessCategoryId",
+          "businessCategoryCode",
+          "beneficialOwners"
+        ],
+        "type": "object",
+        "properties": {
+          "businessName": {
+            "type": "string"
+          },
+          "registrationNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "taxIdentificationNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "incorporationDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "businessCategoryId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "businessCategoryCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "beneficialOwners": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BeneficialOwnerView"
+            }
+          }
+        }
+      },
       "ChangeRequestAccepted": {
         "required": [
           "changeRequestId"
@@ -2672,6 +3292,21 @@
           }
         }
       },
+      "ChangeRoleRequest": {
+        "required": [
+          "groupMemberRoleId"
+        ],
+        "type": "object",
+        "properties": {
+          "groupMemberRoleId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "ChangeRow": {
         "required": [
           "auditId",
@@ -2762,6 +3397,122 @@
           }
         }
       },
+      "CreateBusinessRequest": {
+        "required": [
+          "businessName",
+          "registrationNumber",
+          "taxIdentificationNumber",
+          "incorporationDate",
+          "businessCategoryId",
+          "mobile",
+          "phone",
+          "emailAddress",
+          "address1",
+          "address2",
+          "sourceOfFunds",
+          "occupationOrSector"
+        ],
+        "type": "object",
+        "properties": {
+          "businessName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "registrationNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "taxIdentificationNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "incorporationDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "businessCategoryId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "mobile": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "emailAddress": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "address1": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "address2": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sourceOfFunds": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "occupationOrSector": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isPoliticallyExposed": {
+            "type": "boolean",
+            "default": false
+          },
+          "document": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DocumentRequest"
+              }
+            ]
+          },
+          "beneficialOwners": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/OwnerShareRequest"
+            }
+          }
+        }
+      },
       "CreatedId": {
         "required": [
           "id"
@@ -2771,6 +3522,230 @@
           "id": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "CreatedParty": {
+        "required": [
+          "partyId",
+          "partyNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "partyId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "partyNumber": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateGroupRequest": {
+        "required": [
+          "groupName",
+          "formationDate",
+          "meetingFrequency",
+          "mobile",
+          "phone",
+          "emailAddress",
+          "address1",
+          "address2"
+        ],
+        "type": "object",
+        "properties": {
+          "groupName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "formationDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "meetingFrequency": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mobile": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "emailAddress": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "address1": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "address2": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "members": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MemberRequest"
+            }
+          }
+        }
+      },
+      "CreateIndividualRequest": {
+        "required": [
+          "title",
+          "firstName",
+          "lastName",
+          "dateOfBirth",
+          "genderId",
+          "nationality",
+          "mobile",
+          "phone",
+          "emailAddress",
+          "address1",
+          "address2",
+          "identificationTypeId",
+          "identificationNumber",
+          "identificationIssuedOn",
+          "identificationExpiresOn",
+          "sourceOfFunds",
+          "occupationOrSector"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "firstName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lastName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dateOfBirth": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "genderId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "nationality": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mobile": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "emailAddress": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "address1": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "address2": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "identificationTypeId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "identificationNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "identificationIssuedOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "identificationExpiresOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "sourceOfFunds": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "occupationOrSector": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isPoliticallyExposed": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -2943,6 +3918,157 @@
           }
         }
       },
+      "DocumentRequest": {
+        "required": [
+          "documentTypeId",
+          "documentNumber",
+          "issuedOn",
+          "expiresOn"
+        ],
+        "type": "object",
+        "properties": {
+          "documentTypeId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "documentNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "issuedOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "expiresOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        }
+      },
+      "GroupMemberView": {
+        "required": [
+          "groupMemberId",
+          "memberPartyId",
+          "partyNumber",
+          "displayName",
+          "groupMemberRoleId",
+          "roleCode",
+          "joinedOn",
+          "leftOn",
+          "isChairperson"
+        ],
+        "type": "object",
+        "properties": {
+          "groupMemberId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "memberPartyId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "partyNumber": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "groupMemberRoleId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "roleCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "joinedOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "leftOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "isChairperson": {
+            "type": "boolean"
+          }
+        }
+      },
+      "GroupView": {
+        "required": [
+          "groupName",
+          "formationDate",
+          "meetingFrequency",
+          "chairpersonPartyId",
+          "chairpersonPartyNumber",
+          "chairpersonName",
+          "activeMemberCount"
+        ],
+        "type": "object",
+        "properties": {
+          "groupName": {
+            "type": "string"
+          },
+          "formationDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "meetingFrequency": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "chairpersonPartyId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "chairpersonPartyNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "chairpersonName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "activeMemberCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "HolidayRequest": {
         "required": [
           "holidayDate",
@@ -3034,6 +4160,80 @@
           }
         }
       },
+      "IndividualView": {
+        "required": [
+          "title",
+          "firstName",
+          "lastName",
+          "genderId",
+          "genderCode",
+          "dateOfBirth",
+          "nationality",
+          "identificationTypeId",
+          "identificationTypeCode",
+          "identificationNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "genderId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "genderCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dateOfBirth": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "nationality": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "identificationTypeId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "identificationTypeCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "identificationNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "InstitutionProfileView": {
         "required": [
           "institutionName",
@@ -3087,6 +4287,21 @@
         }
       },
       "JsonElement": {},
+      "LeaveGroupRequest": {
+        "required": [
+          "leftOn"
+        ],
+        "type": "object",
+        "properties": {
+          "leftOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        }
+      },
       "LedgerAccountRequest": {
         "required": [
           "ledgerAccountCode",
@@ -3307,6 +4522,34 @@
           }
         }
       },
+      "MemberRequest": {
+        "required": [
+          "memberPartyId",
+          "groupMemberRoleId",
+          "joinedOn"
+        ],
+        "type": "object",
+        "properties": {
+          "memberPartyId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "groupMemberRoleId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "joinedOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        }
+      },
       "MeResponse": {
         "required": [
           "staffUserId",
@@ -3393,6 +4636,23 @@
               "string"
             ],
             "format": "date"
+          }
+        }
+      },
+      "OwnerShareRequest": {
+        "required": [
+          "ownerPartyId",
+          "ownershipPercentage"
+        ],
+        "type": "object",
+        "properties": {
+          "ownerPartyId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "ownershipPercentage": {
+            "type": "number",
+            "format": "double"
           }
         }
       },
@@ -3570,6 +4830,156 @@
           }
         }
       },
+      "PartyDetail": {
+        "required": [
+          "partyId",
+          "partyNumber",
+          "displayName",
+          "partyTypeCode",
+          "kycStatusCode",
+          "supervisionState",
+          "mobile",
+          "phone",
+          "emailAddress",
+          "address1",
+          "address2",
+          "sourceOfFunds",
+          "occupationOrSector",
+          "isPoliticallyExposed",
+          "createdOn",
+          "createdByUserId",
+          "modifiedByUserId",
+          "supervisedByUserId",
+          "individual",
+          "business",
+          "group"
+        ],
+        "type": "object",
+        "properties": {
+          "partyId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "partyNumber": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "partyTypeCode": {
+            "type": "string"
+          },
+          "kycStatusCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "supervisionState": {
+            "type": "string"
+          },
+          "mobile": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "emailAddress": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "address1": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "address2": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sourceOfFunds": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "occupationOrSector": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isPoliticallyExposed": {
+            "type": "boolean"
+          },
+          "createdOn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdByUserId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "modifiedByUserId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "supervisedByUserId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "individual": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IndividualView"
+              }
+            ]
+          },
+          "business": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BusinessView"
+              }
+            ]
+          },
+          "group": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GroupView"
+              }
+            ]
+          }
+        }
+      },
       "PendingLedgerRename": {
         "required": [
           "changeRequestId",
@@ -3681,6 +5091,23 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "ReplaceOwnersRequest": {
+        "required": [
+          "beneficialOwners"
+        ],
+        "type": "object",
+        "properties": {
+          "beneficialOwners": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/OwnerShareRequest"
+            }
           }
         }
       },
@@ -4202,6 +5629,9 @@
     },
     {
       "name": "Ledger accounts"
+    },
+    {
+      "name": "Parties"
     }
   ]
 }

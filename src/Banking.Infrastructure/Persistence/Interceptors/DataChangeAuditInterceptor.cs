@@ -1,8 +1,12 @@
+using System.Data;
+using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using Banking.Application.Abstractions;
 using Banking.Domain.Auditing;
 using Banking.Domain.Security;
 using Banking.Infrastructure.Persistence.Auditing;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -74,23 +78,25 @@ public sealed class DataChangeAuditInterceptor : SaveChangesInterceptor
             return base.SavedChanges(eventData, result);
         }
 
-        List<DataChangeAuditLog>? rows = null;
         try
         {
-            rows = BuildRows();
-            if (rows.Count > 0)
+            _writingAudit = true;
+            foreach (var (sql, parameters) in InsertCommands(BuildRows()))
             {
-                eventData.Context.Set<DataChangeAuditLog>().AddRange(rows);
-                _writingAudit = true;
-                eventData.Context.SaveChanges();
-                Detach(eventData.Context, rows);
+                try
+                {
+                    eventData.Context.Database.ExecuteSqlRaw(sql, parameters);
+                }
+                catch (SqlException exception)
+                {
+                    throw AuditWriteFailed(exception);
+                }
             }
 
             _ownedTransaction?.Commit();
         }
         catch
         {
-            Detach(eventData.Context, rows);
             _ownedTransaction?.Rollback();
             throw;
         }
@@ -115,16 +121,19 @@ public sealed class DataChangeAuditInterceptor : SaveChangesInterceptor
             return await base.SavedChangesAsync(eventData, result, cancellationToken).ConfigureAwait(false);
         }
 
-        List<DataChangeAuditLog>? rows = null;
         try
         {
-            rows = BuildRows();
-            if (rows.Count > 0)
+            _writingAudit = true;
+            foreach (var (sql, parameters) in InsertCommands(BuildRows()))
             {
-                eventData.Context.Set<DataChangeAuditLog>().AddRange(rows);
-                _writingAudit = true;
-                await eventData.Context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-                Detach(eventData.Context, rows);
+                try
+                {
+                    await eventData.Context.Database.ExecuteSqlRawAsync(sql, parameters, cancellationToken).ConfigureAwait(false);
+                }
+                catch (SqlException exception)
+                {
+                    throw AuditWriteFailed(exception);
+                }
             }
 
             if (_ownedTransaction is not null)
@@ -134,7 +143,6 @@ public sealed class DataChangeAuditInterceptor : SaveChangesInterceptor
         }
         catch
         {
-            Detach(eventData.Context, rows);
             if (_ownedTransaction is not null)
             {
                 await _ownedTransaction.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
@@ -295,18 +303,57 @@ public sealed class DataChangeAuditInterceptor : SaveChangesInterceptor
         return recordId.Length <= 50 ? recordId : recordId[..50];
     }
 
-    private static void Detach(DbContext context, List<DataChangeAuditLog>? rows)
+    /// <summary>
+    /// Plain parameterised INSERTs. EF writes four or more rows as one MERGE, which an append-only ledger table
+    /// rejects ("Updates are not allowed"), and the generated ids are not needed here.
+    /// </summary>
+    private static IEnumerable<(string Sql, object[] Parameters)> InsertCommands(List<DataChangeAuditLog> rows)
     {
-        if (rows is null)
-        {
-            return;
-        }
+        const int RowsPerCommand = 200; // 8 parameters per row, well under SQL Server's 2,100 limit.
 
-        foreach (var row in rows)
+        for (var start = 0; start < rows.Count; start += RowsPerCommand)
         {
-            context.Entry(row).State = EntityState.Detached;
+            var sql = new StringBuilder(
+                "INSERT INTO [dbo].[DataChangeAuditLog] ([StaffUserId], [BranchId], [TableName], [RecordId], [ActionType], [OldValueJson], [NewValueJson], [LoggedOn]) VALUES ");
+            var parameters = new List<object>();
+            var chunk = rows.Skip(start).Take(RowsPerCommand).ToList();
+
+            for (var index = 0; index < chunk.Count; index++)
+            {
+                var row = chunk[index];
+                var first = parameters.Count;
+                parameters.Add(Parameter(first, row.StaffUserId, SqlDbType.BigInt));
+                parameters.Add(Parameter(first + 1, row.BranchId, SqlDbType.Int));
+                parameters.Add(Parameter(first + 2, row.TableName, SqlDbType.VarChar));
+                parameters.Add(Parameter(first + 3, row.RecordId, SqlDbType.VarChar));
+                parameters.Add(Parameter(first + 4, row.ActionType, SqlDbType.VarChar));
+                parameters.Add(Parameter(first + 5, row.OldValueJson, SqlDbType.NVarChar));
+                parameters.Add(Parameter(first + 6, row.NewValueJson, SqlDbType.NVarChar));
+                parameters.Add(Parameter(first + 7, row.LoggedOn, SqlDbType.DateTime2));
+
+                sql.Append(index == 0 ? "(" : ", (");
+                for (var offset = 0; offset < 8; offset++)
+                {
+                    sql.Append(offset == 0 ? "@a" : ", @a").Append((first + offset).ToString(CultureInfo.InvariantCulture));
+                }
+
+                sql.Append(')');
+            }
+
+            yield return (sql.ToString(), parameters.ToArray());
         }
     }
+
+    /// <summary>Callers see the same exception type as for any other failed save.</summary>
+    private static DbUpdateException AuditWriteFailed(SqlException exception) =>
+        new("The data change audit rows could not be written, so the change was rolled back.", exception);
+
+    private static SqlParameter Parameter(int index, object? value, SqlDbType type) =>
+        new("@a" + index.ToString(CultureInfo.InvariantCulture), type)
+        {
+            Value = value ?? DBNull.Value,
+            Size = type is SqlDbType.VarChar or SqlDbType.NVarChar ? -1 : 0
+        };
 
     private void Reset()
     {

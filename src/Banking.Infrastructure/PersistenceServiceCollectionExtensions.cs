@@ -78,6 +78,9 @@ public static class PersistenceServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.TryAddScoped<Banking.Infrastructure.Parties.PartyAdmin>();
+        services.TryAddScoped<Banking.Infrastructure.Parties.PartyCommon>();
+        services.TryAddScoped<Banking.Infrastructure.Parties.BusinessAdmin>();
+        services.TryAddScoped<Banking.Infrastructure.Parties.GroupAdmin>();
 
         return services;
     }

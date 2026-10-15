@@ -49,6 +49,9 @@ public static class ProblemCodes
     public const string LedgerFieldLocked = "ledger.field-locked";
     public const string ConcurrencyConflict = "record.changed";
     public const string PartyDuplicateIdentification = "party.duplicate-identification";
+    public const string PartyDuplicateRegistration = "party.duplicate-registration";
+    public const string GroupMemberInOtherGroup = "group.member-in-other-group";
+    public const string GroupChairpersonExists = "group.chairperson-exists";
 
     public static readonly IReadOnlyList<string> All =
     [
@@ -60,6 +63,7 @@ public static class ProblemCodes
         LookupCodeTaken, LookupCodeImmutable, LookupCodedRow, StaffCodeTaken, StaffSelfChange,
         ReferenceCodeTaken, ReferenceCodeImmutable, RecordOtherBranch, LocalCurrencyRequired, HolidayExists,
         HolidayBusinessDayExists, BusinessDayNotOpen, BusinessDayPreviousOpen, BusinessDayDateNotAfter,
-        BusinessDayNonWorkingDay, LedgerFieldLocked, ConcurrencyConflict, PartyDuplicateIdentification
+        BusinessDayNonWorkingDay, LedgerFieldLocked, ConcurrencyConflict, PartyDuplicateIdentification,
+        PartyDuplicateRegistration, GroupMemberInOtherGroup, GroupChairpersonExists
     ];
 }

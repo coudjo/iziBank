@@ -46,6 +46,9 @@ Every error response is RFC 7807 problem details. `type` is one of the stable co
 | `business-day.non-working-day` | 409 | The date is a weekend day (`Calendar:WeekendDays`) or a defined holiday. |
 | `ledger.field-locked` | 409 | Changing the type or currency of an approved ledger account. |
 | `party.duplicate-identification` | 409 | A customer already holds this identification type and number. `existingPartyNumber` names them. |
+| `party.duplicate-registration` | 409 | A business already holds this registration number. `existingPartyNumber` names it. |
+| `group.member-in-other-group` | 409 | The person is an active member of another group (D8). `memberPartyNumber` and `groupPartyNumber` say who and where. |
+| `group.chairperson-exists` | 409 | Adding or promoting a chairperson while the group already has one. |
 | `supervision.permission-denied` | 403 | No supervise permission for the record. |
 | `supervision.self-approval` | 409 | The approver created or last changed the record. |
 | `supervision.not-pending` | 409 | The record is not awaiting approval. |
