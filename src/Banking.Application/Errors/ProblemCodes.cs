@@ -52,6 +52,14 @@ public static class ProblemCodes
     public const string PartyDuplicateRegistration = "party.duplicate-registration";
     public const string GroupMemberInOtherGroup = "group.member-in-other-group";
     public const string GroupChairpersonExists = "group.chairperson-exists";
+    public const string PartyPrimaryDocument = "party.primary-document";
+    public const string UploadEmpty = "upload.empty";
+    public const string UploadTooLarge = "upload.too-large";
+    public const string UploadTypeNotAllowed = "upload.type-not-allowed";
+    public const string UploadTypeMismatch = "upload.type-mismatch";
+    public const string IdempotencyKeyInvalid = "idempotency.key-invalid";
+    public const string IdempotencyKeyReused = "idempotency.key-reused";
+    public const string IdempotencyInProgress = "idempotency.in-progress";
 
     public static readonly IReadOnlyList<string> All =
     [
@@ -64,6 +72,8 @@ public static class ProblemCodes
         ReferenceCodeTaken, ReferenceCodeImmutable, RecordOtherBranch, LocalCurrencyRequired, HolidayExists,
         HolidayBusinessDayExists, BusinessDayNotOpen, BusinessDayPreviousOpen, BusinessDayDateNotAfter,
         BusinessDayNonWorkingDay, LedgerFieldLocked, ConcurrencyConflict, PartyDuplicateIdentification,
-        PartyDuplicateRegistration, GroupMemberInOtherGroup, GroupChairpersonExists
+        PartyDuplicateRegistration, GroupMemberInOtherGroup, GroupChairpersonExists, PartyPrimaryDocument,
+        UploadEmpty, UploadTooLarge, UploadTypeNotAllowed, UploadTypeMismatch,
+        IdempotencyKeyInvalid, IdempotencyKeyReused, IdempotencyInProgress
     ];
 }

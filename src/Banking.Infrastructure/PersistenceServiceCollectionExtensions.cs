@@ -81,6 +81,8 @@ public static class PersistenceServiceCollectionExtensions
         services.TryAddScoped<Banking.Infrastructure.Parties.PartyCommon>();
         services.TryAddScoped<Banking.Infrastructure.Parties.BusinessAdmin>();
         services.TryAddScoped<Banking.Infrastructure.Parties.GroupAdmin>();
+        services.TryAddScoped<Banking.Infrastructure.Parties.PartyDocuments>();
+        services.TryAddScoped<Banking.Infrastructure.Security.IdempotencyStore>();
 
         return services;
     }

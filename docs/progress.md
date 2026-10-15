@@ -11,4 +11,5 @@
 | A2-03, A2-08 | done | 2026-10-14 | owner: dotnet test green |
 | A3-01, A3-02, A3-03 | done | 2026-10-14 | owner: dotnet test green |
 | A4-01 | done | 2026-10-15 | owner: dotnet test green |
-| A4-02, A4-03 | written, waiting on owner build and test | 2026-10-15 | |
+| A4-02, A4-03 (+ audit MERGE fix) | done | 2026-10-15 | owner: dotnet test green |
+| A4-04 (+ idempotency for photo and documents) | written, waiting on owner build and test | 2026-10-15 | |

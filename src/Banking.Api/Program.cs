@@ -42,6 +42,7 @@ try
     builder.Services.Configure<CalendarOptions>(builder.Configuration.GetSection(CalendarOptions.SectionName));
     builder.Services.Configure<PartyNumberOptions>(builder.Configuration.GetSection(PartyNumberOptions.SectionName));
     builder.Services.Configure<KycOptions>(builder.Configuration.GetSection(KycOptions.SectionName));
+    builder.Services.Configure<UploadOptions>(builder.Configuration.GetSection(UploadOptions.SectionName));
 
     // Fail at start-up, not on the first business-day request, if the weekend setting is wrong.
     _ = (builder.Configuration.GetSection(CalendarOptions.SectionName).Get<CalendarOptions>() ?? new CalendarOptions()).ParseWeekendDays();
@@ -88,6 +89,7 @@ try
     api.MapReferenceEndpoints();
     api.MapLedgerEndpoints();
     api.MapPartyEndpoints();
+    api.MapPartyDocumentEndpoints();
 
     await app.RunAsync().ConfigureAwait(false);
 }
