@@ -13,6 +13,7 @@ Use this file when the plan has no default. Pick the most restrictive behaviour,
 | Q5 | Should staff see parties and accounts from all branches or only their own? | All branches for reads (D2). | Pending |
 | Q6 | Regulator KYC field list, accepted ID types, PEP handling, minimum group size, beneficial-owner threshold. | Placeholders in configuration (plan section 4). | Pending |
 | Q7 | Do changes to product interest rates need four-eyes approval? | No: `ACC/PRODUCT` edit, logged (ADR 0002, A5-b). Started rates are only closed, never edited. | Pending |
+| Q8 | How should an approved account's name or operating mode change: a change request (like ledger accounts) or back to Pending? | Not built yet (ADR 0002, A5-r). | Pending |
 
 ## Decisions recorded during implementation
 

@@ -53,6 +53,13 @@ Every error response is RFC 7807 problem details. `type` is one of the stable co
 | `account.product-not-openable` | 409 | The product is pending, inactive or frozen, or its type is not in `Account:DirectOpeningProductTypes`. |
 | `account.holder-not-ready` | 409 | A holder is awaiting approval or is not KYC verified. `partyNumbers` lists them. |
 | `account.signature-missing` | 409 | A person who signs on the account has no approved specimen signature (addendum rule 3a). `partyNumbers` lists them. |
+| `account.closed` | 409 | Any change to a closed account (closed accounts are read-only). |
+| `account.already-frozen` | 409 | Freezing an account that is already frozen. |
+| `account.not-frozen` | 409 | Unfreezing an account that is not frozen. |
+| `account.already-dormant` | 409 | Marking a dormant account dormant. |
+| `account.not-dormant` | 409 | Reactivating an account that is not dormant. |
+| `account.close-blocked` | 409 | Closing with a balance, a hold or unsupervised amounts. `failedChecks` lists `ZERO_BALANCE`, `NO_HOLDS`, `NO_PENDING_ITEMS`. |
+| `account.classification-exists` | 409 | Assigning a classification the account already has. |
 | `account.limit-reached` | 409 | The primary holder already has `AccountsPerCustomer` open accounts on this product. |
 | `party.duplicate-identification` | 409 | A customer already holds this identification type and number. `existingPartyNumber` names them. |
 | `party.duplicate-registration` | 409 | A business already holds this registration number. `existingPartyNumber` names it. |

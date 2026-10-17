@@ -1,4 +1,5 @@
 using Banking.Application.Abstractions;
+using Banking.Domain.Accounts;
 using Banking.Domain.Lookups;
 using Banking.Domain.Parties;
 using Banking.Infrastructure.Persistence;
@@ -41,7 +42,10 @@ public sealed record PartyOverview(
     int NextOfKinCount,
     string? CreditOfficerName,
     PartyReference? ActiveGroup,
-    IReadOnlyList<object> Accounts);
+    IReadOnlyList<PartyAccountRow> Accounts);
+
+/// <summary>An account the customer holds, in any role (UX 7.3 Accounts held).</summary>
+public sealed record PartyAccountRow(long AccountId, string AccountNumber, string AccountName, string ProductName, string RoleCode, string Status);
 
 /// <summary>
 /// A4-08 (plan section 8): search and the 360 overview. A search term is tried as an exact or prefix customer
@@ -205,7 +209,7 @@ public sealed class PartySearch
 
     public IQueryable<Party> Parties() => _db.Set<Party>().AsNoTracking();
 
-    /// <summary>The 360 view (UX 7.3): the party, its checklist, photo and signature state, counts, and accounts (none until A6).</summary>
+    /// <summary>The 360 view (UX 7.3): the party, its checklist, photo and signature state, counts, and the accounts it holds.</summary>
     public async Task<PartyOverview?> OverviewAsync(long partyId, CancellationToken cancellationToken)
     {
         var party = await _parties.GetAsync(partyId, cancellationToken).ConfigureAwait(false);
@@ -240,7 +244,35 @@ public sealed class PartySearch
             .SingleAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return new PartyOverview(party, checklist, photo, signature, counts.Documents, counts.NextOfKin, counts.CreditOfficerName, counts.ActiveGroup, []);
+        var held = await _db.Set<AccountHolder>()
+            .AsNoTracking()
+            .Where(holder => holder.PartyId == partyId)
+            .OrderBy(holder => holder.Account!.AccountNumber)
+            .Select(holder => new
+            {
+                holder.AccountId,
+                holder.Account!.AccountNumber,
+                holder.Account!.AccountName,
+                holder.Account!.Product!.ProductName,
+                RoleCode = holder.Role!.Code,
+                Pending = holder.Account!.IsSupervisionRequired && holder.Account!.SupervisedByUserId == null,
+                Closed = holder.Account!.ClosedOn != null,
+                Frozen = holder.Account!.Condition != null && holder.Account!.Condition!.IsFreezed,
+                holder.Account!.IsDormant
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var accounts = held
+            .Select(row => new PartyAccountRow(
+                row.AccountId,
+                row.AccountNumber,
+                row.AccountName,
+                row.ProductName,
+                row.RoleCode,
+                AccountStatusRules.Derive(row.Pending, row.Closed, row.Frozen, row.IsDormant)))
+            .ToList();
+
+        return new PartyOverview(party, checklist, photo, signature, counts.Documents, counts.NextOfKin, counts.CreditOfficerName, counts.ActiveGroup, accounts);
     }
 
     private IQueryable<Party> Filtered(PartySearchFilter filter)

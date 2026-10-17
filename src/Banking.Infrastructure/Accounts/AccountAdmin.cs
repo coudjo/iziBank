@@ -287,7 +287,7 @@ public sealed class AccountAdmin
         return await SaveAsync(accountId, cancellationToken).ConfigureAwait(false);
     }
 
-    private static AccountBalanceView BalanceView(AccountBalance balance, decimal? minimumBalance, string currencyCode) =>
+    internal static AccountBalanceView BalanceView(AccountBalance balance, decimal? minimumBalance, string currencyCode) =>
         new(
             balance.OpeningBalance,
             balance.ClearBalance,

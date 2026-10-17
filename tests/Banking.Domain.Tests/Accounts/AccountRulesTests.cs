@@ -205,3 +205,50 @@ public sealed class AccountOpeningRulesTests
         public const string AllToSign = LookupCodes.OperatingModes.AllToSign;
     }
 }
+
+/// <summary>A5-06 hold arithmetic and A5-07 close checks (plan 6.10).</summary>
+public sealed class AccountServicingRulesTests
+{
+    [Fact]
+    public void A_hold_raises_the_held_amount_and_lowers_the_available_balance()
+    {
+        var balance = new AccountBalance { ClearBalance = 300m };
+        FreezeActionRules.TryApply(balance, isHold: true, 120m).ShouldBeTrue();
+        balance.FreezedAmount.ShouldBe(120m);
+        balance.AvailableBalance.ShouldBe(180m);
+        balance.TotalBalance.ShouldBe(300m);
+    }
+
+    [Fact]
+    public void A_release_cannot_exceed_what_is_held()
+    {
+        var balance = new AccountBalance { ClearBalance = 300m, FreezedAmount = 50m };
+        FreezeActionRules.TryApply(balance, isHold: false, 60m).ShouldBeFalse();
+        balance.FreezedAmount.ShouldBe(50m);
+        FreezeActionRules.TryApply(balance, isHold: false, 50m).ShouldBeTrue();
+        balance.FreezedAmount.ShouldBe(0m);
+        balance.AvailableBalance.ShouldBe(300m);
+    }
+
+    [Theory]
+    [InlineData(0, 0, 0, 0, true, true, true)]
+    [InlineData(5, 0, 0, 0, false, true, true)]
+    [InlineData(0, 5, 0, 0, true, false, true)]
+    [InlineData(0, 0, 5, 0, true, true, false)]
+    [InlineData(0, 0, 0, 5, true, true, false)]
+    public void Closing_needs_a_zero_balance_no_holds_and_no_pending_items(
+        int clear, int held, int unsupervisedCredit, int unsupervisedDebit, bool zero, bool noHolds, bool noPending)
+    {
+        var checks = AccountCloseRules.Check(new AccountBalance
+        {
+            ClearBalance = clear,
+            FreezedAmount = held,
+            UnsupervisedCredit = unsupervisedCredit,
+            UnsupervisedDebit = unsupervisedDebit
+        }).ToDictionary(check => check.Code, check => check.Passed, StringComparer.Ordinal);
+
+        checks[AccountCloseChecks.ZeroBalance].ShouldBe(zero);
+        checks[AccountCloseChecks.NoHolds].ShouldBe(noHolds);
+        checks[AccountCloseChecks.NoPendingItems].ShouldBe(noPending);
+    }
+}

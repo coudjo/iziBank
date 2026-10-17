@@ -73,6 +73,13 @@ public static class ProblemCodes
     public const string AccountHolderNotReady = "account.holder-not-ready";
     public const string AccountSignatureMissing = "account.signature-missing";
     public const string AccountLimitReached = "account.limit-reached";
+    public const string AccountClosed = "account.closed";
+    public const string AccountAlreadyFrozen = "account.already-frozen";
+    public const string AccountNotFrozen = "account.not-frozen";
+    public const string AccountAlreadyDormant = "account.already-dormant";
+    public const string AccountNotDormant = "account.not-dormant";
+    public const string AccountCloseBlocked = "account.close-blocked";
+    public const string AccountClassificationExists = "account.classification-exists";
 
     public static readonly IReadOnlyList<string> All =
     [
@@ -89,6 +96,8 @@ public static class ProblemCodes
         UploadEmpty, UploadTooLarge, UploadTypeNotAllowed, UploadTypeMismatch, UploadDimensions,
         IdempotencyKeyInvalid, IdempotencyKeyReused, IdempotencyInProgress, CreditOfficerExists,
         KycChecklistIncomplete, KycNotPending, ProductCodeTaken, ProductFieldLocked, ProductRateOverlap, ProductRateStarted,
-        AccountProductNotOpenable, AccountHolderNotReady, AccountSignatureMissing, AccountLimitReached
+        AccountProductNotOpenable, AccountHolderNotReady, AccountSignatureMissing, AccountLimitReached,
+        AccountClosed, AccountAlreadyFrozen, AccountNotFrozen, AccountAlreadyDormant, AccountNotDormant, AccountCloseBlocked,
+        AccountClassificationExists
     ];
 }

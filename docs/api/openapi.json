@@ -2998,6 +2998,66 @@
             }
           }
         }
+      },
+      "get": {
+        "tags": [
+          "Accounts"
+        ],
+        "parameters": [
+          {
+            "name": "branchId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "productId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfAccountListRow"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/accounts/{accountId}": {
@@ -3158,6 +3218,800 @@
         "responses": {
           "204": {
             "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/search": {
+      "post": {
+        "tags": [
+          "Accounts"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountSearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfAccountListRow"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{accountId}/freeze-actions": {
+      "get": {
+        "tags": [
+          "Accounts"
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FreezeActionView"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Accounts"
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FreezeActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FreezeActionResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{accountId}/close-check": {
+      "get": {
+        "tags": [
+          "Accounts"
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountCloseStatus"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{accountId}/close": {
+      "post": {
+        "tags": [
+          "Accounts"
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{accountId}/dormancy/mark": {
+      "post": {
+        "tags": [
+          "Accounts"
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{accountId}/dormancy/reactivate": {
+      "post": {
+        "tags": [
+          "Accounts"
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{accountId}/classifications": {
+      "get": {
+        "tags": [
+          "Accounts"
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AccountClassificationView"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Accounts"
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClassificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedId"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{accountId}/classifications/{assignmentId}": {
+      "delete": {
+        "tags": [
+          "Accounts"
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{accountId}/reminders": {
+      "get": {
+        "tags": [
+          "Accounts"
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AccountReminderView"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Accounts"
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReminderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedId"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{accountId}/reminders/{reminderId}": {
+      "delete": {
+        "tags": [
+          "Accounts"
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "reminderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/account-classifications": {
+      "get": {
+        "tags": [
+          "Accounts"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClassificationOption"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Accounts"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClassificationCatalogRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedId"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/account-classifications/{classificationId}/sub-classifications": {
+      "post": {
+        "tags": [
+          "Accounts"
+        ],
+        "parameters": [
+          {
+            "name": "classificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClassificationCatalogRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedId"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
           },
           "404": {
             "description": "Not Found",
@@ -5653,6 +6507,86 @@
           }
         }
       },
+      "AccountClassificationView": {
+        "required": [
+          "assignmentId",
+          "accountClassificationId",
+          "classificationCode",
+          "classificationName",
+          "accountSubClassificationId",
+          "subClassificationCode",
+          "subClassificationName"
+        ],
+        "type": "object",
+        "properties": {
+          "assignmentId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "accountClassificationId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "classificationCode": {
+            "type": "string"
+          },
+          "classificationName": {
+            "type": "string"
+          },
+          "accountSubClassificationId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "subClassificationCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subClassificationName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "AccountCloseCheck": {
+        "required": [
+          "code",
+          "passed"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "passed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AccountCloseStatus": {
+        "required": [
+          "canClose",
+          "checks"
+        ],
+        "type": "object",
+        "properties": {
+          "canClose": {
+            "type": "boolean"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountCloseCheck"
+            }
+          }
+        }
+      },
       "AccountConditionView": {
         "required": [
           "isFreezed",
@@ -5747,6 +6681,66 @@
           }
         }
       },
+      "AccountListRow": {
+        "required": [
+          "accountId",
+          "accountNumber",
+          "accountName",
+          "branchCode",
+          "productCode",
+          "productName",
+          "primaryHolderNumber",
+          "primaryHolderName",
+          "status",
+          "dateOpened",
+          "createdOn"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "accountNumber": {
+            "type": "string"
+          },
+          "accountName": {
+            "type": "string"
+          },
+          "branchCode": {
+            "type": "string"
+          },
+          "productCode": {
+            "type": "string"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "primaryHolderNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "primaryHolderName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "dateOpened": {
+            "type": "string",
+            "format": "date"
+          },
+          "createdOn": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "AccountOpened": {
         "required": [
           "accountId",
@@ -5789,6 +6783,59 @@
           "createdOn": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "AccountSearchRequest": {
+        "required": [
+          "q",
+          "branchId",
+          "productId",
+          "status",
+          "page",
+          "pageSize"
+        ],
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "branchId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "productId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "status": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "page": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -6500,6 +7547,92 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "ClassificationCatalogRequest": {
+        "required": [
+          "code",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ClassificationOption": {
+        "required": [
+          "accountClassificationId",
+          "classificationCode",
+          "classificationName",
+          "subClassifications"
+        ],
+        "type": "object",
+        "properties": {
+          "accountClassificationId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "classificationCode": {
+            "type": "string"
+          },
+          "classificationName": {
+            "type": "string"
+          },
+          "subClassifications": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubClassificationOption"
+            }
+          }
+        }
+      },
+      "ClassificationRequest": {
+        "required": [
+          "accountClassificationId",
+          "accountSubClassificationId"
+        ],
+        "type": "object",
+        "properties": {
+          "accountClassificationId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "accountSubClassificationId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "CloseAccountRequest": {
+        "required": [
+          "closeReasonId"
+        ],
+        "type": "object",
+        "properties": {
+          "closeReasonId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -7241,6 +8374,99 @@
           },
           "isPrimary": {
             "type": "boolean"
+          }
+        }
+      },
+      "FreezeActionRequest": {
+        "required": [
+          "action",
+          "amount",
+          "remarks"
+        ],
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amount": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "remarks": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "FreezeActionResult": {
+        "required": [
+          "freezeReleaseId",
+          "isFreezed",
+          "balance"
+        ],
+        "type": "object",
+        "properties": {
+          "freezeReleaseId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "isFreezed": {
+            "type": "boolean"
+          },
+          "balance": {
+            "$ref": "#/components/schemas/AccountBalanceView"
+          }
+        }
+      },
+      "FreezeActionView": {
+        "required": [
+          "freezeReleaseId",
+          "action",
+          "amount",
+          "remarks",
+          "createdByUserId",
+          "createdOn"
+        ],
+        "type": "object",
+        "properties": {
+          "freezeReleaseId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "action": {
+            "type": "string"
+          },
+          "amount": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "remarks": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdByUserId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "createdOn": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -8107,6 +9333,35 @@
           }
         }
       },
+      "PagedResultOfAccountListRow": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountListRow"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "PagedResultOfActivityRow": {
         "required": [
           "items",
@@ -8339,6 +9594,38 @@
           }
         }
       },
+      "PartyAccountRow": {
+        "required": [
+          "accountId",
+          "accountNumber",
+          "accountName",
+          "productName",
+          "roleCode",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "accountNumber": {
+            "type": "string"
+          },
+          "accountName": {
+            "type": "string"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "roleCode": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
       "PartyDetail": {
         "required": [
           "partyId",
@@ -8553,7 +9840,10 @@
             ]
           },
           "accounts": {
-            "type": "array"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PartyAccountRow"
+            }
           }
         }
       },
@@ -9408,6 +10698,20 @@
           }
         }
       },
+      "ReminderRequest": {
+        "required": [
+          "reminderText"
+        ],
+        "type": "object",
+        "properties": {
+          "reminderText": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "ReplaceOwnersRequest": {
         "required": [
           "beneficialOwners"
@@ -9810,6 +11114,26 @@
           },
           "mustChangeSecretKey": {
             "type": "boolean"
+          }
+        }
+      },
+      "SubClassificationOption": {
+        "required": [
+          "accountSubClassificationId",
+          "subClassificationCode",
+          "subClassificationName"
+        ],
+        "type": "object",
+        "properties": {
+          "accountSubClassificationId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "subClassificationCode": {
+            "type": "string"
+          },
+          "subClassificationName": {
+            "type": "string"
           }
         }
       },

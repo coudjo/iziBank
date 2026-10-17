@@ -27,7 +27,7 @@ public static class RoleGroupCatalog
         [
             Grant(ModuleCatalog.Party, "PARTY", View, Add),
             Grant(ModuleCatalog.Accounts, "PRODUCT", View),
-            Grant(ModuleCatalog.Accounts, "ACCOUNT", View, Add),
+            Grant(ModuleCatalog.Accounts, "ACCOUNT", View, Add, Edit),
             Grant(ModuleCatalog.Accounts, "CONDITION", View),
             Grant(ModuleCatalog.Ledger, "CHART", View)
         ]),
@@ -49,6 +49,7 @@ public static class RoleGroupCatalog
         [
             Grant(ModuleCatalog.Party, null, View, Add, Edit, Supervise),
             Grant(ModuleCatalog.Accounts, null, View, Add, Edit, Supervise),
+            Grant(ModuleCatalog.Accounts, "ACCOUNT", View, Delete),
             Grant(ModuleCatalog.Accounts, "CONDITION", View, Edit, Supervise),
             Grant(ModuleCatalog.ReferenceData, "CALENDAR", View, Edit, Supervise),
             Grant(ModuleCatalog.Ledger, "CHART", View, Add, Supervise)

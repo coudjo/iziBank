@@ -18,4 +18,5 @@
 | A4-06, A4-07 | done | 2026-10-15 | owner: dotnet test green |
 | A4-08 | done | 2026-10-15 | owner: dotnet test green (191) |
 | A5-01, A5-02 | done | 2026-10-17 | owner: dotnet test green |
-| A5-03, A5-04, A5-05 | written, waiting on owner build and test | 2026-10-17 | |
+| A5-03, A5-04, A5-05 | done | 2026-10-17 | owner: dotnet test green |
+| A5-06, A5-07, A5-08 | written, waiting on owner build and test | 2026-10-17 | |
