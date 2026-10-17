@@ -2951,6 +2951,237 @@
         }
       }
     },
+    "/api/v1/accounts": {
+      "post": {
+        "tags": [
+          "Accounts"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountOpened"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{accountId}": {
+      "get": {
+        "tags": [
+          "Accounts"
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{accountId}/balance": {
+      "get": {
+        "tags": [
+          "Accounts"
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountBalanceView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{accountId}/supervise": {
+      "post": {
+        "tags": [
+          "Accounts"
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{accountId}/reject": {
+      "post": {
+        "tags": [
+          "Accounts"
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/RejectRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/parties/individuals": {
       "post": {
         "tags": [
@@ -5347,6 +5578,368 @@
   },
   "components": {
     "schemas": {
+      "AccountBalanceView": {
+        "required": [
+          "openingBalance",
+          "clearBalance",
+          "freezedAmount",
+          "unsupervisedCredit",
+          "unsupervisedDebit",
+          "overdrawLimit",
+          "availableBalance",
+          "totalBalance",
+          "minimumBalance",
+          "currencyCode",
+          "lastCreditTransactionDate",
+          "lastDebitTransactionDate"
+        ],
+        "type": "object",
+        "properties": {
+          "openingBalance": {
+            "type": "number",
+            "format": "double"
+          },
+          "clearBalance": {
+            "type": "number",
+            "format": "double"
+          },
+          "freezedAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "unsupervisedCredit": {
+            "type": "number",
+            "format": "double"
+          },
+          "unsupervisedDebit": {
+            "type": "number",
+            "format": "double"
+          },
+          "overdrawLimit": {
+            "type": "number",
+            "format": "double"
+          },
+          "availableBalance": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalBalance": {
+            "type": "number",
+            "format": "double"
+          },
+          "minimumBalance": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "lastCreditTransactionDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "lastDebitTransactionDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "AccountConditionView": {
+        "required": [
+          "isFreezed",
+          "doNotAllowCredit",
+          "doNotAllowDebit",
+          "creditLimit",
+          "debitLimit",
+          "superviseAllTransactions",
+          "doNotApplyTransactionCharges"
+        ],
+        "type": "object",
+        "properties": {
+          "isFreezed": {
+            "type": "boolean"
+          },
+          "doNotAllowCredit": {
+            "type": "boolean"
+          },
+          "doNotAllowDebit": {
+            "type": "boolean"
+          },
+          "creditLimit": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "debitLimit": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "superviseAllTransactions": {
+            "type": "boolean"
+          },
+          "doNotApplyTransactionCharges": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AccountHolderRequest": {
+        "required": [
+          "partyId",
+          "accountHolderRoleId"
+        ],
+        "type": "object",
+        "properties": {
+          "partyId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "accountHolderRoleId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "AccountHolderView": {
+        "required": [
+          "partyId",
+          "partyNumber",
+          "displayName",
+          "partyTypeCode",
+          "roleCode"
+        ],
+        "type": "object",
+        "properties": {
+          "partyId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "partyNumber": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "partyTypeCode": {
+            "type": "string"
+          },
+          "roleCode": {
+            "type": "string"
+          }
+        }
+      },
+      "AccountOpened": {
+        "required": [
+          "accountId",
+          "accountNumber",
+          "accountName",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "accountNumber": {
+            "type": "string"
+          },
+          "accountName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "AccountReminderView": {
+        "required": [
+          "accountReminderId",
+          "reminderText",
+          "createdOn"
+        ],
+        "type": "object",
+        "properties": {
+          "accountReminderId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reminderText": {
+            "type": "string"
+          },
+          "createdOn": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AccountView": {
+        "required": [
+          "accountId",
+          "accountNumber",
+          "accountName",
+          "branchId",
+          "branchCode",
+          "productId",
+          "productCode",
+          "productName",
+          "productTypeCode",
+          "currencyCode",
+          "dateOpened",
+          "operatingModeCode",
+          "status",
+          "supervisionState",
+          "isDormant",
+          "closedOn",
+          "closeReasonCode",
+          "openedByUserId",
+          "createdOn",
+          "modifiedByUserId",
+          "supervisedByUserId",
+          "supervisedOn",
+          "holders",
+          "balance",
+          "condition",
+          "reminders"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "accountNumber": {
+            "type": "string"
+          },
+          "accountName": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "branchCode": {
+            "type": "string"
+          },
+          "productId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "productCode": {
+            "type": "string"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "productTypeCode": {
+            "type": "string"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "dateOpened": {
+            "type": "string",
+            "format": "date"
+          },
+          "operatingModeCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "supervisionState": {
+            "type": "string"
+          },
+          "isDormant": {
+            "type": "boolean"
+          },
+          "closedOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "closeReasonCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "openedByUserId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "createdOn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "modifiedByUserId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "supervisedByUserId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "supervisedOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "holders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountHolderView"
+            }
+          },
+          "balance": {
+            "$ref": "#/components/schemas/AccountBalanceView"
+          },
+          "condition": {
+            "$ref": "#/components/schemas/AccountConditionView"
+          },
+          "reminders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountReminderView"
+            }
+          }
+        }
+      },
       "ActivityRow": {
         "required": [
           "eventId",
@@ -7442,6 +8035,46 @@
           }
         }
       },
+      "OpenAccountRequest": {
+        "required": [
+          "productId",
+          "accountName",
+          "operatingModeId",
+          "holders"
+        ],
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "accountName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "operatingModeId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "holders": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/AccountHolderRequest"
+            }
+          }
+        }
+      },
       "OpenBusinessDayRequest": {
         "required": [
           "workingDate"
@@ -9384,6 +10017,9 @@
     },
     {
       "name": "Products"
+    },
+    {
+      "name": "Accounts"
     },
     {
       "name": "Parties"

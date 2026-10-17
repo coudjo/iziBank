@@ -92,6 +92,7 @@ try
     api.MapReferenceEndpoints();
     api.MapLedgerEndpoints();
     api.MapProductEndpoints();
+    api.MapAccountEndpoints();
     api.MapPartyEndpoints();
     api.MapPartyDocumentEndpoints();
     api.MapPartyProfileEndpoints();

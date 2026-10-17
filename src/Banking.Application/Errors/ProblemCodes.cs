@@ -69,6 +69,10 @@ public static class ProblemCodes
     public const string ProductFieldLocked = "product.field-locked";
     public const string ProductRateOverlap = "product.rate-overlap";
     public const string ProductRateStarted = "product.rate-started";
+    public const string AccountProductNotOpenable = "account.product-not-openable";
+    public const string AccountHolderNotReady = "account.holder-not-ready";
+    public const string AccountSignatureMissing = "account.signature-missing";
+    public const string AccountLimitReached = "account.limit-reached";
 
     public static readonly IReadOnlyList<string> All =
     [
@@ -84,6 +88,7 @@ public static class ProblemCodes
         PartyDuplicateRegistration, GroupMemberInOtherGroup, GroupChairpersonExists, PartyPrimaryDocument,
         UploadEmpty, UploadTooLarge, UploadTypeNotAllowed, UploadTypeMismatch, UploadDimensions,
         IdempotencyKeyInvalid, IdempotencyKeyReused, IdempotencyInProgress, CreditOfficerExists,
-        KycChecklistIncomplete, KycNotPending, ProductCodeTaken, ProductFieldLocked, ProductRateOverlap, ProductRateStarted
+        KycChecklistIncomplete, KycNotPending, ProductCodeTaken, ProductFieldLocked, ProductRateOverlap, ProductRateStarted,
+        AccountProductNotOpenable, AccountHolderNotReady, AccountSignatureMissing, AccountLimitReached
     ];
 }

@@ -50,6 +50,10 @@ Every error response is RFC 7807 problem details. `type` is one of the stable co
 | `product.field-locked` | 409 | Changing the type, account prefix or currency of an approved product. |
 | `product.rate-overlap` | 409 | The rate's dates and amount band overlap another rate of the same product and rate type. |
 | `product.rate-started` | 409 | Changing or removing a rate whose start date has passed. Close it instead. |
+| `account.product-not-openable` | 409 | The product is pending, inactive or frozen, or its type is not in `Account:DirectOpeningProductTypes`. |
+| `account.holder-not-ready` | 409 | A holder is awaiting approval or is not KYC verified. `partyNumbers` lists them. |
+| `account.signature-missing` | 409 | A person who signs on the account has no approved specimen signature (addendum rule 3a). `partyNumbers` lists them. |
+| `account.limit-reached` | 409 | The primary holder already has `AccountsPerCustomer` open accounts on this product. |
 | `party.duplicate-identification` | 409 | A customer already holds this identification type and number. `existingPartyNumber` names them. |
 | `party.duplicate-registration` | 409 | A business already holds this registration number. `existingPartyNumber` names it. |
 | `group.member-in-other-group` | 409 | The person is an active member of another group (D8). `memberPartyNumber` and `groupPartyNumber` say who and where. |

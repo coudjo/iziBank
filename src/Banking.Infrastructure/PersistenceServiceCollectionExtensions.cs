@@ -70,6 +70,9 @@ public static class PersistenceServiceCollectionExtensions
         services.TryAddScoped<Banking.Infrastructure.Ledger.LedgerAccountAdmin>();
         services.TryAddScoped<Banking.Infrastructure.Products.ProductAdmin>();
         services.TryAddScoped<Banking.Infrastructure.Products.ProductRates>();
+        services.TryAddScoped<Banking.Infrastructure.Accounts.AccountNumbers>();
+        services.TryAddScoped<Banking.Infrastructure.Accounts.AccountOpening>();
+        services.TryAddScoped<Banking.Infrastructure.Accounts.AccountAdmin>();
 
         return services;
     }
