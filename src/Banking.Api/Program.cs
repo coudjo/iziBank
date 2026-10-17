@@ -4,6 +4,7 @@ using Banking.Api.Endpoints;
 using Banking.Api.Problems;
 using Banking.Api.Security;
 using Banking.Application.Abstractions;
+using Banking.Application.Accounts;
 using Banking.Application.Parties;
 using Banking.Application.Reference;
 using Banking.Application.Security;
@@ -43,6 +44,8 @@ try
     builder.Services.Configure<PartyNumberOptions>(builder.Configuration.GetSection(PartyNumberOptions.SectionName));
     builder.Services.Configure<KycOptions>(builder.Configuration.GetSection(KycOptions.SectionName));
     builder.Services.Configure<UploadOptions>(builder.Configuration.GetSection(UploadOptions.SectionName));
+    builder.Services.Configure<AccountNumberOptions>(builder.Configuration.GetSection(AccountNumberOptions.SectionName));
+    builder.Services.Configure<AccountOptions>(builder.Configuration.GetSection(AccountOptions.SectionName));
 
     // Fail at start-up, not on the first business-day request, if the weekend setting is wrong.
     _ = (builder.Configuration.GetSection(CalendarOptions.SectionName).Get<CalendarOptions>() ?? new CalendarOptions()).ParseWeekendDays();
@@ -88,6 +91,7 @@ try
     api.MapAdminEndpoints();
     api.MapReferenceEndpoints();
     api.MapLedgerEndpoints();
+    api.MapProductEndpoints();
     api.MapPartyEndpoints();
     api.MapPartyDocumentEndpoints();
     api.MapPartyProfileEndpoints();

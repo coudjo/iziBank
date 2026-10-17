@@ -34,9 +34,10 @@ Every error response is RFC 7807 problem details. `type` is one of the stable co
 | `staff.code-taken` | 409 | The staff code is already used. |
 | `staff.self-change` | 409 | Editing, disabling or resetting your own staff record through the admin API. |
 | `reference.code-taken` | 409 | A branch, currency or ledger account with that code already exists. |
-| `reference.code-immutable` | 400 | The request tried to change a branch, currency or ledger account code. |
+| `reference.code-immutable` | 400 | The request tried to change a branch, currency, ledger account or product code. |
 | `record.other-branch` | 409 | The record belongs to another branch; writes need the effective branch to match (D2). |
 | `record.changed` | 409 | Someone else changed the record first (optimistic concurrency). Reload and retry. |
+| `currency.local-in-use` | 409 | Making another currency local once products exist (ADR 0002, A3-f). |
 | `currency.local-required` | 409 | Switching off the local currency. Make another currency local instead; the flag moves in one step. |
 | `holiday.exists` | 409 | A holiday is already defined for that date. |
 | `holiday.business-day-exists` | 409 | Adding or removing a holiday on a date that a branch has already opened. |
@@ -45,6 +46,10 @@ Every error response is RFC 7807 problem details. `type` is one of the stable co
 | `business-day.date-not-after` | 409 | The date is on or before the branch's latest business day. |
 | `business-day.non-working-day` | 409 | The date is a weekend day (`Calendar:WeekendDays`) or a defined holiday. |
 | `ledger.field-locked` | 409 | Changing the type or currency of an approved ledger account. |
+| `product.code-taken` | 409 | A product with that code already exists (codes are institution-wide). |
+| `product.field-locked` | 409 | Changing the type, account prefix or currency of an approved product. |
+| `product.rate-overlap` | 409 | The rate's dates and amount band overlap another rate of the same product and rate type. |
+| `product.rate-started` | 409 | Changing or removing a rate whose start date has passed. Close it instead. |
 | `party.duplicate-identification` | 409 | A customer already holds this identification type and number. `existingPartyNumber` names them. |
 | `party.duplicate-registration` | 409 | A business already holds this registration number. `existingPartyNumber` names it. |
 | `group.member-in-other-group` | 409 | The person is an active member of another group (D8). `memberPartyNumber` and `groupPartyNumber` say who and where. |

@@ -12,6 +12,7 @@ Use this file when the plan has no default. Pick the most restrictive behaviour,
 | Q4 | Can an individual belong to more than one group at once? | No (D8). | Pending |
 | Q5 | Should staff see parties and accounts from all branches or only their own? | All branches for reads (D2). | Pending |
 | Q6 | Regulator KYC field list, accepted ID types, PEP handling, minimum group size, beneficial-owner threshold. | Placeholders in configuration (plan section 4). | Pending |
+| Q7 | Do changes to product interest rates need four-eyes approval? | No: `ACC/PRODUCT` edit, logged (ADR 0002, A5-b). Started rates are only closed, never edited. | Pending |
 
 ## Decisions recorded during implementation
 

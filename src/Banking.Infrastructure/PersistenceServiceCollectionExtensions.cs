@@ -68,6 +68,8 @@ public static class PersistenceServiceCollectionExtensions
         services.TryAddScoped<Banking.Infrastructure.Reference.BusinessDays>();
         services.TryAddScoped<Banking.Application.Abstractions.IWorkingDateProvider, Banking.Infrastructure.Reference.WorkingDateProvider>();
         services.TryAddScoped<Banking.Infrastructure.Ledger.LedgerAccountAdmin>();
+        services.TryAddScoped<Banking.Infrastructure.Products.ProductAdmin>();
+        services.TryAddScoped<Banking.Infrastructure.Products.ProductRates>();
 
         return services;
     }

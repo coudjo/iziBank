@@ -26,6 +26,7 @@ public static class RoleGroupCatalog
         new(Teller, "Teller", "Counter staff: look up and register customers, open accounts.",
         [
             Grant(ModuleCatalog.Party, "PARTY", View, Add),
+            Grant(ModuleCatalog.Accounts, "PRODUCT", View),
             Grant(ModuleCatalog.Accounts, "ACCOUNT", View, Add),
             Grant(ModuleCatalog.Accounts, "CONDITION", View),
             Grant(ModuleCatalog.Ledger, "CHART", View)

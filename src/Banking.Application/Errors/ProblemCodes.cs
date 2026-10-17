@@ -40,6 +40,7 @@ public static class ProblemCodes
     public const string ReferenceCodeImmutable = "reference.code-immutable";
     public const string RecordOtherBranch = "record.other-branch";
     public const string LocalCurrencyRequired = "currency.local-required";
+    public const string LocalCurrencyInUse = "currency.local-in-use";
     public const string HolidayExists = "holiday.exists";
     public const string HolidayBusinessDayExists = "holiday.business-day-exists";
     public const string BusinessDayNotOpen = "business-day.not-open";
@@ -64,6 +65,10 @@ public static class ProblemCodes
     public const string IdempotencyKeyInvalid = "idempotency.key-invalid";
     public const string IdempotencyKeyReused = "idempotency.key-reused";
     public const string IdempotencyInProgress = "idempotency.in-progress";
+    public const string ProductCodeTaken = "product.code-taken";
+    public const string ProductFieldLocked = "product.field-locked";
+    public const string ProductRateOverlap = "product.rate-overlap";
+    public const string ProductRateStarted = "product.rate-started";
 
     public static readonly IReadOnlyList<string> All =
     [
@@ -73,12 +78,12 @@ public static class ProblemCodes
         PermissionDenied, BranchNotAllowed, ActivityLogUnavailable, SessionNotOpen,
         RoleGroupCodeTaken, RoleGroupInactive, SelfAssignment, LastAdministrator, ChangePendingExists, ChangeNotPending,
         LookupCodeTaken, LookupCodeImmutable, LookupCodedRow, StaffCodeTaken, StaffSelfChange,
-        ReferenceCodeTaken, ReferenceCodeImmutable, RecordOtherBranch, LocalCurrencyRequired, HolidayExists,
+        ReferenceCodeTaken, ReferenceCodeImmutable, RecordOtherBranch, LocalCurrencyRequired, LocalCurrencyInUse, HolidayExists,
         HolidayBusinessDayExists, BusinessDayNotOpen, BusinessDayPreviousOpen, BusinessDayDateNotAfter,
         BusinessDayNonWorkingDay, LedgerFieldLocked, ConcurrencyConflict, PartyDuplicateIdentification,
         PartyDuplicateRegistration, GroupMemberInOtherGroup, GroupChairpersonExists, PartyPrimaryDocument,
         UploadEmpty, UploadTooLarge, UploadTypeNotAllowed, UploadTypeMismatch, UploadDimensions,
         IdempotencyKeyInvalid, IdempotencyKeyReused, IdempotencyInProgress, CreditOfficerExists,
-        KycChecklistIncomplete, KycNotPending
+        KycChecklistIncomplete, KycNotPending, ProductCodeTaken, ProductFieldLocked, ProductRateOverlap, ProductRateStarted
     ];
 }

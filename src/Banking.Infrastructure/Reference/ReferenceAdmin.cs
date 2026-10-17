@@ -254,6 +254,11 @@ public sealed class ReferenceAdmin
             return OperationResult.Fail<int>(ProblemCodes.ReferenceCodeTaken);
         }
 
+        if (draft.IsLocalCurrency && await ProductsExistAsync(cancellationToken).ConfigureAwait(false))
+        {
+            return OperationResult.Fail<int>(ProblemCodes.LocalCurrencyInUse);
+        }
+
         var currency = new Currency
         {
             CurrencyCode = code,
@@ -312,6 +317,11 @@ public sealed class ReferenceAdmin
         if (currency.IsLocalCurrency && !draft.IsLocalCurrency)
         {
             return OperationResult.Fail<int>(ProblemCodes.LocalCurrencyRequired);
+        }
+
+        if (draft.IsLocalCurrency && !currency.IsLocalCurrency && await ProductsExistAsync(cancellationToken).ConfigureAwait(false))
+        {
+            return OperationResult.Fail<int>(ProblemCodes.LocalCurrencyInUse);
         }
 
         currency.CurrencyName = draft.CurrencyName.Trim();
@@ -410,6 +420,10 @@ public sealed class ReferenceAdmin
     }
 
     // ---------------------------------------------------------------- Helpers
+
+    /// <summary>ADR 0002 A3-f: the local currency is fixed once products exist (accounts always belong to a product).</summary>
+    private Task<bool> ProductsExistAsync(CancellationToken cancellationToken) =>
+        _db.Set<Banking.Domain.Products.Product>().AnyAsync(cancellationToken);
 
     private async Task MakeLocalAsync(Currency currency, CancellationToken cancellationToken)
     {
