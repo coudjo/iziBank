@@ -1,8 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <RootNamespace>Banking.Api</RootNamespace>
     <AssemblyName>Banking.Api</AssemblyName>
     <Description>ASP.NET Core Web API host.</Description>
+    <UserSecretsId>189b0606-165b-4bbf-84a6-b0cea65ed2d1</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Banking.Application\Banking.Application.csproj" />

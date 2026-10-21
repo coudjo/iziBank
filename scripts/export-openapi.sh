@@ -21,7 +21,7 @@ trap cleanup EXIT
 
 mkdir -p "$(dirname "${output}")"
 
-Jwt__SigningKey="${Jwt__SigningKey:-openapi-export-only-signing-key-not-secret}" Sessions__SweeperEnabled=false \
+Jwt__SigningKey="${Jwt__SigningKey:-openapi-export-only-signing-key-not-secret}" Sessions__SweeperEnabled=false OpenApi__Expose=true \
   dotnet run --project src/Banking.Api --no-launch-profile --urls "${url}" > /tmp/iziBank-openapi-export.log 2>&1 &
 pid="$!"
 

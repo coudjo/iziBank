@@ -48,6 +48,9 @@ public sealed class AuthService
     public const string StaffCodeEntity = "StaffCode";
 
     private readonly BankingDbContext _db;
+    private static readonly StaffUser TimingUser = new();
+    private static string? s_timingHash;
+
     private readonly IPasswordHasher<StaffUser> _hasher;
     private readonly TimeProvider _timeProvider;
     private readonly SecurityOptions _security;
@@ -112,7 +115,7 @@ public sealed class AuthService
 
         var verified = user is { IsDisabled: false, SecretKeyHash: not null }
             ? _hasher.VerifyHashedPassword(user, user.SecretKeyHash, secretKey)
-            : PasswordVerificationResult.Failed;
+            : RejectAtEqualCost(secretKey);
 
         if (user is null || verified == PasswordVerificationResult.Failed)
         {
@@ -304,6 +307,23 @@ public sealed class AuthService
             user.CanSwitchBranch == true,
             branches,
             permissions.Merged());
+    }
+
+    /// <summary>
+    /// Unknown, disabled and password-less staff codes still pay for one hash check, so the response time does not
+    /// reveal which staff codes exist (A6-02: login errors indistinguishable).
+    /// </summary>
+    private PasswordVerificationResult RejectAtEqualCost(string secretKey)
+    {
+        var dummy = Volatile.Read(ref s_timingHash);
+        if (dummy is null)
+        {
+            dummy = _hasher.HashPassword(TimingUser, Guid.NewGuid().ToString("N"));
+            Volatile.Write(ref s_timingHash, dummy);
+        }
+
+        _ = _hasher.VerifyHashedPassword(TimingUser, dummy, secretKey);
+        return PasswordVerificationResult.Failed;
     }
 
     private async Task<TimeSpan?> LockoutRemainingAsync(string code, DateTime now, CancellationToken cancellationToken)

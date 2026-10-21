@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>Banking.Migrator</RootNamespace>
     <AssemblyName>Banking.Migrator</AssemblyName>
-    <Description>Applies EF schema migrations and seeds reference data. Never imports business data.</Description>
+    <Description>Applies EF schema migrations and seeds reference data. Development-only commands add sample data (demo, perf); it never imports real business data.</Description>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Banking.Infrastructure\Banking.Infrastructure.csproj" />

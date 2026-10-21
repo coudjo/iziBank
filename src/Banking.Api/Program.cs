@@ -10,6 +10,7 @@ using Banking.Application.Reference;
 using Banking.Application.Security;
 using Banking.Application.Supervision;
 using Banking.Infrastructure;
+using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -65,12 +66,36 @@ try
     builder.Services.AddProblemDetails();
     builder.Services.AddOpenApi();
 
+    // Behind nginx the client address arrives in X-Forwarded-For. Only the proxies listed in Network:TrustedProxies
+    // (CIDR ranges) are believed, so a client cannot claim another address (A6-02). With none listed, the direct
+    // connection address is used, as before.
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.ForwardLimit = 1;
+        foreach (var range in builder.Configuration.GetSection("Network:TrustedProxies").Get<string[]>() ?? [])
+        {
+            options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(range));
+        }
+    });
+
     if (builder.Configuration.GetValue("Sessions:SweeperEnabled", true))
     {
         builder.Services.AddHostedService<SessionSweeperService>();
     }
 
     var app = builder.Build();
+
+    app.UseForwardedHeaders();
+
+    // API responses carry personal data (customer details, photos, document images) and are never cacheable by the
+    // browser or a proxy (A6-02).
+    app.Use(static (http, next) =>
+    {
+        http.Response.Headers.CacheControl = "no-store";
+        http.Response.Headers.XContentTypeOptions = "nosniff";
+        return next(http);
+    });
 
     app.UseExceptionHandler();
     app.UseRouting();
@@ -79,7 +104,12 @@ try
     app.UseMiddleware<ActivityLoggingMiddleware>();
     app.UseAuthorization();
 
-    app.MapOpenApi();
+    // The API description is served in Development, and when OpenApi:Expose is set (scripts/export-openapi.sh).
+    // Production does not publish it (A6-02).
+    if (app.Environment.IsDevelopment() || app.Configuration.GetValue("OpenApi:Expose", false))
+    {
+        app.MapOpenApi();
+    }
 
     var api = app.MapGroup("/api/v1")
         .RequireAuthorization()

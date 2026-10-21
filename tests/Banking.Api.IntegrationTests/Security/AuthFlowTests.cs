@@ -5,6 +5,8 @@ using Banking.Application.Errors;
 using Banking.Domain.Lookups;
 using Banking.Domain.Security;
 using Banking.Infrastructure.Security;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -51,6 +53,33 @@ public sealed class AuthFlowTests : IAsyncLifetime
             .Select(row => row.EntityId)
             .ToListAsync();
         attempted.ShouldBe(["ADMIN", "NOBODY", "DISABLED1"], ignoreOrder: true);
+    }
+
+    [Fact]
+    public async Task Unknown_and_disabled_codes_still_check_one_password_hash_so_timing_reveals_nothing()
+    {
+        await _host.CreateStaffAsync("DISABLED2", canSwitchBranch: false);
+        await using (var context = _host.NewContext())
+        {
+            var user = await context.Set<StaffUser>().SingleAsync(row => row.StaffCode == "DISABLED2");
+            user.IsDisabled = true;
+            await context.SaveChangesAsync();
+        }
+
+        var hasher = new CountingHasher();
+        await using var factory = _host.Factory.WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services => services.AddSingleton<IPasswordHasher<StaffUser>>(hasher)));
+        using var client = factory.CreateClient();
+
+        foreach (var code in new[] { "NOBODY2", "DISABLED2", "ADMIN" })
+        {
+            hasher.Reset();
+            using var response = await client.PostAsJsonAsync(
+                "/api/v1/auth/login",
+                new { staffCode = code, secretKey = "Wrong-Secret-1" });
+            response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+            hasher.Verifications.ShouldBe(1, $"one hash check for {code}");
+        }
     }
 
     [Fact]
@@ -196,5 +225,24 @@ public sealed class AuthFlowTests : IAsyncLifetime
     private sealed class AheadTimeProvider(TimeSpan ahead) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => TimeProvider.System.GetUtcNow() + ahead;
+    }
+
+    /// <summary>The real hasher, counting verifications.</summary>
+    private sealed class CountingHasher : IPasswordHasher<StaffUser>
+    {
+        private readonly PasswordHasher<StaffUser> _inner = new();
+        private int _verifications;
+
+        public int Verifications => Volatile.Read(ref _verifications);
+
+        public void Reset() => Volatile.Write(ref _verifications, 0);
+
+        public string HashPassword(StaffUser user, string password) => _inner.HashPassword(user, password);
+
+        public PasswordVerificationResult VerifyHashedPassword(StaffUser user, string hashedPassword, string providedPassword)
+        {
+            Interlocked.Increment(ref _verifications);
+            return _inner.VerifyHashedPassword(user, hashedPassword, providedPassword);
+        }
     }
 }
