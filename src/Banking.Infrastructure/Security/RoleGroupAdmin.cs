@@ -48,7 +48,13 @@ public sealed record RoleGroupSummary(
     int MemberCount,
     long? PendingChangeRequestId);
 
-public sealed record RoleGroupDetail(RoleGroupSummary Group, IReadOnlyList<PermissionGrant> Permissions);
+public sealed record RoleGroupDetail(
+    RoleGroupSummary Group,
+    IReadOnlyList<PermissionGrant> Permissions,
+    IReadOnlyList<TransactionLimitValue> TransactionLimits);
+
+/// <summary>B0-02: a role group's transaction limits, as requested and as stored in the change request.</summary>
+public sealed record RoleGroupLimitsDraft(string RoleGroupCode, IReadOnlyList<TransactionLimitValue> Limits);
 
 public sealed record RoleGroupMember(long StaffUserId, string StaffCode, string FullName, int BranchId, string BranchCode);
 
@@ -169,7 +175,10 @@ public sealed class RoleGroupAdmin
             return null;
         }
 
-        return new RoleGroupDetail(summary, await MatrixAsync(roleGroupId, cancellationToken).ConfigureAwait(false));
+        return new RoleGroupDetail(
+            summary,
+            await MatrixAsync(roleGroupId, cancellationToken).ConfigureAwait(false),
+            await LimitsAsync(roleGroupId, cancellationToken).ConfigureAwait(false));
     }
 
     public async Task<IReadOnlyList<RoleGroupMember>> MembersAsync(int roleGroupId, CancellationToken cancellationToken) =>
@@ -265,6 +274,47 @@ public sealed class RoleGroupAdmin
                 ChangeRequestTypes.RoleGroupDeactivate,
                 before,
                 new { group.RoleGroupCode, IsActive = false },
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// B0-02: replaces a role group's transaction limits (plan B 2.2). A role-group change, so it waits for a different
+    /// approver like the permission matrix.
+    /// </summary>
+    public async Task<OperationResult<long>> RequestLimitsAsync(int roleGroupId, IReadOnlyList<TransactionLimitValue> limits, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(limits);
+
+        var group = await _db.Set<RoleGroup>().AsNoTracking()
+            .SingleOrDefaultAsync(row => row.RoleGroupId == roleGroupId, cancellationToken)
+            .ConfigureAwait(false);
+        if (group is null)
+        {
+            return OperationResult.Fail<long>(ProblemCodes.NotFound);
+        }
+
+        if (!group.IsActive)
+        {
+            return OperationResult.Fail<long>(ProblemCodes.RoleGroupInactive);
+        }
+
+        var normalized = limits
+            .Select(limit => limit with { LimitCode = (limit.LimitCode ?? string.Empty).Trim().ToUpperInvariant() })
+            .OrderBy(limit => limit.LimitCode, StringComparer.Ordinal)
+            .ToList();
+        var errors = TransactionLimitRules.Validate(normalized);
+        if (errors.Count > 0)
+        {
+            return OperationResult.Fail<long>(ProblemCodes.Validation, errors);
+        }
+
+        return await RequestAsync(
+                ChangeRequestEntities.RoleGroup,
+                Key(roleGroupId),
+                ChangeRequestTypes.RoleGroupLimitsReplace,
+                new RoleGroupLimitsDraft(group.RoleGroupCode, await LimitsAsync(roleGroupId, cancellationToken).ConfigureAwait(false)),
+                new RoleGroupLimitsDraft(group.RoleGroupCode, normalized),
                 cancellationToken)
             .ConfigureAwait(false);
     }
@@ -529,6 +579,35 @@ public sealed class RoleGroupAdmin
                 break;
             }
 
+            case ChangeRequestTypes.RoleGroupLimitsReplace:
+            {
+                var draft = JsonSerializer.Deserialize<RoleGroupLimitsDraft>(request.PayloadJson, Json)!;
+                var group = await _db.Set<RoleGroup>()
+                    .Include(row => row.TransactionLimits)
+                    .SingleAsync(row => row.RoleGroupCode == draft.RoleGroupCode, cancellationToken)
+                    .ConfigureAwait(false);
+
+                _db.Set<RoleGroupTransactionLimit>().RemoveRange(
+                    group.TransactionLimits.Where(row => draft.Limits.All(limit => limit.LimitCode != row.LimitCode)).ToList());
+                foreach (var limit in draft.Limits)
+                {
+                    var row = group.TransactionLimits.FirstOrDefault(item => item.LimitCode == limit.LimitCode);
+                    if (row is null)
+                    {
+                        group.TransactionLimits.Add(new RoleGroupTransactionLimit { LimitCode = limit.LimitCode, MaxAmount = limit.MaxAmount });
+                    }
+                    else
+                    {
+                        row.MaxAmount = limit.MaxAmount;
+                    }
+                }
+
+                group.IsSupervisionRequired = true;
+                group.SupervisedByUserId = approverId;
+                group.SupervisedOn = now;
+                break;
+            }
+
             case ChangeRequestTypes.StaffRoleGroupsReplace:
             {
                 var draft = JsonSerializer.Deserialize<AssignmentDraft>(request.PayloadJson, Json)!;
@@ -699,6 +778,15 @@ public sealed class RoleGroupAdmin
             group.RoleGroupName,
             group.Description,
             await MatrixAsync(group.RoleGroupId, cancellationToken).ConfigureAwait(false));
+
+    private async Task<IReadOnlyList<TransactionLimitValue>> LimitsAsync(int roleGroupId, CancellationToken cancellationToken) =>
+        await _db.Set<RoleGroupTransactionLimit>()
+            .AsNoTracking()
+            .Where(row => row.RoleGroupId == roleGroupId)
+            .OrderBy(row => row.LimitCode)
+            .Select(row => new TransactionLimitValue(row.LimitCode, row.MaxAmount))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
 
     private async Task<IReadOnlyList<PermissionGrant>> MatrixAsync(int roleGroupId, CancellationToken cancellationToken) =>
         await _db.Set<RoleGroupPermission>()

@@ -7,6 +7,7 @@ public static class ModuleCatalog
     public const string Party = "PTY";
     public const string Accounts = "ACC";
     public const string Ledger = "LED";
+    public const string Transactions = "TXN";
 
     public static readonly IReadOnlyList<ModuleDefinition> All =
     [
@@ -23,7 +24,8 @@ public static class ModuleCatalog
             new("BRANCHES", "Branches"),
             new("CURRENCIES", "Currencies"),
             new("CALENDAR", "Calendar"),
-            new("LOOKUPS", "Lookups")
+            new("LOOKUPS", "Lookups"),
+            new("EOD", "End of day")
         ]),
         new(Party, "Party and KYC", HasDataEntry: true,
         [
@@ -38,11 +40,23 @@ public static class ModuleCatalog
             new("PRODUCT", "Product"),
             new("ACCOUNT", "Account"),
             new("CONDITION", "Condition"),
-            new("CLASSIFICATION", "Classification")
+            new("CLASSIFICATION", "Classification"),
+            new("CHARGES", "Charges")
         ]),
         new(Ledger, "Ledger", HasDataEntry: true,
         [
-            new("CHART", "Chart")
+            new("CHART", "Chart"),
+            new("JOURNAL", "Journals"),
+            new("SETTINGS", "Ledger settings"),
+            new("REPORTS", "Ledger reports")
+        ]),
+        new(Transactions, "Transactions", HasDataEntry: true,
+        [
+            new("CASH", "Cash"),
+            new("TRANSFER", "Transfers"),
+            new("TILL", "Till"),
+            new("VAULT", "Vault"),
+            new("REVERSAL", "Reversals")
         ])
     ];
 }

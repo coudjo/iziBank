@@ -64,8 +64,8 @@ public sealed class LookupCodesTests
         var subModules = ModuleCatalog.All.SelectMany(module => module.SubModules.Select(sub => sub.Code)).ToArray();
         subModules.ShouldBe(subModules.Distinct(StringComparer.Ordinal), ignoreOrder: true);
         subModules.ShouldAllBe(code => code.Length > 0 && code.Length <= 20);
-        subModules.Length.ShouldBe(19);
-        ModuleCatalog.All.Count.ShouldBe(5);
+        subModules.Length.ShouldBe(29);
+        ModuleCatalog.All.Count.ShouldBe(6);
     }
 
     [Fact]

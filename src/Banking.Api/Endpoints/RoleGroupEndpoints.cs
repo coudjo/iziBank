@@ -21,6 +21,8 @@ internal sealed record RejectRequest(string? Reason);
 
 internal sealed record ChangeRequestAccepted(long ChangeRequestId);
 
+internal sealed record TransactionLimitsRequest(IReadOnlyList<TransactionLimitValue>? Limits);
+
 /// <summary>
 /// Role groups, assignments and their approvals (addendum section 5, tasks A2-09 and A2-10). Every change answers
 /// 202 with a change request; nothing takes effect until a different supervisor approves it.
@@ -61,6 +63,13 @@ internal static class RoleGroupEndpoints
             .RequirePermission(ModuleCatalog.Security, Permissions, PermissionAction.Edit)
             .Produces<ChangeRequestAccepted>(StatusCodes.Status202Accepted)
             .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        groups.MapPut("/{roleGroupId:int}/transaction-limits", LimitsAsync)
+            .RequirePermission(ModuleCatalog.Security, Permissions, PermissionAction.Edit)
+            .Produces<ChangeRequestAccepted>(StatusCodes.Status202Accepted)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         groups.MapPost("/{roleGroupId:int}/deactivate", DeactivateAsync)
@@ -149,6 +158,23 @@ internal static class RoleGroupEndpoints
                 cancellationToken)
             .ConfigureAwait(false);
         return Accepted(result);
+    }
+
+    private static async Task<IResult> LimitsAsync(
+        int roleGroupId,
+        TransactionLimitsRequest request,
+        RoleGroupAdmin admin,
+        CancellationToken cancellationToken)
+    {
+        if (request.Limits is null)
+        {
+            return ApiProblems.Validation(new Dictionary<string, string[]>(StringComparer.Ordinal)
+            {
+                ["limits"] = ["Send the full list of limits (an empty list removes them all)."]
+            });
+        }
+
+        return Accepted(await admin.RequestLimitsAsync(roleGroupId, request.Limits, cancellationToken).ConfigureAwait(false));
     }
 
     private static async Task<IResult> DeactivateAsync(int roleGroupId, RoleGroupAdmin admin, CancellationToken cancellationToken) =>

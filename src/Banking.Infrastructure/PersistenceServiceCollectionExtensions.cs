@@ -52,6 +52,7 @@ public static class PersistenceServiceCollectionExtensions
         services.TryAddScoped<AuthService>();
         services.TryAddScoped<SessionAdmin>();
         services.TryAddScoped<RoleGroupAdmin>();
+        services.TryAddScoped<TransactionLimitResolver>();
         services.TryAddScoped<StaffAdmin>();
         services.TryAddScoped<AuditQueries>();
         services.TryAddScoped<Banking.Infrastructure.Reference.LookupAdmin>();
@@ -68,6 +69,7 @@ public static class PersistenceServiceCollectionExtensions
         services.TryAddScoped<Banking.Infrastructure.Reference.BusinessDays>();
         services.TryAddScoped<Banking.Application.Abstractions.IWorkingDateProvider, Banking.Infrastructure.Reference.WorkingDateProvider>();
         services.TryAddScoped<Banking.Infrastructure.Ledger.LedgerAccountAdmin>();
+        services.TryAddScoped<Banking.Infrastructure.Ledger.LedgerSettingsAdmin>();
         services.TryAddScoped<Banking.Infrastructure.Products.ProductAdmin>();
         services.TryAddScoped<Banking.Infrastructure.Products.ProductRates>();
         services.TryAddScoped<Banking.Infrastructure.Accounts.AccountNumbers>();

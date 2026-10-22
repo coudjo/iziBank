@@ -13,7 +13,7 @@ public sealed class RoleGroupCatalogTests
         codes.Distinct(StringComparer.Ordinal).Count().ShouldBe(codes.Length);
         codes.ShouldAllBe(static code => code.Length <= 30);
         codes.ShouldBe(
-            ["TELLER", "FIELD_OFFICER", "KYC_OFFICER", "SUPERVISOR", "ADMINISTRATOR", "AUDITOR"],
+            ["TELLER", "FIELD_OFFICER", "KYC_OFFICER", "SUPERVISOR", "ADMINISTRATOR", "AUDITOR", "ACCOUNTANT"],
             ignoreOrder: true);
     }
 

@@ -27,7 +27,9 @@ public sealed class SchemaBaselineTests
         "KYCStatusType", "GenderType", "IdentificationDocumentType", "BusinessCategoryType",
         "GroupMemberRoleType", "ProductType", "RateType", "AccountHolderRoleType",
         "OperatingInstructionType", "OperatingModeType", "CloseReasonType",
-        "FreezeReleaseActionType", "LedgerAccountType"
+        "FreezeReleaseActionType", "LedgerAccountType",
+        "TransactionCode", "PostingRequest", "PostedTransaction", "AccountLedgerEntry", "LedgerEntry",
+        "LedgerAccountDailyBalance", "SystemLedgerSetting", "ProductLedgerSetting", "RoleGroupTransactionLimit"
     ];
 
     private readonly MsSqlContainerFixture _fixture;
@@ -76,6 +78,9 @@ public sealed class SchemaBaselineTests
 
         await AssertLedgerAsync(connection, "UserActivityLog");
         await AssertLedgerAsync(connection, "DataChangeAuditLog");
+        await AssertLedgerAsync(connection, "PostedTransaction");
+        await AssertLedgerAsync(connection, "AccountLedgerEntry");
+        await AssertLedgerAsync(connection, "LedgerEntry");
         await AssertSequencesAsync(connection);
         await AssertSection24Async(connection);
     }
@@ -112,7 +117,7 @@ public sealed class SchemaBaselineTests
             """);
 
         sequences.Select(row => Convert.ToString(row["name"], System.Globalization.CultureInfo.InvariantCulture))
-            .ShouldBe(["AccountNumberSequence", "PartyNumberSequence"], ignoreOrder: true);
+            .ShouldBe(["AccountNumberSequence", "PartyNumberSequence", "TransactionReferenceSequence"], ignoreOrder: true);
 
         foreach (var row in sequences)
         {
@@ -140,6 +145,13 @@ public sealed class SchemaBaselineTests
         checks.ShouldContain("CK_ProductInterestRate_EffectiveDates");
         checks.ShouldContain("CK_ProductInterestRate_AmountBand");
         checks.ShouldContain("CK_RoleGroupPermission_ViewImplied");
+        checks.ShouldContain("CK_PostingRequest_Amount");
+        checks.ShouldContain("CK_PostingRequest_Status");
+        checks.ShouldContain("CK_AccountLedgerEntry_Amount");
+        checks.ShouldContain("CK_AccountLedgerEntry_CrDb");
+        checks.ShouldContain("CK_LedgerEntry_Amount");
+        checks.ShouldContain("CK_LedgerEntry_CrDb");
+        checks.ShouldContain("CK_RoleGroupTransactionLimit_MaxAmount");
 
         var indexes = await QueryStringsAsync(
             connection,
@@ -168,6 +180,14 @@ public sealed class SchemaBaselineTests
         indexes.ShouldContain("IX_PartyRegulatoryAttribute_PartyId_AttributeCode_RecordedOn");
         indexes.ShouldContain("IX_UserActivityLog_SessionId_EventTimestamp");
         indexes.ShouldContain("IX_DataChangeAuditLog_TableName_RecordId_LoggedOn");
+        indexes.ShouldContain("UX_PostedTransaction_ReversesTransactionId");
+        indexes.ShouldContain("IX_AccountLedgerEntry_AccountId_EntryId");
+        indexes.ShouldContain("IX_LedgerEntry_Account_Branch_EntryDate");
+        indexes.ShouldContain("IX_PostingRequest_Branch_Status_WorkingDate");
+        indexes.ShouldContain("UX_LedgerAccountDailyBalance_Account_Branch_Date");
+        indexes.ShouldContain("UX_SystemLedgerSetting_Branch_Code");
+        indexes.ShouldContain("UX_ProductLedgerSetting_Product_Code");
+        indexes.ShouldContain("UX_RoleGroupTransactionLimit_Group_Code");
     }
 
     private static async Task<string[]> QueryStringsAsync(

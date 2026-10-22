@@ -16,6 +16,7 @@ public static class BankingModelConventions
     public const string CreatedOnDefaultSql = "SYSUTCDATETIME()";
     public const string PartyNumberSequence = "PartyNumberSequence";
     public const string AccountNumberSequence = "AccountNumberSequence";
+    public const string TransactionReferenceSequence = "TransactionReferenceSequence";
 
     public static void Configure(ModelConfigurationBuilder configurationBuilder)
     {
@@ -33,6 +34,7 @@ public static class BankingModelConventions
         modelBuilder.HasDefaultSchema(DefaultSchema);
         modelBuilder.HasSequence<long>(PartyNumberSequence, DefaultSchema).StartsAt(1).IncrementsBy(1);
         modelBuilder.HasSequence<long>(AccountNumberSequence, DefaultSchema).StartsAt(1).IncrementsBy(1);
+        modelBuilder.HasSequence<long>(TransactionReferenceSequence, DefaultSchema).StartsAt(1).IncrementsBy(1);
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes().ToArray())
         {

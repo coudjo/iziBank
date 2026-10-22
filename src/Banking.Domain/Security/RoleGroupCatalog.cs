@@ -14,6 +14,7 @@ public static class RoleGroupCatalog
     public const string Supervisor = "SUPERVISOR";
     public const string Administrator = "ADMINISTRATOR";
     public const string Auditor = "AUDITOR";
+    public const string Accountant = "ACCOUNTANT";
 
     private const string View = "V";
     private const string Add = "A";
@@ -23,13 +24,16 @@ public static class RoleGroupCatalog
 
     public static readonly IReadOnlyList<RoleGroupDefinition> All =
     [
-        new(Teller, "Teller", "Counter staff: look up and register customers, open accounts.",
+        new(Teller, "Teller", "Counter staff: look up and register customers, open accounts, take deposits and pay withdrawals.",
         [
             Grant(ModuleCatalog.Party, "PARTY", View, Add),
             Grant(ModuleCatalog.Accounts, "PRODUCT", View),
             Grant(ModuleCatalog.Accounts, "ACCOUNT", View, Add, Edit),
             Grant(ModuleCatalog.Accounts, "CONDITION", View),
-            Grant(ModuleCatalog.Ledger, "CHART", View)
+            Grant(ModuleCatalog.Ledger, "CHART", View),
+            Grant(ModuleCatalog.Transactions, "CASH", View, Add),
+            Grant(ModuleCatalog.Transactions, "TRANSFER", View, Add),
+            Grant(ModuleCatalog.Transactions, "TILL", View, Add)
         ]),
         new(FieldOfficer, "Field officer", "Registers customers and collects documents in the field.",
         [
@@ -45,14 +49,18 @@ public static class RoleGroupCatalog
             Grant(ModuleCatalog.Party, "PARTY", View, Supervise),
             Grant(ModuleCatalog.Party, "KYC", View, Supervise)
         ]),
-        new(Supervisor, "Supervisor", "Approves customer, account, condition and chart changes.",
+        new(Supervisor, "Supervisor", "Approves customer, account, condition and chart changes, postings over limits, vault movements and reversals; runs end of day.",
         [
             Grant(ModuleCatalog.Party, null, View, Add, Edit, Supervise),
             Grant(ModuleCatalog.Accounts, null, View, Add, Edit, Supervise),
             Grant(ModuleCatalog.Accounts, "ACCOUNT", View, Delete),
             Grant(ModuleCatalog.Accounts, "CONDITION", View, Edit, Supervise),
             Grant(ModuleCatalog.ReferenceData, "CALENDAR", View, Edit, Supervise),
-            Grant(ModuleCatalog.Ledger, "CHART", View, Add, Supervise)
+            Grant(ModuleCatalog.ReferenceData, "EOD", View, Add),
+            Grant(ModuleCatalog.Ledger, "CHART", View, Add, Supervise),
+            Grant(ModuleCatalog.Ledger, "JOURNAL", View, Add, Supervise),
+            Grant(ModuleCatalog.Ledger, "REPORTS", View),
+            Grant(ModuleCatalog.Transactions, null, View, Add, Supervise)
         ]),
         new(Administrator, "Administrator", "Manages users, role groups, reference data and products.",
         [
@@ -60,13 +68,25 @@ public static class RoleGroupCatalog
             Grant(ModuleCatalog.Security, "PERMISSIONS", Supervise),
             Grant(ModuleCatalog.ReferenceData, null, View, Add, Edit, Delete),
             Grant(ModuleCatalog.Accounts, "PRODUCT", View, Add, Edit, Delete, Supervise),
-            Grant(ModuleCatalog.Ledger, "CHART", View, Add, Edit, Delete, Supervise)
+            Grant(ModuleCatalog.Ledger, "CHART", View, Add, Edit, Delete, Supervise),
+            Grant(ModuleCatalog.Ledger, "SETTINGS", View, Edit),
+            Grant(ModuleCatalog.Accounts, "CHARGES", View, Edit)
         ]),
         new(Auditor, "Auditor", "Read-only access to audit, sessions and users.",
         [
             Grant(ModuleCatalog.Security, "AUDIT", View),
             Grant(ModuleCatalog.Security, "SESSIONS", View),
-            Grant(ModuleCatalog.Security, "USERS", View)
+            Grant(ModuleCatalog.Security, "USERS", View),
+            Grant(ModuleCatalog.Ledger, "REPORTS", View)
+        ]),
+        new(Accountant, "Accountant", "Keeps the books: journals, ledger settings, charge rules and ledger reports.",
+        [
+            Grant(ModuleCatalog.Ledger, "CHART", View),
+            Grant(ModuleCatalog.Ledger, "JOURNAL", View, Add),
+            Grant(ModuleCatalog.Ledger, "SETTINGS", View, Edit, Supervise),
+            Grant(ModuleCatalog.Ledger, "REPORTS", View),
+            Grant(ModuleCatalog.Accounts, "PRODUCT", View),
+            Grant(ModuleCatalog.Accounts, "CHARGES", View, Edit, Supervise)
         ])
     ];
 

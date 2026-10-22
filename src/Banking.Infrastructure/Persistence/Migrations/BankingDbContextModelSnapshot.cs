@@ -27,6 +27,8 @@ namespace Banking.Infrastructure.Persistence.Migrations
 
             modelBuilder.HasSequence("PartyNumberSequence", "dbo");
 
+            modelBuilder.HasSequence("TransactionReferenceSequence", "dbo");
+
             modelBuilder.Entity("Banking.Domain.Accounts.Account", b =>
                 {
                     b.Property<long>("AccountId")
@@ -995,6 +997,104 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.HasIndex("SupervisedByUserId");
 
                     b.ToTable("LedgerAccount", "dbo");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Ledger.ProductLedgerSetting", b =>
+                {
+                    b.Property<long>("ProductLedgerSettingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("ProductLedgerSettingId"));
+
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<long>("LedgerAccountId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SettingCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
+
+                    b.HasKey("ProductLedgerSettingId");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("LedgerAccountId");
+
+                    b.HasIndex("ModifiedByUserId");
+
+                    b.HasIndex("ProductId", "SettingCode")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ProductLedgerSetting_Product_Code");
+
+                    b.ToTable("ProductLedgerSetting", "dbo");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Ledger.SystemLedgerSetting", b =>
+                {
+                    b.Property<long>("SystemLedgerSettingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("SystemLedgerSettingId"));
+
+                    b.Property<int>("BranchId")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<long>("LedgerAccountId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SettingCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
+
+                    b.HasKey("SystemLedgerSettingId");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("LedgerAccountId");
+
+                    b.HasIndex("ModifiedByUserId");
+
+                    b.HasIndex("BranchId", "SettingCode")
+                        .IsUnique()
+                        .HasDatabaseName("UX_SystemLedgerSetting_Branch_Code");
+
+                    b.ToTable("SystemLedgerSetting", "dbo");
                 });
 
             modelBuilder.Entity("Banking.Domain.Lookups.AccountHolderRoleType", b =>
@@ -2861,6 +2961,57 @@ namespace Banking.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Banking.Domain.Security.RoleGroupTransactionLimit", b =>
+                {
+                    b.Property<long>("RoleGroupTransactionLimitId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("RoleGroupTransactionLimitId"));
+
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("LimitCode")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<decimal>("MaxAmount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)");
+
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("RoleGroupId")
+                        .HasColumnType("int");
+
+                    b.HasKey("RoleGroupTransactionLimitId");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("ModifiedByUserId");
+
+                    b.HasIndex("RoleGroupId", "LimitCode")
+                        .IsUnique()
+                        .HasDatabaseName("UX_RoleGroupTransactionLimit_Group_Code");
+
+                    b.ToTable("RoleGroupTransactionLimit", "dbo", t =>
+                        {
+                            t.HasCheckConstraint("CK_RoleGroupTransactionLimit_MaxAmount", "[MaxAmount] > 0");
+                        });
+                });
+
             modelBuilder.Entity("Banking.Domain.Security.StaffUser", b =>
                 {
                     b.Property<long>("StaffUserId")
@@ -3273,6 +3424,382 @@ namespace Banking.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("IX_ChangeRequest_Status_RequestedOn");
 
                     b.ToTable("ChangeRequest", "dbo");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Transactions.AccountLedgerEntry", b =>
+                {
+                    b.Property<long>("AccountLedgerEntryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("AccountLedgerEntryId"));
+
+                    b.Property<long>("AccountId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)");
+
+                    b.Property<decimal>("BalanceAfter")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)");
+
+                    b.Property<int>("BranchId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CrDb")
+                        .IsRequired()
+                        .HasMaxLength(1)
+                        .IsUnicode(false)
+                        .HasColumnType("char(1)")
+                        .IsFixedLength();
+
+                    b.Property<DateOnly>("EntryDate")
+                        .HasColumnType("date");
+
+                    b.Property<long>("PostedTransactionId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("TransactionCodeId")
+                        .HasColumnType("int");
+
+                    b.HasKey("AccountLedgerEntryId");
+
+                    b.HasIndex("PostedTransactionId");
+
+                    b.HasIndex("AccountId", "AccountLedgerEntryId")
+                        .HasDatabaseName("IX_AccountLedgerEntry_AccountId_EntryId");
+
+                    b.HasIndex("BranchId", "EntryDate")
+                        .HasDatabaseName("IX_AccountLedgerEntry_BranchId_EntryDate");
+
+                    b.ToTable("AccountLedgerEntry", "dbo", t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
+            modelBuilder.Entity("Banking.Domain.Transactions.LedgerAccountDailyBalance", b =>
+                {
+                    b.Property<long>("LedgerAccountDailyBalanceId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("LedgerAccountDailyBalanceId"));
+
+                    b.Property<DateOnly>("BalanceDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("BranchId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("ClosingBalance")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)");
+
+                    b.Property<long>("LedgerAccountId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("LedgerAccountDailyBalanceId");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("LedgerAccountId", "BranchId", "BalanceDate")
+                        .IsUnique()
+                        .HasDatabaseName("UX_LedgerAccountDailyBalance_Account_Branch_Date");
+
+                    b.ToTable("LedgerAccountDailyBalance", "dbo");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Transactions.LedgerEntry", b =>
+                {
+                    b.Property<long>("LedgerEntryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("LedgerEntryId"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)");
+
+                    b.Property<int>("BranchId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CrDb")
+                        .IsRequired()
+                        .HasMaxLength(1)
+                        .IsUnicode(false)
+                        .HasColumnType("char(1)")
+                        .IsFixedLength();
+
+                    b.Property<DateOnly>("EntryDate")
+                        .HasColumnType("date");
+
+                    b.Property<long>("LedgerAccountId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("PostedTransactionId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("LedgerEntryId");
+
+                    b.HasIndex("PostedTransactionId");
+
+                    b.HasIndex("BranchId", "EntryDate")
+                        .HasDatabaseName("IX_LedgerEntry_BranchId_EntryDate");
+
+                    b.HasIndex("LedgerAccountId", "BranchId", "EntryDate")
+                        .HasDatabaseName("IX_LedgerEntry_Account_Branch_EntryDate");
+
+                    b.ToTable("LedgerEntry", "dbo", t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
+            modelBuilder.Entity("Banking.Domain.Transactions.PostedTransaction", b =>
+                {
+                    b.Property<long>("PostedTransactionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("PostedTransactionId"));
+
+                    b.Property<int>("BranchId")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly>("EntryDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Narration")
+                        .HasMaxLength(200)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<long?>("OperatorStaffUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("PostedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long?>("PostingRequestId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<long?>("ReversesTransactionId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("SupervisorStaffUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("TransactionCodeId")
+                        .HasColumnType("int");
+
+                    b.HasKey("PostedTransactionId");
+
+                    b.HasIndex("PostingRequestId");
+
+                    b.HasIndex("Reference")
+                        .IsUnique();
+
+                    b.HasIndex("TransactionCodeId");
+
+                    b.HasIndex("BranchId", "EntryDate")
+                        .HasDatabaseName("IX_PostedTransaction_BranchId_EntryDate");
+
+                    b.ToTable("PostedTransaction", "dbo", t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
+            modelBuilder.Entity("Banking.Domain.Transactions.PostingRequest", b =>
+                {
+                    b.Property<long>("PostingRequestId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("PostingRequestId"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)");
+
+                    b.Property<int>("BranchId")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("DecisionReason")
+                        .HasMaxLength(300)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PayloadJson")
+                        .IsRequired()
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long?>("PostedTransactionId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<long>("RequestedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("RequestedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<long?>("SupervisedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("SupervisedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("TransactionCodeId")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly>("WorkingDate")
+                        .HasColumnType("date");
+
+                    b.HasKey("PostingRequestId");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("ModifiedByUserId");
+
+                    b.HasIndex("PostedTransactionId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_PostingRequest_PostedTransactionId")
+                        .HasFilter("[PostedTransactionId] IS NOT NULL");
+
+                    b.HasIndex("Reference")
+                        .IsUnique();
+
+                    b.HasIndex("RequestedByUserId");
+
+                    b.HasIndex("SupervisedByUserId");
+
+                    b.HasIndex("TransactionCodeId");
+
+                    b.HasIndex("BranchId", "Status", "WorkingDate")
+                        .HasDatabaseName("IX_PostingRequest_Branch_Status_WorkingDate");
+
+                    b.ToTable("PostingRequest", "dbo", t =>
+                        {
+                            t.HasCheckConstraint("CK_PostingRequest_Amount", "[Amount] > 0");
+
+                            t.HasCheckConstraint("CK_PostingRequest_Status", "[Status] IN ('PENDING', 'POSTED', 'REJECTED', 'CANCELLED', 'EXPIRED')");
+                        });
+                });
+
+            modelBuilder.Entity("Banking.Domain.Transactions.TransactionCode", b =>
+                {
+                    b.Property<int>("TransactionCodeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TransactionCodeId"));
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("DefaultNarration")
+                        .HasMaxLength(100)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsSystemCode")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("TransactionCodeId");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("ModifiedByUserId");
+
+                    b.ToTable("TransactionCode", "dbo");
                 });
 
             modelBuilder.Entity("Banking.Domain.Accounts.Account", b =>
@@ -3701,6 +4228,64 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.Navigation("LedgerAccountType");
 
                     b.Navigation("SupervisedByUser");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Ledger.ProductLedgerSetting", b =>
+                {
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Ledger.LedgerAccount", "LedgerAccount")
+                        .WithMany()
+                        .HasForeignKey("LedgerAccountId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("ModifiedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Products.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("LedgerAccount");
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Ledger.SystemLedgerSetting", b =>
+                {
+                    b.HasOne("Banking.Domain.Institution.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Ledger.LedgerAccount", "LedgerAccount")
+                        .WithMany()
+                        .HasForeignKey("LedgerAccountId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("ModifiedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("Branch");
+
+                    b.Navigation("LedgerAccount");
                 });
 
             modelBuilder.Entity("Banking.Domain.Parties.BusinessDetail", b =>
@@ -4274,6 +4859,27 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.Navigation("SubModule");
                 });
 
+            modelBuilder.Entity("Banking.Domain.Security.RoleGroupTransactionLimit", b =>
+                {
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("ModifiedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Security.RoleGroup", "RoleGroup")
+                        .WithMany("TransactionLimits")
+                        .HasForeignKey("RoleGroupId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("RoleGroup");
+                });
+
             modelBuilder.Entity("Banking.Domain.Security.StaffUser", b =>
                 {
                     b.HasOne("Banking.Domain.Institution.Branch", "Branch")
@@ -4442,6 +5048,146 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.Navigation("RequestedByUser");
                 });
 
+            modelBuilder.Entity("Banking.Domain.Transactions.AccountLedgerEntry", b =>
+                {
+                    b.HasOne("Banking.Domain.Accounts.Account", "Account")
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Transactions.PostedTransaction", "Transaction")
+                        .WithMany("AccountEntries")
+                        .HasForeignKey("PostedTransactionId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Account");
+
+                    b.Navigation("Transaction");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Transactions.LedgerAccountDailyBalance", b =>
+                {
+                    b.HasOne("Banking.Domain.Institution.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Ledger.LedgerAccount", "LedgerAccount")
+                        .WithMany()
+                        .HasForeignKey("LedgerAccountId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Branch");
+
+                    b.Navigation("LedgerAccount");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Transactions.LedgerEntry", b =>
+                {
+                    b.HasOne("Banking.Domain.Ledger.LedgerAccount", "LedgerAccount")
+                        .WithMany()
+                        .HasForeignKey("LedgerAccountId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Transactions.PostedTransaction", "Transaction")
+                        .WithMany("LedgerEntries")
+                        .HasForeignKey("PostedTransactionId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("LedgerAccount");
+
+                    b.Navigation("Transaction");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Transactions.PostedTransaction", b =>
+                {
+                    b.HasOne("Banking.Domain.Institution.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Transactions.PostingRequest", "PostingRequest")
+                        .WithMany()
+                        .HasForeignKey("PostingRequestId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Transactions.TransactionCode", "TransactionCode")
+                        .WithMany()
+                        .HasForeignKey("TransactionCodeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Branch");
+
+                    b.Navigation("PostingRequest");
+
+                    b.Navigation("TransactionCode");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Transactions.PostingRequest", b =>
+                {
+                    b.HasOne("Banking.Domain.Institution.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("ModifiedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", "RequestedByUser")
+                        .WithMany()
+                        .HasForeignKey("RequestedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", "SupervisedByUser")
+                        .WithMany()
+                        .HasForeignKey("SupervisedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Transactions.TransactionCode", "TransactionCode")
+                        .WithMany()
+                        .HasForeignKey("TransactionCodeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Branch");
+
+                    b.Navigation("RequestedByUser");
+
+                    b.Navigation("SupervisedByUser");
+
+                    b.Navigation("TransactionCode");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Transactions.TransactionCode", b =>
+                {
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("ModifiedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+                });
+
             modelBuilder.Entity("Banking.Domain.Accounts.Account", b =>
                 {
                     b.Navigation("Balance");
@@ -4510,11 +5256,20 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.Navigation("Members");
 
                     b.Navigation("Permissions");
+
+                    b.Navigation("TransactionLimits");
                 });
 
             modelBuilder.Entity("Banking.Domain.Security.StaffUser", b =>
                 {
                     b.Navigation("RoleGroups");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Transactions.PostedTransaction", b =>
+                {
+                    b.Navigation("AccountEntries");
+
+                    b.Navigation("LedgerEntries");
                 });
 #pragma warning restore 612, 618
         }

@@ -770,6 +770,185 @@ Table LedgerAccountType {
 }
 
 // ---------------------------------------------------------------------------
+// Phase B: postings (B0-01, plan B 2.1). The three ledgers are SQL Server
+// append-only ledger tables; a row exists only once posted (ADR B-1).
+// ---------------------------------------------------------------------------
+
+Table TransactionCode {
+  TransactionCodeId int [pk, increment]
+  Code varchar(20) [not null, unique]
+  Description varchar(100) [not null]
+  Category varchar(20) [not null, note: 'CASH, TRANSFER, CORRECTION, TILL, CHARGE, INTEREST']
+  DefaultNarration nvarchar(100)
+  IsSystemCode bool [not null, default: false]
+  IsActive bool [not null, default: true]
+  CreatedByUserId bigint
+  CreatedOn datetime2 [not null]
+  ModifiedByUserId bigint
+  ModifiedOn datetime2
+}
+
+Table PostingRequest {
+  PostingRequestId bigint [pk, increment]
+  Reference varchar(30) [not null, unique]
+  BranchId int [not null]
+  WorkingDate date [not null]
+  TransactionCodeId int [not null]
+  Amount decimal(19,4) [not null, note: '> 0']
+  PayloadJson nvarchar(max) [not null]
+  Status varchar(20) [not null, note: 'PENDING, POSTED, REJECTED, CANCELLED, EXPIRED']
+  PostedTransactionId bigint [note: 'unique when set']
+  RequestedByUserId bigint [not null]
+  RequestedOn datetime2 [not null]
+  SupervisedByUserId bigint
+  SupervisedOn datetime2
+  DecisionReason nvarchar(300)
+  RowVersion rowversion
+  CreatedByUserId bigint
+  CreatedOn datetime2 [not null]
+  ModifiedByUserId bigint
+  ModifiedOn datetime2
+  Indexes {
+    (BranchId, Status, WorkingDate)
+  }
+  Note: 'Maker-checker record for every money movement. Mutable.'
+}
+
+Table PostedTransaction {
+  PostedTransactionId bigint [pk, increment]
+  Reference varchar(30) [not null, unique]
+  PostingRequestId bigint
+  BranchId int [not null]
+  EntryDate date [not null]
+  TransactionCodeId int [not null]
+  Narration nvarchar(200)
+  ReversesTransactionId bigint [note: 'unique when set: reversed at most once']
+  OperatorStaffUserId bigint
+  SupervisorStaffUserId bigint
+  PostedOn datetime2 [not null]
+  Indexes {
+    (BranchId, EntryDate)
+  }
+  Note: 'LEDGER - append-only. One row per posting (journal header).'
+}
+
+Table AccountLedgerEntry {
+  AccountLedgerEntryId bigint [pk, increment]
+  PostedTransactionId bigint [not null]
+  AccountId bigint [not null]
+  BranchId int [not null, note: 'the account branch']
+  EntryDate date [not null]
+  CrDb char(1) [not null, note: 'C or D']
+  Amount decimal(19,4) [not null, note: '> 0']
+  BalanceAfter decimal(19,4) [not null, note: 'ClearBalance after this line']
+  TransactionCodeId int [not null]
+  Indexes {
+    (AccountId, AccountLedgerEntryId)
+    (BranchId, EntryDate)
+  }
+  Note: 'LEDGER - append-only. Customer sub-ledger.'
+}
+
+Table LedgerEntry {
+  LedgerEntryId bigint [pk, increment]
+  PostedTransactionId bigint [not null]
+  LedgerAccountId bigint [not null]
+  BranchId int [not null, note: 'the branch the line belongs to; each branch balances']
+  EntryDate date [not null]
+  CrDb char(1) [not null]
+  Amount decimal(19,4) [not null, note: '> 0']
+  Indexes {
+    (LedgerAccountId, BranchId, EntryDate)
+    (BranchId, EntryDate)
+  }
+  Note: 'LEDGER - append-only. General ledger.'
+}
+
+Table LedgerAccountDailyBalance {
+  LedgerAccountDailyBalanceId bigint [pk, increment]
+  LedgerAccountId bigint [not null]
+  BranchId int [not null]
+  BalanceDate date [not null]
+  ClosingBalance decimal(19,4) [not null]
+  Indexes {
+    (LedgerAccountId, BranchId, BalanceDate) [unique]
+  }
+  Note: 'Written by end of day only (ADR B-2).'
+}
+
+Ref: PostingRequest.BranchId > Branch.BranchId
+Ref: PostingRequest.TransactionCodeId > TransactionCode.TransactionCodeId
+Ref: PostingRequest.RequestedByUserId > StaffUser.StaffUserId
+Ref: PostingRequest.SupervisedByUserId > StaffUser.StaffUserId
+Ref: PostingRequest.PostedTransactionId - PostedTransaction.PostedTransactionId
+Ref: PostedTransaction.PostingRequestId > PostingRequest.PostingRequestId
+Ref: PostedTransaction.BranchId > Branch.BranchId
+Ref: PostedTransaction.TransactionCodeId > TransactionCode.TransactionCodeId
+Ref: PostedTransaction.ReversesTransactionId - PostedTransaction.PostedTransactionId
+Ref: PostedTransaction.OperatorStaffUserId > StaffUser.StaffUserId
+Ref: PostedTransaction.SupervisorStaffUserId > StaffUser.StaffUserId
+Ref: AccountLedgerEntry.PostedTransactionId > PostedTransaction.PostedTransactionId
+Ref: AccountLedgerEntry.AccountId > Account.AccountId
+Ref: AccountLedgerEntry.BranchId > Branch.BranchId
+Ref: AccountLedgerEntry.TransactionCodeId > TransactionCode.TransactionCodeId
+Ref: LedgerEntry.PostedTransactionId > PostedTransaction.PostedTransactionId
+Ref: LedgerEntry.LedgerAccountId > LedgerAccount.LedgerAccountId
+Ref: LedgerEntry.BranchId > Branch.BranchId
+Ref: LedgerAccountDailyBalance.LedgerAccountId > LedgerAccount.LedgerAccountId
+Ref: LedgerAccountDailyBalance.BranchId > Branch.BranchId
+
+Table SystemLedgerSetting {
+  SystemLedgerSettingId bigint [pk, increment]
+  BranchId int [not null]
+  SettingCode varchar(20) [not null, note: 'VAULT, INTER_BRANCH, CASH_SHORT, CASH_OVER, WHT_PAYABLE, SUSPENSE']
+  LedgerAccountId bigint [not null]
+  CreatedByUserId bigint
+  CreatedOn datetime2 [not null]
+  ModifiedByUserId bigint
+  ModifiedOn datetime2
+  Indexes {
+    (BranchId, SettingCode) [unique]
+  }
+  Note: 'B0-02. Written only when a BRANCH_LEDGER_SETTINGS change request is approved.'
+}
+
+Table ProductLedgerSetting {
+  ProductLedgerSettingId bigint [pk, increment]
+  ProductId int [not null]
+  SettingCode varchar(20) [not null, note: 'INTEREST_EXPENSE, INTEREST_PAYABLE, CHARGE_INCOME']
+  LedgerAccountId bigint [not null]
+  CreatedByUserId bigint
+  CreatedOn datetime2 [not null]
+  ModifiedByUserId bigint
+  ModifiedOn datetime2
+  Indexes {
+    (ProductId, SettingCode) [unique]
+  }
+  Note: 'B0-02. Replaces ProductGLSetting and ProductLedgerSettingDetail. Written only when a PRODUCT_LEDGER_SETTINGS change request is approved.'
+}
+
+Table RoleGroupTransactionLimit {
+  RoleGroupTransactionLimitId bigint [pk, increment]
+  RoleGroupId int [not null]
+  LimitCode varchar(30) [not null, note: 'CASH_DEPOSIT, CASH_WITHDRAWAL, TRANSFER']
+  MaxAmount decimal(19,4) [not null, note: '> 0']
+  CreatedByUserId bigint
+  CreatedOn datetime2 [not null]
+  ModifiedByUserId bigint
+  ModifiedOn datetime2
+  Indexes {
+    (RoleGroupId, LimitCode) [unique]
+  }
+  Note: 'B0-02. Largest across a person approved groups in the branch applies. Changed through ROLE_GROUP_LIMITS change requests.'
+}
+
+Ref: SystemLedgerSetting.BranchId > Branch.BranchId
+Ref: SystemLedgerSetting.LedgerAccountId > LedgerAccount.LedgerAccountId
+Ref: ProductLedgerSetting.ProductId > Product.ProductId
+Ref: ProductLedgerSetting.LedgerAccountId > LedgerAccount.LedgerAccountId
+Ref: RoleGroupTransactionLimit.RoleGroupId > RoleGroup.RoleGroupId
+
+// ---------------------------------------------------------------------------
 // Later phases — do not create in Phase A
 // ---------------------------------------------------------------------------
 
@@ -802,16 +981,6 @@ Table ProductChargeTier {
   MaximumCharge decimal(19,4)
 }
 
-Table TransactionCode {
-  TransactionCodeId int [pk, increment]
-  Code varchar(10) [not null, unique]
-  Description varchar(100)
-  TransactionCategoryId int
-  CreditOrDebit char(1) [not null]
-  DefaultNarration varchar(100)
-  IsSystemCode bool [not null, default: false]
-}
-
 Table TransactionCodeChargeTier {
   TransactionCodeChargeTierId bigint [pk, increment]
   TransactionCodeId int [not null]
@@ -820,59 +989,6 @@ Table TransactionCodeChargeTier {
   Amount decimal(19,4)
   Percentage decimal(9,4)
   IncomeLedgerAccountId bigint
-}
-
-Table AccountLedgerEntry {
-  LedgerEntryId bigint [pk, increment]
-  AccountId bigint [not null]
-  TransactionCodeId int [not null]
-  Amount decimal(19,4) [not null]
-  CreditOrDebit char(1) [not null]
-  EntryDate date [not null]
-  VoucherId varchar(20)
-  TellerLedgerAccountId bigint
-  ReversesEntryId bigint
-  EntryStatusId int [not null]
-  OperatorStaffUserId bigint
-  SupervisorStaffUserId bigint
-  Note: 'LEDGER - append-only, partitioned by EntryDate (monthly)'
-}
-
-Table LedgerEntry {
-  LedgerEntryId bigint [pk, increment]
-  LedgerAccountId bigint [not null]
-  TransactionCodeId int [not null]
-  Amount decimal(19,4) [not null]
-  CrDb char(1) [not null]
-  EntryDate date [not null]
-  ReversesEntryId bigint
-  EntryStatusId int [not null]
-  OperatorStaffUserId bigint
-  SupervisorStaffUserId bigint
-  Note: 'LEDGER - append-only, partitioned by EntryDate (monthly)'
-}
-
-Table PendingInterBranchEntry {
-  PendingEntryId bigint [pk, increment]
-  AccountId bigint [not null]
-  ProductId int
-  Amount decimal(19,4) [not null]
-  CrDb char(1) [not null]
-  TransactionCodeId int
-  OtherBranchId int [not null]
-  OtherBranchAccountId bigint
-  EntryStatusId int
-}
-
-Table SavedTransferEntry {
-  SavedTransferEntryId bigint [pk, increment]
-  BranchId int [not null]
-  AccountId bigint [not null]
-  ProductId int
-  Amount decimal(19,4) [not null]
-  CrDb char(1) [not null]
-  TransactionCodeId int
-  EntryStatusId int
 }
 
 Table LoanApplication {
@@ -1198,27 +1314,6 @@ Table InterestProcedure {
   ProcedureCategoryId int
 }
 
-Table ProductGLSetting {
-  ProductGLSettingId int [pk, increment]
-  SettingDescription varchar(50) [not null, unique]
-}
-
-Table ProductLedgerSettingDetail {
-  SettingDetailId bigint [pk, increment]
-  BranchId int [not null]
-  ProductId int [not null]
-  ProductLedgerSettingId int [not null]
-  LedgerAccountId bigint
-}
-
-Table SystemLedgerSetting {
-  SystemLedgerSettingId bigint [pk, increment]
-  BranchId int [not null]
-  SettingCode varchar(10) [not null, unique]
-  LedgerAccountId bigint
-  Description varchar(100)
-}
-
 Table ChargeCategoryType {
   Id int [pk, increment]
   Code varchar(30) [not null, unique]
@@ -1427,7 +1522,6 @@ Ref: ProductCharge.ChargeId > ChargeCode.ChargeId
 Ref: ProductCharge.ChargeConditionId > ChargeConditionType.Id
 Ref: ProductChargeTier.ProductChargeId > ProductCharge.ProductChargeId
 Ref: ProductChargeTier.ChargeBasisId > ChargeBasisType.Id
-Ref: TransactionCode.TransactionCategoryId > TransactionCategoryType.Id
 Ref: TransactionCodeChargeTier.TransactionCodeId > TransactionCode.TransactionCodeId
 Ref: TransactionCodeChargeTier.ChargeBasisId > ChargeBasisType.Id
 Ref: TransactionCodeChargeTier.IncomeLedgerAccountId > LedgerAccount.LedgerAccountId
@@ -1457,30 +1551,6 @@ Ref: FreezeReleaseAccountBalance.FreezeReleaseActionId > FreezeReleaseActionType
 Ref: LedgerAccount.BranchId > Branch.BranchId
 Ref: LedgerAccount.LedgerAccountTypeId > LedgerAccountType.Id
 Ref: LedgerAccount.CurrencyId > Currency.CurrencyId
-Ref: AccountLedgerEntry.AccountId > Account.AccountId
-Ref: AccountLedgerEntry.TransactionCodeId > TransactionCode.TransactionCodeId
-Ref: AccountLedgerEntry.TellerLedgerAccountId > LedgerAccount.LedgerAccountId
-Ref: AccountLedgerEntry.ReversesEntryId > AccountLedgerEntry.LedgerEntryId
-Ref: AccountLedgerEntry.EntryStatusId > EntryStatusType.Id
-Ref: AccountLedgerEntry.OperatorStaffUserId > StaffUser.StaffUserId
-Ref: AccountLedgerEntry.SupervisorStaffUserId > StaffUser.StaffUserId
-Ref: LedgerEntry.LedgerAccountId > LedgerAccount.LedgerAccountId
-Ref: LedgerEntry.TransactionCodeId > TransactionCode.TransactionCodeId
-Ref: LedgerEntry.ReversesEntryId > LedgerEntry.LedgerEntryId
-Ref: LedgerEntry.EntryStatusId > EntryStatusType.Id
-Ref: LedgerEntry.OperatorStaffUserId > StaffUser.StaffUserId
-Ref: LedgerEntry.SupervisorStaffUserId > StaffUser.StaffUserId
-Ref: PendingInterBranchEntry.AccountId > Account.AccountId
-Ref: PendingInterBranchEntry.ProductId > Product.ProductId
-Ref: PendingInterBranchEntry.TransactionCodeId > TransactionCode.TransactionCodeId
-Ref: PendingInterBranchEntry.OtherBranchId > Branch.BranchId
-Ref: PendingInterBranchEntry.OtherBranchAccountId > Account.AccountId
-Ref: PendingInterBranchEntry.EntryStatusId > EntryStatusType.Id
-Ref: SavedTransferEntry.BranchId > Branch.BranchId
-Ref: SavedTransferEntry.AccountId > Account.AccountId
-Ref: SavedTransferEntry.ProductId > Product.ProductId
-Ref: SavedTransferEntry.TransactionCodeId > TransactionCode.TransactionCodeId
-Ref: SavedTransferEntry.EntryStatusId > EntryStatusType.Id
 Ref: LoanApplication.BranchId > Branch.BranchId
 Ref: LoanApplication.PartyId > Party.PartyId
 Ref: LoanApplication.ProductId > Product.ProductId
@@ -1563,12 +1633,6 @@ Ref: ReportPermission.BranchId > Branch.BranchId
 Ref: ReportPermission.StaffUserId > StaffUser.StaffUserId
 Ref: ReportPermission.ReportId > ReportDefinition.ReportId
 Ref: InterestProcedure.ProcedureCategoryId > ProcedureCategoryType.Id
-Ref: ProductLedgerSettingDetail.BranchId > Branch.BranchId
-Ref: ProductLedgerSettingDetail.ProductId > Product.ProductId
-Ref: ProductLedgerSettingDetail.ProductLedgerSettingId > ProductGLSetting.ProductGLSettingId
-Ref: ProductLedgerSettingDetail.LedgerAccountId > LedgerAccount.LedgerAccountId
-Ref: SystemLedgerSetting.BranchId > Branch.BranchId
-Ref: SystemLedgerSetting.LedgerAccountId > LedgerAccount.LedgerAccountId
 
 // Unique indexes declared outside CREATE TABLE
 // BusinessDayStatus: UNIQUE INDEX BusinessDayStatus_index_0 (BranchId, WorkingDate)

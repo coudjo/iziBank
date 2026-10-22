@@ -121,6 +121,7 @@ try
     api.MapAdminEndpoints();
     api.MapReferenceEndpoints();
     api.MapLedgerEndpoints();
+    api.MapLedgerSettingsEndpoints();
     api.MapProductEndpoints();
     api.MapAccountEndpoints();
     api.MapPartyEndpoints();

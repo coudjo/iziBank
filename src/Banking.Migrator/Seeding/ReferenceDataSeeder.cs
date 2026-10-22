@@ -1,5 +1,6 @@
 using Banking.Domain.Lookups;
 using Banking.Domain.Security;
+using Banking.Domain.Transactions;
 using Banking.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -51,6 +52,7 @@ internal static class ReferenceDataSeeder
             .ConfigureAwait(false);
 
         await SeedEventTypesAsync(context, createdOn, cancellationToken).ConfigureAwait(false);
+        await SeedTransactionCodesAsync(context, createdOn, cancellationToken).ConfigureAwait(false);
         await SeedModulesAsync(context, createdOn, cancellationToken).ConfigureAwait(false);
 
         if (context.ChangeTracker.HasChanges())
@@ -182,6 +184,33 @@ internal static class ReferenceDataSeeder
             {
                 EventCode = code,
                 EventName = LookupCodes.ToDisplayName(code),
+                CreatedOn = createdOn
+            });
+        }
+    }
+
+    /// <summary>Plan B section 7: system transaction codes, created when missing and never changed afterwards.</summary>
+    private static async Task SeedTransactionCodesAsync(
+        BankingDbContext context,
+        DateTime createdOn,
+        CancellationToken cancellationToken)
+    {
+        var existing = (await context.Set<TransactionCode>()
+                .AsNoTracking()
+                .Select(row => row.Code)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false))
+            .ToHashSet(StringComparer.Ordinal);
+
+        foreach (var definition in TransactionCodes.All.Where(definition => !existing.Contains(definition.Code)))
+        {
+            context.Set<TransactionCode>().Add(new TransactionCode
+            {
+                Code = definition.Code,
+                Description = definition.Description,
+                Category = definition.Category,
+                IsSystemCode = true,
+                IsActive = true,
                 CreatedOn = createdOn
             });
         }

@@ -56,6 +56,9 @@ public static class ChangeRequestTypes
     public const string StaffRoleGroupsReplace = "STAFF_ROLE_GROUPS_REPLACE";
     public const string LedgerAccountRename = "LEDGER_ACCOUNT_RENAME";
     public const string ProductUpdate = "PRODUCT_UPDATE";
+    public const string RoleGroupLimitsReplace = "ROLE_GROUP_LIMITS";
+    public const string BranchLedgerSettingsReplace = "BRANCH_LEDGER_SETTINGS";
+    public const string ProductLedgerSettingsReplace = "PRODUCT_LEDGER_SETTINGS";
 }
 
 public static class ChangeRequestEntities
@@ -64,6 +67,8 @@ public static class ChangeRequestEntities
     public const string StaffBranchAssignment = "StaffBranchAssignment";
     public const string LedgerAccount = "LedgerAccount";
     public const string Product = "Product";
+    public const string BranchLedgerSettings = "BranchLedgerSettings";
+    public const string ProductLedgerSettings = "ProductLedgerSettings";
 
     /// <summary>Change requests handled by the security approval screens (SEC/PERMISSIONS).</summary>
     public static readonly IReadOnlyList<string> Security = [RoleGroup, StaffBranchAssignment];

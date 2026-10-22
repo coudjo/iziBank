@@ -5,6 +5,7 @@ using Banking.Domain.Lookups;
 using Banking.Domain.Parties;
 using Banking.Domain.Products;
 using Banking.Domain.Security;
+using Banking.Domain.Transactions;
 using Banking.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -33,7 +34,10 @@ public sealed class BankingModelTests
         nameof(KYCStatusType), nameof(GenderType), nameof(IdentificationDocumentType), nameof(BusinessCategoryType),
         nameof(GroupMemberRoleType), nameof(ProductType), nameof(RateType), nameof(AccountHolderRoleType),
         nameof(OperatingInstructionType), nameof(OperatingModeType), nameof(CloseReasonType),
-        nameof(FreezeReleaseActionType), nameof(LedgerAccountType)
+        nameof(FreezeReleaseActionType), nameof(LedgerAccountType),
+        nameof(TransactionCode), nameof(PostingRequest), nameof(PostedTransaction), nameof(AccountLedgerEntry),
+        nameof(LedgerEntry), nameof(LedgerAccountDailyBalance),
+        nameof(SystemLedgerSetting), nameof(ProductLedgerSetting), nameof(RoleGroupTransactionLimit)
     ];
 
     [Fact]
@@ -145,6 +149,14 @@ public sealed class BankingModelTests
         model.FindEntityType(typeof(UserActivityLog))!.IsTableExcludedFromMigrations().ShouldBeTrue();
         model.FindEntityType(typeof(DataChangeAuditLog))!.IsTableExcludedFromMigrations().ShouldBeTrue();
         model.FindEntityType(typeof(Party))!.IsTableExcludedFromMigrations().ShouldBeFalse();
+
+        // B0-01: the posting ledgers are created in raw SQL as append-only ledger tables.
+        model.FindSequence(BankingModelConventions.TransactionReferenceSequence, "dbo").ShouldNotBeNull();
+        model.FindEntityType(typeof(PostedTransaction))!.IsTableExcludedFromMigrations().ShouldBeTrue();
+        model.FindEntityType(typeof(AccountLedgerEntry))!.IsTableExcludedFromMigrations().ShouldBeTrue();
+        model.FindEntityType(typeof(LedgerEntry))!.IsTableExcludedFromMigrations().ShouldBeTrue();
+        model.FindEntityType(typeof(PostingRequest))!.IsTableExcludedFromMigrations().ShouldBeFalse();
+        CheckNames(model.FindEntityType(typeof(PostingRequest))!).ShouldContain("CK_PostingRequest_Amount");
     }
 
     [Fact]

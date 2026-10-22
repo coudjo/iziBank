@@ -198,6 +198,8 @@ public sealed class RoleGroup : AuditableEntity, ISupervisable
     public ICollection<RoleGroupPermission> Permissions { get; } = new List<RoleGroupPermission>();
 
     public ICollection<StaffUserRoleGroup> Members { get; } = new List<StaffUserRoleGroup>();
+
+    public ICollection<RoleGroupTransactionLimit> TransactionLimits { get; } = new List<RoleGroupTransactionLimit>();
 }
 
 /// <summary>

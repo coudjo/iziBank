@@ -87,8 +87,8 @@ public sealed class MigratorSeedTests
         (await context.Set<PartyType>().CountAsync()).ShouldBe(3);
         (await context.Set<IdentificationDocumentType>().CountAsync()).ShouldBe(8);
         (await context.Set<EventType>().CountAsync()).ShouldBe(EventCodes.All.Count);
-        (await context.Set<Module>().CountAsync()).ShouldBe(5);
-        (await context.Set<SubModule>().CountAsync()).ShouldBe(19);
+        (await context.Set<Module>().CountAsync()).ShouldBe(6);
+        (await context.Set<SubModule>().CountAsync()).ShouldBe(29);
 
         var currency = await context.Set<Currency>().SingleAsync(row => row.IsLocalCurrency);
         currency.CurrencyCode.ShouldBe(CurrencyCodes.GhanaCedi);
