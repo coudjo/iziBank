@@ -22,4 +22,5 @@
 | A5-06, A5-07, A5-08 | done | 2026-10-17 | owner: dotnet test green |
 | A6-02, A6-03, A6-04, A6-05, A6-01 (tooling) | done; A6-01 measurement still to run | 2026-10-21 | owner: build and test green, export-openapi with no drift |
 | B0-01 posting schema | done | 2026-10-21 | owner: dotnet test green |
-| B0-02 ledger settings, teller limits, TXN permissions, ACCOUNTANT group | written, awaiting owner migration, build and test | 2026-10-21 | pending |
+| B0-02 ledger settings, teller limits, TXN permissions, ACCOUNTANT group | done | 2026-10-22 | owner: dotnet test green, OpenAPI exported |
+| B1-01, B1-02, B1-03 posting engine; B3-01, B3-02 transfers | written, awaiting owner build and test | 2026-10-22 | pending |

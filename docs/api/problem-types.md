@@ -61,6 +61,20 @@ Every error response is RFC 7807 problem details. `type` is one of the stable co
 | `account.close-blocked` | 409 | Closing with a balance, a hold or unsupervised amounts. `failedChecks` lists `ZERO_BALANCE`, `NO_HOLDS`, `NO_PENDING_ITEMS`. |
 | `account.classification-exists` | 409 | Assigning a classification the account already has. |
 | `account.limit-reached` | 409 | The primary holder already has `AccountsPerCustomer` open accounts on this product. |
+| `account.frozen` | 409 | Posting to or from an account that is frozen. |
+| `account.credit-blocked` | 409 | Crediting an account whose conditions block credits. |
+| `account.debit-blocked` | 409 | Debiting an account whose conditions block debits. |
+| `account.credit-limit` | 409 | A credit above the account's `CreditLimit`. |
+| `account.debit-limit` | 409 | A debit above the account's `DebitLimit`. |
+| `account.dormant` | 409 | Debiting a dormant account (credits are allowed). |
+| `account.insufficient-funds` | 409 | The debit would take the available balance below the product minimum. |
+| `account.signer-kyc-lapsed` | 409 | Debiting an account while one of its signers is not KYC verified (expired, pending or rejected). |
+| `transaction.mandate-not-confirmed` | 409 | A withdrawal or transfer without the signers its operating mode needs (one signer, or every signer for all-to-sign). |
+| `transaction.currency-mismatch` | 409 | The accounts in one posting have different currencies. |
+| `ledger.setting-missing` | 409 | A branch or product ledger setting the posting needs is not set, or a product has no control account. `settingCode` and `branchId` or `productId` say which. |
+| `posting.expired` | 409 | Approving a request after its business day closed. |
+| `posting.not-requester` | 409 | Cancelling someone else's request. |
+| `idempotency.key-required` | 400 | A posting endpoint was called without an `Idempotency-Key` header. |
 | `party.duplicate-identification` | 409 | A customer already holds this identification type and number. `existingPartyNumber` names them. |
 | `party.duplicate-registration` | 409 | A business already holds this registration number. `existingPartyNumber` names it. |
 | `group.member-in-other-group` | 409 | The person is an active member of another group (D8). `memberPartyNumber` and `groupPartyNumber` say who and where. |

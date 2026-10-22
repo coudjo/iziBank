@@ -25,7 +25,7 @@ public sealed class TransactionLimitResolver
                 where assignment.StaffUserId == staffUserId && assignment.BranchId == branchId
                 where !assignment.IsSupervisionRequired || assignment.SupervisedByUserId != null
                 join roleGroup in _db.Set<RoleGroup>().AsNoTracking() on assignment.RoleGroupId equals roleGroup.RoleGroupId
-                where roleGroup.IsActive
+                where roleGroup.IsActive && (!roleGroup.IsSupervisionRequired || roleGroup.SupervisedByUserId != null)
                 join limit in _db.Set<RoleGroupTransactionLimit>().AsNoTracking() on roleGroup.RoleGroupId equals limit.RoleGroupId
                 where limit.LimitCode == limitCode
                 select new TransactionLimitValue(limit.LimitCode, limit.MaxAmount))

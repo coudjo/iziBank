@@ -29,6 +29,11 @@ public static class EventCodes
     public const string AuditView = "AUDIT_VIEW";
     public const string BusinessDayOpen = "BUSINESS_DAY_OPEN";
     public const string BusinessDayClose = "BUSINESS_DAY_CLOSE";
+    public const string PostingRequest = "POSTING_REQUEST";
+    public const string PostingPost = "POSTING_POST";
+    public const string PostingApprove = "POSTING_APPROVE";
+    public const string PostingReject = "POSTING_REJECT";
+    public const string PostingCancel = "POSTING_CANCEL";
 
     public static readonly IReadOnlyList<string> All =
     [
@@ -58,6 +63,11 @@ public static class EventCodes
         UserAdmin,
         AuditView,
         BusinessDayOpen,
-        BusinessDayClose
+        BusinessDayClose,
+        PostingRequest,
+        PostingPost,
+        PostingApprove,
+        PostingReject,
+        PostingCancel
     ];
 }

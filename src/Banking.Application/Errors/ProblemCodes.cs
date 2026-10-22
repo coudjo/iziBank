@@ -80,6 +80,20 @@ public static class ProblemCodes
     public const string AccountNotDormant = "account.not-dormant";
     public const string AccountCloseBlocked = "account.close-blocked";
     public const string AccountClassificationExists = "account.classification-exists";
+    public const string AccountFrozen = "account.frozen";
+    public const string AccountCreditBlocked = "account.credit-blocked";
+    public const string AccountDebitBlocked = "account.debit-blocked";
+    public const string AccountCreditLimit = "account.credit-limit";
+    public const string AccountDebitLimit = "account.debit-limit";
+    public const string AccountDormant = "account.dormant";
+    public const string AccountInsufficientFunds = "account.insufficient-funds";
+    public const string AccountSignerKycLapsed = "account.signer-kyc-lapsed";
+    public const string TransactionMandateNotConfirmed = "transaction.mandate-not-confirmed";
+    public const string TransactionCurrencyMismatch = "transaction.currency-mismatch";
+    public const string LedgerSettingMissing = "ledger.setting-missing";
+    public const string PostingExpired = "posting.expired";
+    public const string PostingNotRequester = "posting.not-requester";
+    public const string IdempotencyKeyRequired = "idempotency.key-required";
 
     public static readonly IReadOnlyList<string> All =
     [
@@ -98,6 +112,8 @@ public static class ProblemCodes
         KycChecklistIncomplete, KycNotPending, ProductCodeTaken, ProductFieldLocked, ProductRateOverlap, ProductRateStarted,
         AccountProductNotOpenable, AccountHolderNotReady, AccountSignatureMissing, AccountLimitReached,
         AccountClosed, AccountAlreadyFrozen, AccountNotFrozen, AccountAlreadyDormant, AccountNotDormant, AccountCloseBlocked,
-        AccountClassificationExists
+        AccountClassificationExists,
+        AccountFrozen, AccountCreditBlocked, AccountDebitBlocked, AccountCreditLimit, AccountDebitLimit, AccountDormant, AccountInsufficientFunds,
+        AccountSignerKycLapsed, TransactionMandateNotConfirmed, TransactionCurrencyMismatch, LedgerSettingMissing, PostingExpired, PostingNotRequester, IdempotencyKeyRequired
     ];
 }

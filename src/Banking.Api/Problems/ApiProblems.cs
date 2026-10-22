@@ -85,7 +85,21 @@ internal static class ApiProblems
         [Banking.Domain.Supervision.SupervisionProblems.Pending] = "This record is waiting for approval and cannot be used yet.",
         [Banking.Domain.Supervision.SupervisionProblems.RejectNotAllowed] = "This record was approved before and cannot be rejected.",
         [Banking.Domain.Supervision.SupervisionProblems.HasDependents] = "Other records use this one, so it cannot be rejected.",
-        [Banking.Domain.Supervision.SupervisionProblems.SelfApproval] = "You cannot approve your own change."
+        [Banking.Domain.Supervision.SupervisionProblems.SelfApproval] = "You cannot approve your own change.",
+        [ProblemCodes.AccountFrozen] = "The account is frozen: nothing can be posted to or from it.",
+        [ProblemCodes.AccountCreditBlocked] = "This account does not accept credits.",
+        [ProblemCodes.AccountDebitBlocked] = "This account does not allow debits.",
+        [ProblemCodes.AccountCreditLimit] = "The amount is above the account's credit limit.",
+        [ProblemCodes.AccountDebitLimit] = "The amount is above the account's debit limit.",
+        [ProblemCodes.AccountDormant] = "The account is dormant: reactivate it before paying out.",
+        [ProblemCodes.AccountInsufficientFunds] = "The available balance does not cover this amount.",
+        [ProblemCodes.AccountSignerKycLapsed] = "A signer's KYC is no longer verified.",
+        [ProblemCodes.TransactionMandateNotConfirmed] = "The signers confirmed do not satisfy the account's mandate.",
+        [ProblemCodes.TransactionCurrencyMismatch] = "The accounts are in different currencies.",
+        [ProblemCodes.LedgerSettingMissing] = "A ledger setting this posting needs is not set.",
+        [ProblemCodes.PostingExpired] = "The request was made on an earlier business day.",
+        [ProblemCodes.PostingNotRequester] = "Only the person who made the request can cancel it.",
+        [ProblemCodes.IdempotencyKeyRequired] = "Send an Idempotency-Key header with every posting."
     };
 
     public static string TitleFor(string code) => Titles.TryGetValue(code, out var title) ? title : code;
