@@ -24,4 +24,5 @@
 | B0-01 posting schema | done | 2026-10-21 | owner: dotnet test green |
 | B0-02 ledger settings, teller limits, TXN permissions, ACCOUNTANT group | done | 2026-10-22 | owner: dotnet test green, OpenAPI exported |
 | B1-01, B1-02, B1-03 posting engine; B3-01, B3-02 transfers | done | 2026-10-22 | owner: dotnet test green (302) |
-| B2-01, B2-02, B2-03, B2-04 tills, vault, cash deposit and withdrawal, till close | written; waiting for owner build and test | 2026-10-22 | migration 0007 to generate |
+| B2-01, B2-02, B2-03, B2-04 tills, vault, cash deposit and withdrawal, till close | done | 2026-10-22 | owner: dotnet test green, migration 0007, OpenAPI exported |
+| B4-01 reversals, B4-02 journals | written; waiting for owner build and test | 2026-10-22 | no schema change |

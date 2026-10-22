@@ -81,7 +81,13 @@ Every error response is RFC 7807 problem details. `type` is one of the stable co
 | `till.not-empty` | 409 | Opening a till whose ledger account is not at zero. |
 | `till.insufficient-cash` | 409 | A withdrawal or sale to the vault larger than the cash in the till. |
 | `vault.insufficient-cash` | 409 | Buying more cash from the vault than it holds. |
-| `till.pending-requests` | 409 | Closing a till while the teller's cash or vault requests are still pending. |
+| `till.pending-requests` | 409 | Closing a till while the teller's cash, vault or reversal requests on it are still pending. |
+| `transaction.not-reversible` | 409 | Reversing a reversal or a till movement (vault buys and sales, till close). Post a new transaction instead. |
+| `transaction.already-reversed` | 409 | Reversing a transaction that already has a posted reversal. A transaction is reversed at most once. |
+| `transaction.reversal-pending` | 409 | Requesting a second reversal while one is still pending. |
+| `transaction.reversal-window` | 409 | Reversing a transaction older than `Transactions:ReversalDays` (30 by default). Correct it with a journal. |
+| `transaction.till-closed` | 409 | Reversing a cash deposit or withdrawal after its till session has started closing or closed. Post a new cash transaction instead. |
+| `journal.account-not-allowed` | 409 | A journal line on a till, vault or product control account, or on a ledger account that is not approved. `ledgerAccountCode` names it. Cash moves only through tills; customer balances only through account lines. |
 | `party.duplicate-identification` | 409 | A customer already holds this identification type and number. `existingPartyNumber` names them. |
 | `party.duplicate-registration` | 409 | A business already holds this registration number. `existingPartyNumber` names it. |
 | `group.member-in-other-group` | 409 | The person is an active member of another group (D8). `memberPartyNumber` and `groupPartyNumber` say who and where. |

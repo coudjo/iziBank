@@ -101,6 +101,12 @@ public static class ProblemCodes
     public const string TillInsufficientCash = "till.insufficient-cash";
     public const string VaultInsufficientCash = "vault.insufficient-cash";
     public const string TillPendingRequests = "till.pending-requests";
+    public const string TransactionNotReversible = "transaction.not-reversible";
+    public const string TransactionAlreadyReversed = "transaction.already-reversed";
+    public const string TransactionReversalPending = "transaction.reversal-pending";
+    public const string TransactionReversalWindow = "transaction.reversal-window";
+    public const string TransactionTillClosed = "transaction.till-closed";
+    public const string JournalAccountNotAllowed = "journal.account-not-allowed";
 
     public static readonly IReadOnlyList<string> All =
     [
@@ -122,6 +128,7 @@ public static class ProblemCodes
         AccountClassificationExists,
         AccountFrozen, AccountCreditBlocked, AccountDebitBlocked, AccountCreditLimit, AccountDebitLimit, AccountDormant, AccountInsufficientFunds,
         AccountSignerKycLapsed, TransactionMandateNotConfirmed, TransactionCurrencyMismatch, LedgerSettingMissing, PostingExpired, PostingNotRequester, IdempotencyKeyRequired,
-        TillNotOpen, TillAlreadyOpen, TillNotAssigned, TillNotEmpty, TillInsufficientCash, VaultInsufficientCash, TillPendingRequests
+        TillNotOpen, TillAlreadyOpen, TillNotAssigned, TillNotEmpty, TillInsufficientCash, VaultInsufficientCash, TillPendingRequests,
+        TransactionNotReversible, TransactionAlreadyReversed, TransactionReversalPending, TransactionReversalWindow, TransactionTillClosed, JournalAccountNotAllowed
     ];
 }

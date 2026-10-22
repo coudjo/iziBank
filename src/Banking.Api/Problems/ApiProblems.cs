@@ -106,7 +106,13 @@ internal static class ApiProblems
         [ProblemCodes.TillNotEmpty] = "The till still holds cash from an earlier session.",
         [ProblemCodes.TillInsufficientCash] = "The till does not hold enough cash.",
         [ProblemCodes.VaultInsufficientCash] = "The vault does not hold enough cash.",
-        [ProblemCodes.TillPendingRequests] = "Requests on this till are still waiting for approval."
+        [ProblemCodes.TillPendingRequests] = "Requests on this till are still waiting for approval.",
+        [ProblemCodes.TransactionNotReversible] = "This transaction cannot be reversed.",
+        [ProblemCodes.TransactionAlreadyReversed] = "This transaction has already been reversed.",
+        [ProblemCodes.TransactionReversalPending] = "A reversal of this transaction is waiting for approval.",
+        [ProblemCodes.TransactionReversalWindow] = "This transaction is too old to reverse.",
+        [ProblemCodes.TransactionTillClosed] = "The till that handled this cash is closed.",
+        [ProblemCodes.JournalAccountNotAllowed] = "Journals cannot use this ledger account."
     };
 
     public static string TitleFor(string code) => Titles.TryGetValue(code, out var title) ? title : code;

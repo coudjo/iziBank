@@ -247,6 +247,9 @@ public sealed class Tills
                        && TillCodes.Contains(row.TransactionCode!.Code),
                 cancellationToken)
             .ConfigureAwait(false);
+
+        // A reversal of this till's cash, requested by a supervisor, holds the close too (plan B 6.7).
+        pending = pending || await Corrections.PendingReversalsAsync(_db, "$.details.tillSessionId", Key(tillSessionId), cancellationToken).ConfigureAwait(false);
         if (pending)
         {
             return OperationResult.Fail<TillCloseOutcome>(ProblemCodes.TillPendingRequests);

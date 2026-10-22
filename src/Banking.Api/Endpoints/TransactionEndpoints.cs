@@ -21,6 +21,12 @@ internal sealed record CashWithdrawalRequest(
     bool? ToHolder,
     CashPerson? Recipient);
 
+internal sealed record ReversalRequest(string? Reference, string? Reason);
+
+internal sealed record JournalLineRequest(long? LedgerAccountId, long? AccountId, int? BranchId, string? CrDb, decimal? Amount);
+
+internal sealed record JournalRequest(string? Narration, IReadOnlyList<JournalLineRequest>? Lines);
+
 internal sealed record TillAmountRequest(decimal? Amount);
 
 internal sealed record TillCloseRequest(decimal? CountedAmount);
@@ -69,6 +75,21 @@ internal static class TransactionEndpoints
             .Produces<PostingOutcome>(StatusCodes.Status202Accepted)
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        api.MapPost("/transactions/reversals", ReverseAsync)
+            .WithTags("Transactions")
+            .RequirePermission(ModuleCatalog.Transactions, "REVERSAL", PermissionAction.Add)
+            .Produces<PostingOutcome>(StatusCodes.Status202Accepted)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        api.MapPost("/transactions/journals", JournalAsync)
+            .WithTags("Transactions")
+            .RequirePermission(ModuleCatalog.Ledger, "JOURNAL", PermissionAction.Add)
+            .Produces<PostingOutcome>(StatusCodes.Status202Accepted)
+            .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         api.MapGet("/accounts/{accountId:long}/signers", SignersAsync)
@@ -183,6 +204,36 @@ internal static class TransactionEndpoints
             request,
             () => cash.WithdrawAsync(
                 new CashWithdrawalDraft(request.AccountId, request.Amount, request.Narration, request.ConfirmedSignerPartyIds, request.ToHolder, request.Recipient),
+                cancellationToken),
+            cancellationToken);
+
+    private static Task<IResult> ReverseAsync(
+        ReversalRequest request,
+        HttpRequest http,
+        Reversals reversals,
+        IdempotencyStore idempotency,
+        CancellationToken cancellationToken) =>
+        PostingAsync(
+            http,
+            idempotency,
+            request,
+            () => reversals.ReverseAsync(new ReversalDraft(request.Reference, request.Reason), cancellationToken),
+            cancellationToken);
+
+    private static Task<IResult> JournalAsync(
+        JournalRequest request,
+        HttpRequest http,
+        Journals journals,
+        IdempotencyStore idempotency,
+        CancellationToken cancellationToken) =>
+        PostingAsync(
+            http,
+            idempotency,
+            request,
+            () => journals.PostAsync(
+                new JournalDraft(
+                    request.Narration,
+                    request.Lines?.Select(static line => new JournalLineDraft(line.LedgerAccountId, line.AccountId, line.BranchId, line.CrDb, line.Amount)).ToList()),
                 cancellationToken),
             cancellationToken);
 

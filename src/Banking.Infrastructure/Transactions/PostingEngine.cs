@@ -23,7 +23,9 @@ public sealed record PostingActor(long StaffUserId, int BranchId);
 /// <summary>
 /// Everything the engine needs to post or re-post a movement (plan B 5.1). It is stored as the request's payload, so
 /// an approval runs exactly what was requested. <see cref="LedgerLines"/> are the lines other than the product control
-/// accounts, which the engine adds for every <see cref="AccountLines"/> entry.
+/// accounts, which the engine adds for every <see cref="AccountLines"/> entry, unless <see cref="ExactLedgerLines"/> is set
+/// (a reversal mirrors the original's GL lines as they were posted, control lines included). A reversal names the
+/// transaction it reverses in <see cref="ReversesTransactionId"/>.
 /// </summary>
 public sealed record PostingDraft(
     string TransactionCode,
@@ -35,7 +37,9 @@ public sealed record PostingDraft(
     bool CheckSignerKyc,
     IReadOnlyDictionary<string, string?>? Details = null,
     IReadOnlyList<LedgerFloor>? Floors = null,
-    long? ClosesTillSessionId = null);
+    long? ClosesTillSessionId = null,
+    bool ExactLedgerLines = false,
+    long? ReversesTransactionId = null);
 
 /// <summary>
 /// A cash ledger account (till or vault) whose balance in one branch must not go below zero after the posting
@@ -104,6 +108,9 @@ public sealed class PostingEngine
         _timeProvider = timeProvider;
         _supervision = supervision.Value;
     }
+
+    /// <summary>Reads a stored request payload.</summary>
+    internal static PostingDraft ReadDraft(string payloadJson) => JsonSerializer.Deserialize<PostingDraft>(payloadJson, Json)!;
 
     // ---------------------------------------------------------------- Submit
 
@@ -344,7 +351,7 @@ public sealed class PostingEngine
         row.Code,
         row.Request.Amount,
         row.Request.Status,
-        JsonSerializer.Deserialize<PostingDraft>(row.Request.PayloadJson, Json)!,
+        ReadDraft(row.Request.PayloadJson),
         row.Request.RequestedByUserId,
         row.RequestedByName,
         row.Request.RequestedOn,
@@ -486,6 +493,12 @@ public sealed class PostingEngine
             }
         }
 
+        if (draft.ReversesTransactionId is { } reversed
+            && await _db.Set<PostedTransaction>().AnyAsync(row => row.ReversesTransactionId == reversed, cancellationToken).ConfigureAwait(false))
+        {
+            return new Refusal(ProblemCodes.TransactionAlreadyReversed);
+        }
+
         if (accounts.Values.Select(static row => row.Product!.CurrencyId).Distinct().Count() > 1)
         {
             return new Refusal(ProblemCodes.TransactionCurrencyMismatch);
@@ -513,7 +526,7 @@ public sealed class PostingEngine
     private static LedgerPlan LedgerLines(PostingDraft draft, Dictionary<long, Account> accounts)
     {
         var lines = new List<LedgerLine>(draft.LedgerLines);
-        foreach (var line in draft.AccountLines)
+        foreach (var line in draft.ExactLedgerLines ? Array.Empty<AccountLine>() : draft.AccountLines)
         {
             var account = accounts[line.AccountId];
             if (account.Product!.LedgerControlAccountId is not { } control)
@@ -591,6 +604,7 @@ public sealed class PostingEngine
             EntryDate = workingDate,
             TransactionCodeId = codeId,
             Narration = draft.Narration,
+            ReversesTransactionId = draft.ReversesTransactionId,
             OperatorStaffUserId = operatorId,
             SupervisorStaffUserId = supervisorId,
             PostedOn = now
@@ -691,7 +705,7 @@ public sealed class PostingEngine
             return (null, null, SupervisionProblems.PermissionDenied);
         }
 
-        return (request, JsonSerializer.Deserialize<PostingDraft>(request.PayloadJson, Json)!, null);
+        return (request, ReadDraft(request.PayloadJson), null);
     }
 
     private async Task<OperationResult<PostingOutcome>> DecideAsync(
@@ -737,7 +751,7 @@ public sealed class PostingEngine
                     return OperationResult.Fail<PostingOutcome>(ProblemCodes.PostingNotRequester);
                 }
 
-                draft = JsonSerializer.Deserialize<PostingDraft>(request.PayloadJson, Json)!;
+                draft = ReadDraft(request.PayloadJson);
             }
 
             var accounts = await LockAsync(draft!, cancellationToken).ConfigureAwait(false);
