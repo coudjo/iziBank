@@ -3735,6 +3735,91 @@ namespace Banking.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Banking.Domain.Transactions.TillSession", b =>
+                {
+                    b.Property<long>("TillSessionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("TillSessionId"));
+
+                    b.Property<int>("BranchId")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("ClosePostingRequestId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("ClosedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("CountedAmount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)");
+
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<decimal?>("ExpectedAmount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)");
+
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("OpenedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<long>("StaffUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(10)");
+
+                    b.Property<long>("TellerLedgerAccountId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateOnly>("WorkingDate")
+                        .HasColumnType("date");
+
+                    b.HasKey("TillSessionId");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("ModifiedByUserId");
+
+                    b.HasIndex("StaffUserId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_TillSession_OneActivePerStaff")
+                        .HasFilter("[Status] <> 'CLOSED'");
+
+                    b.HasIndex("TellerLedgerAccountId");
+
+                    b.HasIndex("BranchId", "WorkingDate")
+                        .HasDatabaseName("IX_TillSession_Branch_WorkingDate");
+
+                    b.ToTable("TillSession", "dbo", t =>
+                        {
+                            t.HasCheckConstraint("CK_TillSession_Status", "[Status] IN ('OPEN', 'CLOSING', 'CLOSED')");
+                        });
+                });
+
             modelBuilder.Entity("Banking.Domain.Transactions.TransactionCode", b =>
                 {
                     b.Property<int>("TransactionCodeId")
@@ -5173,6 +5258,43 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.Navigation("SupervisedByUser");
 
                     b.Navigation("TransactionCode");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Transactions.TillSession", b =>
+                {
+                    b.HasOne("Banking.Domain.Institution.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("ModifiedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", "StaffUser")
+                        .WithMany()
+                        .HasForeignKey("StaffUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Ledger.LedgerAccount", "TellerLedgerAccount")
+                        .WithMany()
+                        .HasForeignKey("TellerLedgerAccountId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Branch");
+
+                    b.Navigation("StaffUser");
+
+                    b.Navigation("TellerLedgerAccount");
                 });
 
             modelBuilder.Entity("Banking.Domain.Transactions.TransactionCode", b =>

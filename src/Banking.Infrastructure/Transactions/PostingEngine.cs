@@ -33,7 +33,15 @@ public sealed record PostingDraft(
     IReadOnlyList<AccountLine> AccountLines,
     IReadOnlyList<LedgerLine> LedgerLines,
     bool CheckSignerKyc,
-    IReadOnlyDictionary<string, string?>? Details = null);
+    IReadOnlyDictionary<string, string?>? Details = null,
+    IReadOnlyList<LedgerFloor>? Floors = null,
+    long? ClosesTillSessionId = null);
+
+/// <summary>
+/// A cash ledger account (till or vault) whose balance in one branch must not go below zero after the posting
+/// (plan B 6.4). The account row is locked while it is checked, so two postings cannot both spend the same cash.
+/// </summary>
+public sealed record LedgerFloor(long LedgerAccountId, int BranchId, string ProblemCode);
 
 /// <summary>What happened to a submission: posted at once, or waiting for approval.</summary>
 public sealed record PostingOutcome(long PostingRequestId, string Reference, string Status, long? PostedTransactionId);
@@ -403,6 +411,13 @@ public sealed class PostingEngine
                 .ConfigureAwait(false);
         }
 
+        foreach (var ledgerAccountId in (draft.Floors ?? []).Select(static floor => floor.LedgerAccountId).Distinct().Order())
+        {
+            await _db.Database
+                .ExecuteSqlInterpolatedAsync($"SELECT [LedgerAccountId] FROM [LedgerAccount] WITH (UPDLOCK, ROWLOCK) WHERE [LedgerAccountId] = {ledgerAccountId}", cancellationToken)
+                .ConfigureAwait(false);
+        }
+
         var accounts = await _db.Set<Account>()
             .Include(row => row.Balance)
             .Include(row => row.Condition)
@@ -452,6 +467,22 @@ public sealed class PostingEngine
             if (refusal != PostingRefusal.None)
             {
                 return new Refusal(ProblemFor(refusal), new Dictionary<string, object?>(StringComparer.Ordinal) { ["accountNumber"] = account.AccountNumber });
+            }
+        }
+
+        foreach (var floor in draft.Floors ?? [])
+        {
+            var current = await _db.Set<LedgerEntry>()
+                .AsNoTracking()
+                .Where(row => row.LedgerAccountId == floor.LedgerAccountId && row.BranchId == floor.BranchId)
+                .SumAsync(row => row.CrDb == EntrySides.Debit ? row.Amount : -row.Amount, cancellationToken)
+                .ConfigureAwait(false);
+            var effect = draft.LedgerLines
+                .Where(line => line.LedgerAccountId == floor.LedgerAccountId && line.BranchId == floor.BranchId)
+                .Sum(static line => line.CrDb == EntrySides.Debit ? line.Amount : -line.Amount);
+            if (current + effect < 0m)
+            {
+                return new Refusal(floor.ProblemCode);
             }
         }
 
@@ -616,6 +647,14 @@ public sealed class PostingEngine
                 .ConfigureAwait(false);
         }
 
+        if (draft.ClosesTillSessionId is { } tillSessionId)
+        {
+            var session = await _db.Set<TillSession>().SingleAsync(row => row.TillSessionId == tillSessionId, cancellationToken).ConfigureAwait(false);
+            session.Status = TillSessionStatuses.Closed;
+            session.ClosedOn = now;
+            _activity.Record(EventCodes.TillClose, nameof(TillSession), tillSessionId.ToString(CultureInfo.InvariantCulture));
+        }
+
         request.PostedTransactionId = posted.PostedTransactionId;
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return posted.PostedTransactionId;
@@ -710,6 +749,16 @@ public sealed class PostingEngine
             foreach (var line in draft!.AccountLines)
             {
                 PostingRules.Release(accounts[line.AccountId].Balance!, line.CrDb, line.Amount);
+            }
+
+            if (draft.ClosesTillSessionId is { } tillSessionId)
+            {
+                // The close did not go through: the till is open again and can be counted again.
+                var session = await _db.Set<TillSession>().SingleAsync(row => row.TillSessionId == tillSessionId, cancellationToken).ConfigureAwait(false);
+                session.Status = TillSessionStatuses.Open;
+                session.CountedAmount = null;
+                session.ExpectedAmount = null;
+                session.ClosePostingRequestId = null;
             }
 
             request!.Status = status;

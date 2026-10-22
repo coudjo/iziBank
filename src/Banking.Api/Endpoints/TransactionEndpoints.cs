@@ -11,6 +11,20 @@ using Banking.Infrastructure.Transactions;
 
 namespace Banking.Api.Endpoints;
 
+internal sealed record CashDepositRequest(long? AccountId, decimal? Amount, string? Narration, bool? ByHolder, CashPerson? Depositor);
+
+internal sealed record CashWithdrawalRequest(
+    long? AccountId,
+    decimal? Amount,
+    string? Narration,
+    IReadOnlyList<long>? ConfirmedSignerPartyIds,
+    bool? ToHolder,
+    CashPerson? Recipient);
+
+internal sealed record TillAmountRequest(decimal? Amount);
+
+internal sealed record TillCloseRequest(decimal? CountedAmount);
+
 internal sealed record TransferRequest(
     long? FromAccountId,
     long? ToAccountId,
@@ -38,6 +52,64 @@ internal static class TransactionEndpoints
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
+
+        api.MapPost("/transactions/cash-deposits", DepositAsync)
+            .WithTags("Transactions")
+            .RequirePermission(ModuleCatalog.Transactions, "CASH", PermissionAction.Add)
+            .Produces<PostingOutcome>(StatusCodes.Status201Created)
+            .Produces<PostingOutcome>(StatusCodes.Status202Accepted)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        api.MapPost("/transactions/cash-withdrawals", WithdrawAsync)
+            .WithTags("Transactions")
+            .RequirePermission(ModuleCatalog.Transactions, "CASH", PermissionAction.Add)
+            .Produces<PostingOutcome>(StatusCodes.Status201Created)
+            .Produces<PostingOutcome>(StatusCodes.Status202Accepted)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        api.MapGet("/accounts/{accountId:long}/signers", SignersAsync)
+            .WithTags("Transactions")
+            .RequirePermission(ModuleCatalog.Accounts, "ACCOUNT", PermissionAction.View)
+            .Produces<AccountSignersView>()
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        var tills = api.MapGroup("/tills").WithTags("Tills");
+
+        tills.MapGet("/mine", MyTillAsync)
+            .RequirePermission(ModuleCatalog.Transactions, "TILL", PermissionAction.View)
+            .Produces<MyTillView>();
+
+        tills.MapPost("/open", OpenTillAsync)
+            .RequirePermission(ModuleCatalog.Transactions, "TILL", PermissionAction.Add)
+            .Produces<TillSessionView>(StatusCodes.Status201Created)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        tills.MapPost("/{tillSessionId:long}/buy", BuyAsync)
+            .RequirePermission(ModuleCatalog.Transactions, "TILL", PermissionAction.Add)
+            .Produces<PostingOutcome>(StatusCodes.Status202Accepted)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        tills.MapPost("/{tillSessionId:long}/sell", SellAsync)
+            .RequirePermission(ModuleCatalog.Transactions, "TILL", PermissionAction.Add)
+            .Produces<PostingOutcome>(StatusCodes.Status202Accepted)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        tills.MapPost("/{tillSessionId:long}/close", CloseTillAsync)
+            .RequirePermission(ModuleCatalog.Transactions, "TILL", PermissionAction.Add)
+            .Produces<TillCloseOutcome>()
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        api.MapGet("/branches/{branchId:int}/tills", BranchTillsAsync)
+            .WithTags("Tills")
+            .RequirePermission(ModuleCatalog.Transactions, "VAULT", PermissionAction.View)
+            .Produces<BranchTillsView>();
 
         var requests = api.MapGroup("/transaction-requests").WithTags("Transactions");
 
@@ -85,6 +157,64 @@ internal static class TransactionEndpoints
                 new TransferDraft(request.FromAccountId, request.ToAccountId, request.Amount, request.Narration, request.ConfirmedSignerPartyIds),
                 cancellationToken),
             cancellationToken);
+
+    private static Task<IResult> DepositAsync(
+        CashDepositRequest request,
+        HttpRequest http,
+        CashPostings cash,
+        IdempotencyStore idempotency,
+        CancellationToken cancellationToken) =>
+        PostingAsync(
+            http,
+            idempotency,
+            request,
+            () => cash.DepositAsync(new CashDepositDraft(request.AccountId, request.Amount, request.Narration, request.ByHolder, request.Depositor), cancellationToken),
+            cancellationToken);
+
+    private static Task<IResult> WithdrawAsync(
+        CashWithdrawalRequest request,
+        HttpRequest http,
+        CashPostings cash,
+        IdempotencyStore idempotency,
+        CancellationToken cancellationToken) =>
+        PostingAsync(
+            http,
+            idempotency,
+            request,
+            () => cash.WithdrawAsync(
+                new CashWithdrawalDraft(request.AccountId, request.Amount, request.Narration, request.ConfirmedSignerPartyIds, request.ToHolder, request.Recipient),
+                cancellationToken),
+            cancellationToken);
+
+    private static async Task<IResult> SignersAsync(long accountId, CashPostings cash, CancellationToken cancellationToken)
+    {
+        var view = await cash.SignersAsync(accountId, cancellationToken).ConfigureAwait(false);
+        return view is null ? ApiProblems.Result(StatusCodes.Status404NotFound, ProblemCodes.NotFound) : TypedResults.Ok(view);
+    }
+
+    private static async Task<IResult> MyTillAsync(Tills tills, CancellationToken cancellationToken) =>
+        TypedResults.Ok(await tills.MineAsync(cancellationToken).ConfigureAwait(false));
+
+    private static async Task<IResult> OpenTillAsync(Tills tills, CancellationToken cancellationToken)
+    {
+        var result = await tills.OpenAsync(cancellationToken).ConfigureAwait(false);
+        return result.Succeeded ? TypedResults.Created((string?)null, result.Value) : ResultProblems.From(result);
+    }
+
+    private static Task<IResult> BuyAsync(long tillSessionId, TillAmountRequest request, HttpRequest http, Tills tills, IdempotencyStore idempotency, CancellationToken cancellationToken) =>
+        PostingAsync(http, idempotency, request, () => tills.BuyAsync(tillSessionId, request.Amount, cancellationToken), cancellationToken);
+
+    private static Task<IResult> SellAsync(long tillSessionId, TillAmountRequest request, HttpRequest http, Tills tills, IdempotencyStore idempotency, CancellationToken cancellationToken) =>
+        PostingAsync(http, idempotency, request, () => tills.SellAsync(tillSessionId, request.Amount, cancellationToken), cancellationToken);
+
+    private static async Task<IResult> CloseTillAsync(long tillSessionId, TillCloseRequest request, Tills tills, CancellationToken cancellationToken)
+    {
+        var result = await tills.CloseAsync(tillSessionId, request.CountedAmount, cancellationToken).ConfigureAwait(false);
+        return result.Succeeded ? TypedResults.Ok(result.Value) : ResultProblems.From(result);
+    }
+
+    private static async Task<IResult> BranchTillsAsync(int branchId, Tills tills, CancellationToken cancellationToken) =>
+        TypedResults.Ok(await tills.BranchAsync(branchId, cancellationToken).ConfigureAwait(false));
 
     /// <summary>Requires the idempotency key, then stores the outcome so a retry gets the same answer.</summary>
     internal static async Task<IResult> PostingAsync<TRequest>(

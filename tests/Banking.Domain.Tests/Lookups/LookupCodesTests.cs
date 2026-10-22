@@ -83,7 +83,7 @@ public sealed class LookupCodesTests
         LookupCodes.PartyTypes.All.ShouldBe(["INDIVIDUAL", "BUSINESS", "GROUP"]);
         LookupCodes.IdentificationDocumentTypes.Individual.ShouldBe(
             ["GHANA_CARD", "PASSPORT", "DRIVERS_LICENCE", "VOTER_ID"]);
-        EventCodes.All.Count.ShouldBe(32);
+        EventCodes.All.Count.ShouldBe(34);
     }
 
     private static void AssertUniqueAndFit(IReadOnlyList<string> codes)

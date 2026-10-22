@@ -184,3 +184,38 @@ internal sealed class LedgerAccountDailyBalanceConfiguration : IEntityTypeConfig
             .OnDelete(DeleteBehavior.NoAction);
     }
 }
+
+internal sealed class TillSessionConfiguration : IEntityTypeConfiguration<TillSession>
+{
+    public void Configure(EntityTypeBuilder<TillSession> builder)
+    {
+        builder.ToTable(nameof(TillSession), table =>
+            table.HasCheckConstraint("CK_TillSession_Status", "[Status] IN ('OPEN', 'CLOSING', 'CLOSED')"));
+        builder.HasKey(entity => entity.TillSessionId);
+        builder.Property(entity => entity.Status).IsVarchar(10);
+        builder.Property(entity => entity.RowVersion).IsRowVersion();
+
+        // Plan B 2.3: one open or closing session per teller.
+        builder.HasIndex(entity => entity.StaffUserId)
+            .IsUnique()
+            .HasFilter("[Status] <> 'CLOSED'")
+            .HasDatabaseName("UX_TillSession_OneActivePerStaff");
+        builder.HasIndex(entity => new { entity.BranchId, entity.WorkingDate })
+            .HasDatabaseName("IX_TillSession_Branch_WorkingDate");
+
+        builder.HasOne(entity => entity.StaffUser)
+            .WithMany()
+            .HasForeignKey(entity => entity.StaffUserId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.HasOne(entity => entity.Branch)
+            .WithMany()
+            .HasForeignKey(entity => entity.BranchId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.HasOne(entity => entity.TellerLedgerAccount)
+            .WithMany()
+            .HasForeignKey(entity => entity.TellerLedgerAccountId)
+            .OnDelete(DeleteBehavior.NoAction);
+    }
+}

@@ -413,6 +413,214 @@
         }
       }
     },
+    "/api/v1/transactions/cash-deposits": {
+      "post": {
+        "tags": [
+          "Transactions"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CashDepositRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostingOutcome"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostingOutcome"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transactions/cash-withdrawals": {
+      "post": {
+        "tags": [
+          "Transactions"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CashWithdrawalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostingOutcome"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostingOutcome"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{accountId}/signers": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountSignersView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/branches/{branchId}/tills": {
+      "get": {
+        "tags": [
+          "Tills"
+        ],
+        "parameters": [
+          {
+            "name": "branchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchTillsView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/role-groups": {
       "get": {
         "tags": [
@@ -2843,6 +3051,234 @@
         "responses": {
           "204": {
             "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tills/mine": {
+      "get": {
+        "tags": [
+          "Tills"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyTillView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tills/open": {
+      "post": {
+        "tags": [
+          "Tills"
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TillSessionView"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tills/{tillSessionId}/buy": {
+      "post": {
+        "tags": [
+          "Tills"
+        ],
+        "parameters": [
+          {
+            "name": "tillSessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TillAmountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostingOutcome"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tills/{tillSessionId}/sell": {
+      "post": {
+        "tags": [
+          "Tills"
+        ],
+        "parameters": [
+          {
+            "name": "tillSessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TillAmountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostingOutcome"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tills/{tillSessionId}/close": {
+      "post": {
+        "tags": [
+          "Tills"
+        ],
+        "parameters": [
+          {
+            "name": "tillSessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TillCloseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TillCloseOutcome"
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request",
@@ -7638,6 +8074,68 @@
           }
         }
       },
+      "AccountSignersView": {
+        "required": [
+          "accountId",
+          "accountNumber",
+          "operatingModeCode",
+          "signers"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "accountNumber": {
+            "type": "string"
+          },
+          "operatingModeCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "signers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountSignerView"
+            }
+          }
+        }
+      },
+      "AccountSignerView": {
+        "required": [
+          "partyId",
+          "partyNumber",
+          "displayName",
+          "roleCode",
+          "effectiveKycStatusCode",
+          "hasEffectiveSignature"
+        ],
+        "type": "object",
+        "properties": {
+          "partyId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "partyNumber": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "roleCode": {
+            "type": "string"
+          },
+          "effectiveKycStatusCode": {
+            "type": "string"
+          },
+          "hasEffectiveSignature": {
+            "type": "boolean"
+          }
+        }
+      },
       "AccountView": {
         "required": [
           "accountId",
@@ -7999,6 +8497,41 @@
           }
         }
       },
+      "BranchTillsView": {
+        "required": [
+          "branchId",
+          "vaultLedgerAccountId",
+          "vaultBalance",
+          "sessions"
+        ],
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "vaultLedgerAccountId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "vaultBalance": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "sessions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TillSessionView"
+            }
+          }
+        }
+      },
       "BranchView": {
         "required": [
           "branchId",
@@ -8146,6 +8679,149 @@
             "items": {
               "$ref": "#/components/schemas/BeneficialOwnerView"
             }
+          }
+        }
+      },
+      "CashDepositRequest": {
+        "required": [
+          "accountId",
+          "amount",
+          "narration",
+          "byHolder",
+          "depositor"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "amount": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "narration": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "byHolder": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "depositor": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CashPerson"
+              }
+            ]
+          }
+        }
+      },
+      "CashPerson": {
+        "required": [
+          "name",
+          "mobile",
+          "identificationTypeId",
+          "identificationNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mobile": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "identificationTypeId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "identificationNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "CashWithdrawalRequest": {
+        "required": [
+          "accountId",
+          "amount",
+          "narration",
+          "confirmedSignerPartyIds",
+          "toHolder",
+          "recipient"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "amount": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "narration": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "confirmedSignerPartyIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          "toHolder": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "recipient": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CashPerson"
+              }
+            ]
           }
         }
       },
@@ -9828,6 +10504,27 @@
           }
         }
       },
+      "LedgerFloor": {
+        "required": [
+          "ledgerAccountId",
+          "branchId",
+          "problemCode"
+        ],
+        "type": "object",
+        "properties": {
+          "ledgerAccountId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "branchId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "problemCode": {
+            "type": "string"
+          }
+        }
+      },
       "LedgerLine": {
         "required": [
           "ledgerAccountId",
@@ -10127,6 +10824,35 @@
             "items": {
               "$ref": "#/components/schemas/SubModuleView"
             }
+          }
+        }
+      },
+      "MyTillView": {
+        "required": [
+          "hasTillAccount",
+          "tellerLedgerAccountCode",
+          "session"
+        ],
+        "type": "object",
+        "properties": {
+          "hasTillAccount": {
+            "type": "boolean"
+          },
+          "tellerLedgerAccountCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "session": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TillSessionView"
+              }
+            ]
           }
         }
       },
@@ -11144,6 +11870,22 @@
             "additionalProperties": {
               "type": "string"
             }
+          },
+          "floors": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LedgerFloor"
+            }
+          },
+          "closesTillSessionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
           }
         }
       },
@@ -12291,6 +13033,148 @@
           }
         }
       },
+      "TillAmountRequest": {
+        "required": [
+          "amount"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "TillCloseOutcome": {
+        "required": [
+          "session",
+          "posting"
+        ],
+        "type": "object",
+        "properties": {
+          "session": {
+            "$ref": "#/components/schemas/TillSessionView"
+          },
+          "posting": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PostingOutcome"
+              }
+            ]
+          }
+        }
+      },
+      "TillCloseRequest": {
+        "required": [
+          "countedAmount"
+        ],
+        "type": "object",
+        "properties": {
+          "countedAmount": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "TillSessionView": {
+        "required": [
+          "tillSessionId",
+          "staffUserId",
+          "staffCode",
+          "staffName",
+          "branchId",
+          "workingDate",
+          "tellerLedgerAccountId",
+          "tellerLedgerAccountCode",
+          "status",
+          "balance",
+          "openedOn",
+          "closedOn",
+          "countedAmount",
+          "expectedAmount",
+          "closePostingRequestId"
+        ],
+        "type": "object",
+        "properties": {
+          "tillSessionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "staffUserId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "staffCode": {
+            "type": "string"
+          },
+          "staffName": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "workingDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "tellerLedgerAccountId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "tellerLedgerAccountCode": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "balance": {
+            "type": "number",
+            "format": "double"
+          },
+          "openedOn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "closedOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "countedAmount": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "expectedAmount": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "closePostingRequestId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          }
+        }
+      },
       "TokenResponse": {
         "required": [
           "accessToken",
@@ -12535,6 +13419,9 @@
     },
     {
       "name": "Transactions"
+    },
+    {
+      "name": "Tills"
     },
     {
       "name": "Change requests"

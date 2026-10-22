@@ -99,7 +99,14 @@ internal static class ApiProblems
         [ProblemCodes.LedgerSettingMissing] = "A ledger setting this posting needs is not set.",
         [ProblemCodes.PostingExpired] = "The request was made on an earlier business day.",
         [ProblemCodes.PostingNotRequester] = "Only the person who made the request can cancel it.",
-        [ProblemCodes.IdempotencyKeyRequired] = "Send an Idempotency-Key header with every posting."
+        [ProblemCodes.IdempotencyKeyRequired] = "Send an Idempotency-Key header with every posting.",
+        [ProblemCodes.TillNotOpen] = "Open your till first.",
+        [ProblemCodes.TillAlreadyOpen] = "Your till is already open.",
+        [ProblemCodes.TillNotAssigned] = "No till account is assigned to you in this branch.",
+        [ProblemCodes.TillNotEmpty] = "The till still holds cash from an earlier session.",
+        [ProblemCodes.TillInsufficientCash] = "The till does not hold enough cash.",
+        [ProblemCodes.VaultInsufficientCash] = "The vault does not hold enough cash.",
+        [ProblemCodes.TillPendingRequests] = "Requests on this till are still waiting for approval."
     };
 
     public static string TitleFor(string code) => Titles.TryGetValue(code, out var title) ? title : code;

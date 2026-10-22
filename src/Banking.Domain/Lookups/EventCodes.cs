@@ -34,6 +34,8 @@ public static class EventCodes
     public const string PostingApprove = "POSTING_APPROVE";
     public const string PostingReject = "POSTING_REJECT";
     public const string PostingCancel = "POSTING_CANCEL";
+    public const string TillOpen = "TILL_OPEN";
+    public const string TillClose = "TILL_CLOSE";
 
     public static readonly IReadOnlyList<string> All =
     [
@@ -68,6 +70,8 @@ public static class EventCodes
         PostingPost,
         PostingApprove,
         PostingReject,
-        PostingCancel
+        PostingCancel,
+        TillOpen,
+        TillClose
     ];
 }

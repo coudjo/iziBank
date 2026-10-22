@@ -948,6 +948,34 @@ Ref: ProductLedgerSetting.ProductId > Product.ProductId
 Ref: ProductLedgerSetting.LedgerAccountId > LedgerAccount.LedgerAccountId
 Ref: RoleGroupTransactionLimit.RoleGroupId > RoleGroup.RoleGroupId
 
+Table TillSession {
+  TillSessionId bigint [pk, increment]
+  StaffUserId bigint [not null]
+  BranchId int [not null]
+  WorkingDate date [not null]
+  TellerLedgerAccountId bigint [not null, note: 'The teller till ledger account (StaffUser.TellerGLAccountId) at open']
+  Status varchar(10) [not null, note: 'OPEN, CLOSING, CLOSED']
+  OpenedOn datetime2 [not null]
+  ClosedOn datetime2
+  CountedAmount decimal(19,4) [note: 'Cash counted at close']
+  ExpectedAmount decimal(19,4) [note: 'Till ledger balance at close']
+  ClosePostingRequestId bigint [note: 'The close posting (TILL_SELL, TILL_SHORT or TILL_OVER), approved by a supervisor']
+  CreatedByUserId bigint
+  CreatedOn datetime2 [not null]
+  ModifiedByUserId bigint
+  ModifiedOn datetime2
+  RowVersion rowversion [not null]
+  Indexes {
+    StaffUserId [unique, name: 'UX_TillSession_OneActivePerStaff', note: 'filtered: Status <> CLOSED']
+    (BranchId, WorkingDate) [name: 'IX_TillSession_Branch_WorkingDate']
+  }
+  Note: 'B2-01. One open or closing session per teller. The till balance is the ledger balance of the till account; the session closes when the close posting is approved (cash back to the vault, difference to CASH_SHORT or CASH_OVER). A rejected close reopens it.'
+}
+
+Ref: TillSession.StaffUserId > StaffUser.StaffUserId
+Ref: TillSession.BranchId > Branch.BranchId
+Ref: TillSession.TellerLedgerAccountId > LedgerAccount.LedgerAccountId
+
 // ---------------------------------------------------------------------------
 // Later phases — do not create in Phase A
 // ---------------------------------------------------------------------------

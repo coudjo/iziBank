@@ -94,6 +94,13 @@ public static class ProblemCodes
     public const string PostingExpired = "posting.expired";
     public const string PostingNotRequester = "posting.not-requester";
     public const string IdempotencyKeyRequired = "idempotency.key-required";
+    public const string TillNotOpen = "till.not-open";
+    public const string TillAlreadyOpen = "till.already-open";
+    public const string TillNotAssigned = "till.not-assigned";
+    public const string TillNotEmpty = "till.not-empty";
+    public const string TillInsufficientCash = "till.insufficient-cash";
+    public const string VaultInsufficientCash = "vault.insufficient-cash";
+    public const string TillPendingRequests = "till.pending-requests";
 
     public static readonly IReadOnlyList<string> All =
     [
@@ -114,6 +121,7 @@ public static class ProblemCodes
         AccountClosed, AccountAlreadyFrozen, AccountNotFrozen, AccountAlreadyDormant, AccountNotDormant, AccountCloseBlocked,
         AccountClassificationExists,
         AccountFrozen, AccountCreditBlocked, AccountDebitBlocked, AccountCreditLimit, AccountDebitLimit, AccountDormant, AccountInsufficientFunds,
-        AccountSignerKycLapsed, TransactionMandateNotConfirmed, TransactionCurrencyMismatch, LedgerSettingMissing, PostingExpired, PostingNotRequester, IdempotencyKeyRequired
+        AccountSignerKycLapsed, TransactionMandateNotConfirmed, TransactionCurrencyMismatch, LedgerSettingMissing, PostingExpired, PostingNotRequester, IdempotencyKeyRequired,
+        TillNotOpen, TillAlreadyOpen, TillNotAssigned, TillNotEmpty, TillInsufficientCash, VaultInsufficientCash, TillPendingRequests
     ];
 }

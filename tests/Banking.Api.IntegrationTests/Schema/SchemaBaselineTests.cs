@@ -29,7 +29,8 @@ public sealed class SchemaBaselineTests
         "OperatingInstructionType", "OperatingModeType", "CloseReasonType",
         "FreezeReleaseActionType", "LedgerAccountType",
         "TransactionCode", "PostingRequest", "PostedTransaction", "AccountLedgerEntry", "LedgerEntry",
-        "LedgerAccountDailyBalance", "SystemLedgerSetting", "ProductLedgerSetting", "RoleGroupTransactionLimit"
+        "LedgerAccountDailyBalance", "SystemLedgerSetting", "ProductLedgerSetting", "RoleGroupTransactionLimit",
+        "TillSession"
     ];
 
     private readonly MsSqlContainerFixture _fixture;
@@ -152,6 +153,7 @@ public sealed class SchemaBaselineTests
         checks.ShouldContain("CK_LedgerEntry_Amount");
         checks.ShouldContain("CK_LedgerEntry_CrDb");
         checks.ShouldContain("CK_RoleGroupTransactionLimit_MaxAmount");
+        checks.ShouldContain("CK_TillSession_Status");
 
         var indexes = await QueryStringsAsync(
             connection,
@@ -188,6 +190,8 @@ public sealed class SchemaBaselineTests
         indexes.ShouldContain("UX_SystemLedgerSetting_Branch_Code");
         indexes.ShouldContain("UX_ProductLedgerSetting_Product_Code");
         indexes.ShouldContain("UX_RoleGroupTransactionLimit_Group_Code");
+        indexes.ShouldContain("UX_TillSession_OneActivePerStaff");
+        indexes.ShouldContain("IX_TillSession_Branch_WorkingDate");
     }
 
     private static async Task<string[]> QueryStringsAsync(

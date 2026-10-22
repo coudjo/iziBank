@@ -37,7 +37,7 @@ public sealed class BankingModelTests
         nameof(FreezeReleaseActionType), nameof(LedgerAccountType),
         nameof(TransactionCode), nameof(PostingRequest), nameof(PostedTransaction), nameof(AccountLedgerEntry),
         nameof(LedgerEntry), nameof(LedgerAccountDailyBalance),
-        nameof(SystemLedgerSetting), nameof(ProductLedgerSetting), nameof(RoleGroupTransactionLimit)
+        nameof(SystemLedgerSetting), nameof(ProductLedgerSetting), nameof(RoleGroupTransactionLimit), nameof(TillSession)
     ];
 
     [Fact]

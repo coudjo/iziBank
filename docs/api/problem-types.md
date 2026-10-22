@@ -75,6 +75,13 @@ Every error response is RFC 7807 problem details. `type` is one of the stable co
 | `posting.expired` | 409 | Approving a request after its business day closed. |
 | `posting.not-requester` | 409 | Cancelling someone else's request. |
 | `idempotency.key-required` | 400 | A posting endpoint was called without an `Idempotency-Key` header. |
+| `till.not-open` | 409 | A cash posting, or a till action, without an open till session today. |
+| `till.already-open` | 409 | Opening a till while another session of the same teller is open or closing. |
+| `till.not-assigned` | 409 | Opening a till without a teller till account in the working branch. |
+| `till.not-empty` | 409 | Opening a till whose ledger account is not at zero. |
+| `till.insufficient-cash` | 409 | A withdrawal or sale to the vault larger than the cash in the till. |
+| `vault.insufficient-cash` | 409 | Buying more cash from the vault than it holds. |
+| `till.pending-requests` | 409 | Closing a till while the teller's cash or vault requests are still pending. |
 | `party.duplicate-identification` | 409 | A customer already holds this identification type and number. `existingPartyNumber` names them. |
 | `party.duplicate-registration` | 409 | A business already holds this registration number. `existingPartyNumber` names it. |
 | `group.member-in-other-group` | 409 | The person is an active member of another group (D8). `memberPartyNumber` and `groupPartyNumber` say who and where. |
