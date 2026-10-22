@@ -46,3 +46,11 @@ internal sealed class CloseReasonTypeConfiguration : LookupConfiguration<CloseRe
 internal sealed class FreezeReleaseActionTypeConfiguration : LookupConfiguration<FreezeReleaseActionType>;
 
 internal sealed class LedgerAccountTypeConfiguration : LookupConfiguration<LedgerAccountType>;
+
+internal sealed class ChargeCategoryTypeConfiguration : LookupConfiguration<ChargeCategoryType>;
+
+internal sealed class ChargeConditionTypeConfiguration : LookupConfiguration<ChargeConditionType>;
+
+internal sealed class ChargeBasisTypeConfiguration : LookupConfiguration<ChargeBasisType>;
+
+internal sealed class ChargeShortfallPolicyTypeConfiguration : LookupConfiguration<ChargeShortfallPolicyType>;

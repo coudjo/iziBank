@@ -35,6 +35,10 @@ public sealed class LookupAdmin
         new LookupSet<AccountHolderRoleType>("account-holder-roles", LookupCodes.AccountHolderRoles.All),
         new LookupSet<CloseReasonType>("close-reasons", LookupCodes.CloseReasons.All),
         new LookupSet<FreezeReleaseActionType>("freeze-release-actions", LookupCodes.FreezeReleaseActions.All),
+        new LookupSet<ChargeCategoryType>("charge-categories", LookupCodes.ChargeCategories.All),
+        new LookupSet<ChargeConditionType>("charge-conditions", LookupCodes.ChargeConditions.All),
+        new LookupSet<ChargeBasisType>("charge-bases", LookupCodes.ChargeBases.All),
+        new LookupSet<ChargeShortfallPolicyType>("charge-shortfall-policies", LookupCodes.ChargeShortfallPolicies.All),
         new LookupSet<LedgerAccountType>("ledger-account-types", LookupCodes.LedgerAccountTypes.All)
     ];
 

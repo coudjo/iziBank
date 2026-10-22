@@ -30,7 +30,9 @@ public sealed class SchemaBaselineTests
         "FreezeReleaseActionType", "LedgerAccountType",
         "TransactionCode", "PostingRequest", "PostedTransaction", "AccountLedgerEntry", "LedgerEntry",
         "LedgerAccountDailyBalance", "SystemLedgerSetting", "ProductLedgerSetting", "RoleGroupTransactionLimit",
-        "TillSession"
+        "TillSession",
+        "ChargeCategoryType", "ChargeConditionType", "ChargeBasisType", "ChargeShortfallPolicyType",
+        "ChargeCode", "ProductCharge", "ProductChargeTier"
     ];
 
     private readonly MsSqlContainerFixture _fixture;
@@ -154,6 +156,10 @@ public sealed class SchemaBaselineTests
         checks.ShouldContain("CK_LedgerEntry_CrDb");
         checks.ShouldContain("CK_RoleGroupTransactionLimit_MaxAmount");
         checks.ShouldContain("CK_TillSession_Status");
+        checks.ShouldContain("CK_ProductCharge_EffectiveDates");
+        checks.ShouldContain("CK_ProductCharge_FreeTransactions");
+        checks.ShouldContain("CK_ProductChargeTier_Amount");
+        checks.ShouldContain("CK_ProductChargeTier_MinMax");
 
         var indexes = await QueryStringsAsync(
             connection,
@@ -192,6 +198,9 @@ public sealed class SchemaBaselineTests
         indexes.ShouldContain("UX_RoleGroupTransactionLimit_Group_Code");
         indexes.ShouldContain("UX_TillSession_OneActivePerStaff");
         indexes.ShouldContain("IX_TillSession_Branch_WorkingDate");
+        indexes.ShouldContain("UX_ChargeCode_Code");
+        indexes.ShouldContain("UX_ProductCharge_Product_Charge_Condition_From");
+        indexes.ShouldContain("UX_ProductChargeTier_Charge_Tier");
     }
 
     private static async Task<string[]> QueryStringsAsync(

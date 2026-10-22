@@ -1,4 +1,5 @@
 using Banking.Domain.Accounts;
+using Banking.Domain.Charges;
 using Banking.Domain.Institution;
 using Banking.Domain.Ledger;
 using Banking.Domain.Lookups;
@@ -37,7 +38,9 @@ public sealed class BankingModelTests
         nameof(FreezeReleaseActionType), nameof(LedgerAccountType),
         nameof(TransactionCode), nameof(PostingRequest), nameof(PostedTransaction), nameof(AccountLedgerEntry),
         nameof(LedgerEntry), nameof(LedgerAccountDailyBalance),
-        nameof(SystemLedgerSetting), nameof(ProductLedgerSetting), nameof(RoleGroupTransactionLimit), nameof(TillSession)
+        nameof(SystemLedgerSetting), nameof(ProductLedgerSetting), nameof(RoleGroupTransactionLimit), nameof(TillSession),
+        nameof(ChargeCategoryType), nameof(ChargeConditionType), nameof(ChargeBasisType), nameof(ChargeShortfallPolicyType),
+        nameof(ChargeCode), nameof(ProductCharge), nameof(ProductChargeTier)
     ];
 
     [Fact]

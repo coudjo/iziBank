@@ -123,6 +123,7 @@ try
     api.MapReferenceEndpoints();
     api.MapLedgerEndpoints();
     api.MapLedgerSettingsEndpoints();
+    api.MapChargeEndpoints();
     api.MapTransactionEndpoints();
     api.MapProductEndpoints();
     api.MapAccountEndpoints();

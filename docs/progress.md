@@ -25,4 +25,5 @@
 | B0-02 ledger settings, teller limits, TXN permissions, ACCOUNTANT group | done | 2026-10-22 | owner: dotnet test green, OpenAPI exported |
 | B1-01, B1-02, B1-03 posting engine; B3-01, B3-02 transfers | done | 2026-10-22 | owner: dotnet test green (302) |
 | B2-01, B2-02, B2-03, B2-04 tills, vault, cash deposit and withdrawal, till close | done | 2026-10-22 | owner: dotnet test green, migration 0007, OpenAPI exported |
-| B4-01 reversals, B4-02 journals | written; waiting for owner build and test | 2026-10-22 | no schema change |
+| B4-01 reversals, B4-02 journals | done | 2026-10-22 | owner: build and test green |
+| B0-03 charge rules | written; waiting for owner build, test and migration 0008 | 2026-10-22 | migration 0008_ChargeRules to generate |

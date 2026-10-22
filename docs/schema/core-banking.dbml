@@ -983,31 +983,60 @@ Ref: TillSession.TellerLedgerAccountId > LedgerAccount.LedgerAccountId
 Table ChargeCode {
   ChargeId int [pk, increment]
   Code varchar(10) [not null, unique]
-  Description varchar(100)
-  ChargeCategoryId int
+  Description varchar(100) [not null]
+  ChargeCategoryId int [not null, note: 'TRANSACTION, PERIODIC']
   IsActive bool [not null, default: true]
+  CreatedByUserId bigint
+  CreatedOn datetime2 [not null]
+  ModifiedByUserId bigint
+  ModifiedOn datetime2
+  Note: 'B0-03. Reference data: not supervised. Codes are set up by an administrator; the code itself cannot change.'
 }
 
 Table ProductCharge {
   ProductChargeId bigint [pk, increment]
   ProductId int [not null]
   ChargeId int [not null]
-  ChargeConditionId int
-  FreeTransactions smallint
+  ChargeConditionId int [not null, note: 'PER_CASH_WITHDRAWAL, PER_TRANSFER_OUT (TRANSACTION); MONTHLY_MAINTENANCE (PERIODIC)']
+  FreeTransactions smallint [note: 'Per calendar month; null means none are free']
+  ShortfallPolicyId int [note: 'COLLECT_AVAILABLE, CHARGE_FULL, DEFER; null means Charges:ShortfallPolicy']
   EffectiveFrom date [not null]
   EffectiveTo date
+  IsSupervisionRequired bool [not null, default: true]
+  SupervisedByUserId bigint
+  SupervisedOn datetime2
+  CreatedByUserId bigint
+  CreatedOn datetime2 [not null]
+  ModifiedByUserId bigint
+  ModifiedOn datetime2
+  Indexes {
+    (ProductId, ChargeId, ChargeConditionId, EffectiveFrom) [unique, name: 'UX_ProductCharge_Product_Charge_Condition_From']
+  }
+  Note: 'B0-03. Supervised (ACC/CHARGES): a new charge waits for a different supervisor. Approval ends an earlier approved charge of the same charge and condition the day before it starts. Only approved charges are used for posting (B5-01). Check: EffectiveTo null or >= EffectiveFrom; FreeTransactions null or >= 0.'
 }
 
 Table ProductChargeTier {
   ProductChargeTierId bigint [pk, increment]
   ProductChargeId bigint [not null]
-  TierNumber smallint [not null]
-  ChargeBasisId int
-  TransactionAmount decimal(19,4)
-  AmountOrPercentage decimal(19,4)
+  TierNumber smallint [not null, note: 'From 1, in order']
+  ChargeBasisId int [not null, note: 'FLAT, PERCENT']
+  TransactionAmount decimal(19,4) [note: 'Inclusive upper limit of the band on the transaction amount. Null for the last band only.']
+  AmountOrPercentage decimal(19,4) [not null, note: 'Amount, or percentage 0 to 100 when PERCENT. > 0']
   MinimumCharge decimal(19,4)
   MaximumCharge decimal(19,4)
+  Indexes {
+    (ProductChargeId, TierNumber) [unique, name: 'UX_ProductChargeTier_Charge_Tier']
+  }
+  Note: 'B0-03. Check: MinimumCharge null, or MaximumCharge null, or MaximumCharge >= MinimumCharge. Bands are written with their charge and cascade with it.'
 }
+
+Ref: ChargeCode.ChargeCategoryId > ChargeCategoryType.Id
+Ref: ProductCharge.ProductId > Product.ProductId
+Ref: ProductCharge.ChargeId > ChargeCode.ChargeId
+Ref: ProductCharge.ChargeConditionId > ChargeConditionType.Id
+Ref: ProductCharge.ShortfallPolicyId > ChargeShortfallPolicyType.Id
+Ref: ProductChargeTier.ProductChargeId > ProductCharge.ProductChargeId
+Ref: ProductChargeTier.ChargeBasisId > ChargeBasisType.Id
 
 Table TransactionCodeChargeTier {
   TransactionCodeChargeTierId bigint [pk, increment]
@@ -1361,6 +1390,14 @@ Table ChargeBasisType {
   Code varchar(30) [not null, unique]
   Name varchar(100) [not null]
   IsActive bool [not null, default: true]
+}
+
+Table ChargeShortfallPolicyType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+  Note: 'B0-03. COLLECT_AVAILABLE, CHARGE_FULL, DEFER (Q7). Institution default in Charges:ShortfallPolicy.'
 }
 
 Table TransactionCategoryType {

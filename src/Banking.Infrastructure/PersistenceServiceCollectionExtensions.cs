@@ -82,6 +82,7 @@ public static class PersistenceServiceCollectionExtensions
         services.TryAddScoped<Banking.Infrastructure.Transactions.Transfers>();
         services.TryAddScoped<Banking.Infrastructure.Transactions.Reversals>();
         services.TryAddScoped<Banking.Infrastructure.Transactions.Journals>();
+        services.TryAddScoped<Banking.Infrastructure.Charges.ChargeAdmin>();
         services.TryAddScoped<Banking.Infrastructure.Transactions.Tills>();
         services.TryAddScoped<Banking.Infrastructure.Transactions.CashPostings>();
 

@@ -320,6 +320,40 @@ public static class LookupCodes
         ];
     }
 
+    public static class ChargeCategories
+    {
+        public const string Transaction = "TRANSACTION";
+        public const string Periodic = "PERIODIC";
+
+        public static readonly IReadOnlyList<string> All = [Transaction, Periodic];
+    }
+
+    public static class ChargeConditions
+    {
+        public const string PerCashWithdrawal = "PER_CASH_WITHDRAWAL";
+        public const string PerTransferOut = "PER_TRANSFER_OUT";
+        public const string MonthlyMaintenance = "MONTHLY_MAINTENANCE";
+
+        public static readonly IReadOnlyList<string> All = [PerCashWithdrawal, PerTransferOut, MonthlyMaintenance];
+    }
+
+    public static class ChargeBases
+    {
+        public const string Flat = "FLAT";
+        public const string Percent = "PERCENT";
+
+        public static readonly IReadOnlyList<string> All = [Flat, Percent];
+    }
+
+    public static class ChargeShortfallPolicies
+    {
+        public const string CollectAvailable = "COLLECT_AVAILABLE";
+        public const string ChargeFull = "CHARGE_FULL";
+        public const string Defer = "DEFER";
+
+        public static readonly IReadOnlyList<string> All = [CollectAvailable, ChargeFull, Defer];
+    }
+
     public static IEnumerable<string> AllCodes()
     {
         return RegulatoryCategories.All
@@ -338,7 +372,11 @@ public static class LookupCodes
             .Concat(AccountHolderRoles.All)
             .Concat(CloseReasons.All)
             .Concat(FreezeReleaseActions.All)
-            .Concat(LedgerAccountTypes.All);
+            .Concat(LedgerAccountTypes.All)
+            .Concat(ChargeCategories.All)
+            .Concat(ChargeConditions.All)
+            .Concat(ChargeBases.All)
+            .Concat(ChargeShortfallPolicies.All);
     }
 
     public static string ToDisplayName(string code)

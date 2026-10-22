@@ -638,6 +638,190 @@ namespace Banking.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Banking.Domain.Charges.ChargeCode", b =>
+                {
+                    b.Property<int>("ChargeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ChargeId"));
+
+                    b.Property<int>("ChargeCategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(10)");
+
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("ChargeId");
+
+                    b.HasIndex("ChargeCategoryId");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ChargeCode_Code");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("ModifiedByUserId");
+
+                    b.ToTable("ChargeCode", "dbo");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Charges.ProductCharge", b =>
+                {
+                    b.Property<long>("ProductChargeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("ProductChargeId"));
+
+                    b.Property<int>("ChargeConditionId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ChargeId")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("CreatedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<DateOnly>("EffectiveFrom")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("EffectiveTo")
+                        .HasColumnType("date");
+
+                    b.Property<short?>("FreeTransactions")
+                        .HasColumnType("smallint");
+
+                    b.Property<bool>("IsSupervisionRequired")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<long?>("ModifiedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ShortfallPolicyId")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("SupervisedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("SupervisedOn")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("ProductChargeId");
+
+                    b.HasIndex("ChargeConditionId");
+
+                    b.HasIndex("ChargeId");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("ModifiedByUserId");
+
+                    b.HasIndex("ShortfallPolicyId");
+
+                    b.HasIndex("ProductId", "ChargeId", "ChargeConditionId", "EffectiveFrom")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ProductCharge_Product_Charge_Condition_From");
+
+                    b.ToTable("ProductCharge", "dbo", t =>
+                        {
+                            t.HasCheckConstraint("CK_ProductCharge_EffectiveDates", "[EffectiveTo] IS NULL OR [EffectiveTo] >= [EffectiveFrom]");
+
+                            t.HasCheckConstraint("CK_ProductCharge_FreeTransactions", "[FreeTransactions] IS NULL OR [FreeTransactions] >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("Banking.Domain.Charges.ProductChargeTier", b =>
+                {
+                    b.Property<long>("ProductChargeTierId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("ProductChargeTierId"));
+
+                    b.Property<decimal>("AmountOrPercentage")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)");
+
+                    b.Property<int>("ChargeBasisId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("MaximumCharge")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)");
+
+                    b.Property<decimal?>("MinimumCharge")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)");
+
+                    b.Property<long>("ProductChargeId")
+                        .HasColumnType("bigint");
+
+                    b.Property<short>("TierNumber")
+                        .HasColumnType("smallint");
+
+                    b.Property<decimal?>("TransactionAmount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)");
+
+                    b.HasKey("ProductChargeTierId");
+
+                    b.HasIndex("ChargeBasisId");
+
+                    b.HasIndex("ProductChargeId", "TierNumber")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ProductChargeTier_Charge_Tier");
+
+                    b.ToTable("ProductChargeTier", "dbo", t =>
+                        {
+                            t.HasCheckConstraint("CK_ProductChargeTier_Amount", "[AmountOrPercentage] > 0");
+
+                            t.HasCheckConstraint("CK_ProductChargeTier_MinMax", "[MinimumCharge] IS NULL OR [MaximumCharge] IS NULL OR [MaximumCharge] >= [MinimumCharge]");
+                        });
+                });
+
             modelBuilder.Entity("Banking.Domain.Institution.Branch", b =>
                 {
                     b.Property<int>("BranchId")
@@ -1191,6 +1375,134 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.HasAlternateKey("Code");
 
                     b.ToTable("BusinessDayStatusType", "dbo");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Lookups.ChargeBasisType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Code");
+
+                    b.ToTable("ChargeBasisType", "dbo");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Lookups.ChargeCategoryType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Code");
+
+                    b.ToTable("ChargeCategoryType", "dbo");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Lookups.ChargeConditionType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Code");
+
+                    b.ToTable("ChargeConditionType", "dbo");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Lookups.ChargeShortfallPolicyType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Code");
+
+                    b.ToTable("ChargeShortfallPolicyType", "dbo");
                 });
 
             modelBuilder.Entity("Banking.Domain.Lookups.CloseReasonType", b =>
@@ -4186,6 +4498,90 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.Navigation("Action");
                 });
 
+            modelBuilder.Entity("Banking.Domain.Charges.ChargeCode", b =>
+                {
+                    b.HasOne("Banking.Domain.Lookups.ChargeCategoryType", "ChargeCategory")
+                        .WithMany()
+                        .HasForeignKey("ChargeCategoryId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("ModifiedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("ChargeCategory");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Charges.ProductCharge", b =>
+                {
+                    b.HasOne("Banking.Domain.Lookups.ChargeConditionType", "ChargeCondition")
+                        .WithMany()
+                        .HasForeignKey("ChargeConditionId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Charges.ChargeCode", "ChargeCode")
+                        .WithMany()
+                        .HasForeignKey("ChargeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Security.StaffUser", null)
+                        .WithMany()
+                        .HasForeignKey("ModifiedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Products.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Lookups.ChargeShortfallPolicyType", "ShortfallPolicy")
+                        .WithMany()
+                        .HasForeignKey("ShortfallPolicyId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("ChargeCode");
+
+                    b.Navigation("ChargeCondition");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("ShortfallPolicy");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Charges.ProductChargeTier", b =>
+                {
+                    b.HasOne("Banking.Domain.Lookups.ChargeBasisType", "ChargeBasis")
+                        .WithMany()
+                        .HasForeignKey("ChargeBasisId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Charges.ProductCharge", "ProductCharge")
+                        .WithMany("Tiers")
+                        .HasForeignKey("ProductChargeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ChargeBasis");
+
+                    b.Navigation("ProductCharge");
+                });
+
             modelBuilder.Entity("Banking.Domain.Institution.Branch", b =>
                 {
                     b.HasOne("Banking.Domain.Security.StaffUser", null)
@@ -5328,6 +5724,11 @@ namespace Banking.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Banking.Domain.Accounts.AccountClassification", b =>
                 {
                     b.Navigation("SubClassifications");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Charges.ProductCharge", b =>
+                {
+                    b.Navigation("Tiers");
                 });
 
             modelBuilder.Entity("Banking.Domain.Institution.Branch", b =>

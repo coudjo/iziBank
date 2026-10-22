@@ -33,3 +33,11 @@ public sealed class CloseReasonType : Lookup;
 public sealed class FreezeReleaseActionType : Lookup;
 
 public sealed class LedgerAccountType : Lookup;
+
+public sealed class ChargeCategoryType : Lookup;
+
+public sealed class ChargeConditionType : Lookup;
+
+public sealed class ChargeBasisType : Lookup;
+
+public sealed class ChargeShortfallPolicyType : Lookup;
