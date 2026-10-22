@@ -48,6 +48,9 @@ internal sealed class PostingTestBed
 
     public long CashOverId { get; private set; }
 
+    /// <summary>The savings product's charge income account (B5-01).</summary>
+    public long ChargeIncomeId { get; private set; }
+
     public long SetupStaffId { get; private set; }
 
     public long SetupSupervisorId { get; private set; }
@@ -117,6 +120,11 @@ internal sealed class PostingTestBed
         context.Add(product);
         await context.SaveChangesAsync();
         Savings = new SampleProduct(product.ProductId, product.ProductCode, product.AccountPrefix);
+
+        // Plan B 2.2: the product's charge income account, so per-transaction charges can post (B5-01).
+        ChargeIncomeId = await LedgerAccountAsync(context, "4801-01", LookupCodes.LedgerAccountTypes.Income, HomeBranchId);
+        context.Add(new ProductLedgerSetting { ProductId = product.ProductId, SettingCode = LedgerSettingCodes.ChargeIncome, LedgerAccountId = ChargeIncomeId, CreatedOn = DateTime.UtcNow });
+        await context.SaveChangesAsync();
     }
 
     /// <summary>A staff member who is a teller with their own till ledger account in the home branch.</summary>

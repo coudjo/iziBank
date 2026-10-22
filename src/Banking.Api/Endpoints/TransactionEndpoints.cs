@@ -3,13 +3,20 @@ using Banking.Api.Problems;
 using Banking.Api.Security;
 using Banking.Application.Abstractions;
 using Banking.Application.Errors;
+using Banking.Domain.Charges;
 using Banking.Domain.Lookups;
 using Banking.Domain.Security;
 using Banking.Domain.Transactions;
+using Banking.Infrastructure.Charges;
 using Banking.Infrastructure.Security;
 using Banking.Infrastructure.Transactions;
 
 namespace Banking.Api.Endpoints;
+
+internal sealed record ChargeQuoteRequest(long? AccountId, string? Kind, decimal? Amount);
+
+/// <summary>B5-01: the charge on a transaction. Amount is what the account would pay; zero when waived or none applies.</summary>
+internal sealed record ChargeQuoteView(long? ProductChargeId, string? ChargeCode, decimal Amount, bool Waived);
 
 internal sealed record CashDepositRequest(long? AccountId, decimal? Amount, string? Narration, bool? ByHolder, CashPerson? Depositor);
 
@@ -97,6 +104,14 @@ internal static class TransactionEndpoints
             .RequirePermission(ModuleCatalog.Accounts, "ACCOUNT", PermissionAction.View)
             .Produces<AccountSignersView>()
             .ProducesProblem(StatusCodes.Status404NotFound);
+
+        api.MapPost("/transactions/quote", QuoteAsync)
+            .WithTags("Transactions")
+            .RequirePermission(ModuleCatalog.Transactions, "CASH", PermissionAction.View)
+            .Produces<ChargeQuoteView>()
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         var tills = api.MapGroup("/tills").WithTags("Tills");
 
@@ -236,6 +251,40 @@ internal static class TransactionEndpoints
                     request.Lines?.Select(static line => new JournalLineDraft(line.LedgerAccountId, line.AccountId, line.BranchId, line.CrDb, line.Amount)).ToList()),
                 cancellationToken),
             cancellationToken);
+
+    /// <summary>B5-01: what the charge would be for a withdrawal or transfer of this amount, without posting anything.</summary>
+    private static async Task<IResult> QuoteAsync(ChargeQuoteRequest request, ChargeQuoter quoter, CancellationToken cancellationToken)
+    {
+        var condition = ChargeQuoteKinds.ConditionFor(request.Kind);
+        if (request.AccountId is null || request.Amount is not > 0m || condition is null)
+        {
+            var errors = new Dictionary<string, string[]>(StringComparer.Ordinal);
+            if (request.AccountId is null)
+            {
+                errors["accountId"] = ["Choose the account."];
+            }
+
+            if (request.Amount is not > 0m)
+            {
+                errors["amount"] = ["Enter an amount above zero."];
+            }
+
+            if (condition is null)
+            {
+                errors["kind"] = ["Choose CASH_WITHDRAWAL or TRANSFER."];
+            }
+
+            return ResultProblems.From(OperationResult.Fail<ChargeQuoteView>(ProblemCodes.Validation, errors));
+        }
+
+        var quote = await quoter.QuoteAsync(request.AccountId.Value, condition, request.Amount.Value, cancellationToken).ConfigureAwait(false);
+        if (quote.ProblemCode is not null)
+        {
+            return ApiProblems.Result(quote.ProblemCode == ProblemCodes.NotFound ? StatusCodes.Status404NotFound : StatusCodes.Status409Conflict, quote.ProblemCode);
+        }
+
+        return TypedResults.Ok(new ChargeQuoteView(quote.ProductChargeId, quote.ChargeCode, quote.Amount, quote.Waived));
+    }
 
     private static async Task<IResult> SignersAsync(long accountId, CashPostings cash, CancellationToken cancellationToken)
     {

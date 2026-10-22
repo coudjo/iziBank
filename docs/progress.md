@@ -27,3 +27,4 @@
 | B2-01, B2-02, B2-03, B2-04 tills, vault, cash deposit and withdrawal, till close | done | 2026-10-22 | owner: dotnet test green, migration 0007, OpenAPI exported |
 | B4-01 reversals, B4-02 journals | done | 2026-10-22 | owner: build and test green |
 | B0-03 charge rules | written; waiting for owner build, test and migration 0008 | 2026-10-22 | migration 0008_ChargeRules to generate |
+| B5-01 charges on withdrawals and transfers | written; waiting for owner build, test and OpenAPI export | 2026-10-22 | no migration; `docs/api/openapi.json` re-export for the quote endpoint |

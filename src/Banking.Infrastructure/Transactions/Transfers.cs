@@ -3,8 +3,10 @@ using Banking.Application.Abstractions;
 using Banking.Application.Errors;
 using Banking.Domain.Accounts;
 using Banking.Domain.Ledger;
+using Banking.Domain.Lookups;
 using Banking.Domain.Security;
 using Banking.Domain.Transactions;
+using Banking.Infrastructure.Charges;
 using Banking.Infrastructure.Persistence;
 using Banking.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
@@ -29,12 +31,14 @@ public sealed class Transfers
     private readonly BankingDbContext _db;
     private readonly PostingEngine _engine;
     private readonly ICurrentUser _currentUser;
+    private readonly ChargeQuoter _quoter;
 
-    public Transfers(BankingDbContext db, PostingEngine engine, ICurrentUser currentUser)
+    public Transfers(BankingDbContext db, PostingEngine engine, ICurrentUser currentUser, ChargeQuoter quoter)
     {
         _db = db;
         _engine = engine;
         _currentUser = currentUser;
+        _quoter = quoter;
     }
 
     public async Task<OperationResult<PostingOutcome>> TransferAsync(TransferDraft draft, CancellationToken cancellationToken)
@@ -142,12 +146,26 @@ public sealed class Transfers
             ledger.Add(new LedgerLine(settings[to.BranchId], to.BranchId, EntrySides.Debit, value));
         }
 
+        // The source account pays any per-transfer charge on top of the amount moved (B5-01).
+        var charge = await _quoter.QuoteAsync(from.AccountId, LookupCodes.ChargeConditions.PerTransferOut, value, cancellationToken).ConfigureAwait(false);
+        if (charge.ProblemCode is not null)
+        {
+            return OperationResult.Fail<PostingOutcome>(charge.ProblemCode);
+        }
+
+        var accountLines = new List<AccountLine> { new(from.AccountId, EntrySides.Debit, value), new(to.AccountId, EntrySides.Credit, value) };
+        if (charge.IncomeLine is { } income)
+        {
+            accountLines.Add(new AccountLine(from.AccountId, EntrySides.Debit, charge.Amount));
+            ledger.Add(income);
+        }
+
         var posting = new PostingDraft(
             from.BranchId == to.BranchId ? TransactionCodes.Transfer : TransactionCodes.TransferAcrossBranches,
             TransactionLimitCodes.Transfer,
             value,
             string.IsNullOrWhiteSpace(draft.Narration) ? null : draft.Narration.Trim(),
-            [new AccountLine(from.AccountId, EntrySides.Debit, value), new AccountLine(to.AccountId, EntrySides.Credit, value)],
+            accountLines,
             ledger,
             CheckSignerKyc: true,
             new Dictionary<string, string?>(StringComparer.Ordinal)

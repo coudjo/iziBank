@@ -7,6 +7,7 @@ using Banking.Domain.Lookups;
 using Banking.Domain.Parties;
 using Banking.Domain.Security;
 using Banking.Domain.Transactions;
+using Banking.Infrastructure.Charges;
 using Banking.Infrastructure.Parties;
 using Banking.Infrastructure.Persistence;
 using Banking.Infrastructure.Security;
@@ -57,6 +58,7 @@ public sealed class CashPostings
     private readonly KycService _kyc;
     private readonly PartySignatures _signatures;
     private readonly TransactionOptions _options;
+    private readonly ChargeQuoter _quoter;
 
     public CashPostings(
         BankingDbContext db,
@@ -64,10 +66,12 @@ public sealed class CashPostings
         Tills tills,
         KycService kyc,
         PartySignatures signatures,
-        IOptions<TransactionOptions> options)
+        IOptions<TransactionOptions> options,
+        ChargeQuoter quoter)
     {
         ArgumentNullException.ThrowIfNull(options);
         _db = db;
+        _quoter = quoter;
         _engine = engine;
         _tills = tills;
         _kyc = kyc;
@@ -174,8 +178,27 @@ public sealed class CashPostings
         }
 
         lines.AddRange(crossing.Lines);
+        var charge = await _quoter.QuoteAsync(account.AccountId, LookupCodes.ChargeConditions.PerCashWithdrawal, amount, cancellationToken).ConfigureAwait(false);
+        if (charge.ProblemCode is not null)
+        {
+            return OperationResult.Fail<PostingOutcome>(charge.ProblemCode);
+        }
+
+        // The charge is debited to the account on top of the cash paid out, and books to charge income (B5-01).
+        var accountLines = new List<AccountLine> { new(account.AccountId, EntrySides.Debit, amount) };
+        if (charge.IncomeLine is { } income)
+        {
+            accountLines.Add(new AccountLine(account.AccountId, EntrySides.Debit, charge.Amount));
+            lines.Add(income);
+        }
+
         var details = Details(account.AccountNumber, session.TillSessionId, "recipient", draft.ToHolder, draft.Recipient);
         details["signers"] = string.Join(",", confirmed.Order().Select(static id => id.ToString(CultureInfo.InvariantCulture)));
+        if (charge.Amount > 0m)
+        {
+            details["charge"] = charge.Amount.ToString(CultureInfo.InvariantCulture);
+        }
+
         return await _engine.SubmitAsync(
                 actor,
                 new PostingDraft(
@@ -183,7 +206,7 @@ public sealed class CashPostings
                     TransactionLimitCodes.CashWithdrawal,
                     amount,
                     Narration(draft.Narration),
-                    [new AccountLine(account.AccountId, EntrySides.Debit, amount)],
+                    accountLines,
                     lines,
                     CheckSignerKyc: true,
                     details,
