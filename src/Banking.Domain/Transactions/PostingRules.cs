@@ -4,7 +4,11 @@ using Banking.Domain.Lookups;
 namespace Banking.Domain.Transactions;
 
 /// <summary>A line on a customer account. The engine adds the matching control-account line itself.</summary>
-public sealed record AccountLine(long AccountId, string CrDb, decimal Amount);
+/// <summary>
+/// A customer account line. <paramref name="AllowShortfall"/> lets this debit take the balance below zero (a charge under
+/// CHARGE_FULL, B5-02); the principal of the posting still has to fit.
+/// </summary>
+public sealed record AccountLine(long AccountId, string CrDb, decimal Amount, bool AllowShortfall = false);
 
 /// <summary>A general ledger line other than a product control account (till, vault, inter-branch, income...).</summary>
 public sealed record LedgerLine(long LedgerAccountId, int BranchId, string CrDb, decimal Amount);

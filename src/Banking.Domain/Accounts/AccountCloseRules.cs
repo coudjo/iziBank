@@ -5,8 +5,9 @@ public static class AccountCloseChecks
     public const string ZeroBalance = "ZERO_BALANCE";
     public const string NoHolds = "NO_HOLDS";
     public const string NoPendingItems = "NO_PENDING_ITEMS";
+    public const string NoArrears = "NO_ARREARS";
 
-    public static readonly IReadOnlyList<string> All = [ZeroBalance, NoHolds, NoPendingItems];
+    public static readonly IReadOnlyList<string> All = [ZeroBalance, NoHolds, NoPendingItems, NoArrears];
 }
 
 public sealed record AccountCloseCheck(string Code, bool Passed);
@@ -17,14 +18,18 @@ public sealed record AccountCloseCheck(string Code, bool Passed);
 /// </summary>
 public static class AccountCloseRules
 {
-    public static IReadOnlyList<AccountCloseCheck> Check(AccountBalance balance)
+    /// <summary>
+    /// The close checks. A negative balance fails ZERO_BALANCE; an open arrear (B5-02) fails NO_ARREARS.
+    /// </summary>
+    public static IReadOnlyList<AccountCloseCheck> Check(AccountBalance balance, decimal outstandingArrears = 0m)
     {
         ArgumentNullException.ThrowIfNull(balance);
         return
         [
             new(AccountCloseChecks.ZeroBalance, balance.ClearBalance == 0m),
             new(AccountCloseChecks.NoHolds, balance.FreezedAmount == 0m),
-            new(AccountCloseChecks.NoPendingItems, balance.UnsupervisedCredit == 0m && balance.UnsupervisedDebit == 0m)
+            new(AccountCloseChecks.NoPendingItems, balance.UnsupervisedCredit == 0m && balance.UnsupervisedDebit == 0m),
+            new(AccountCloseChecks.NoArrears, outstandingArrears == 0m)
         ];
     }
 }

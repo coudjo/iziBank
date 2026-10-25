@@ -40,7 +40,7 @@ public sealed class BankingModelTests
         nameof(LedgerEntry), nameof(LedgerAccountDailyBalance),
         nameof(SystemLedgerSetting), nameof(ProductLedgerSetting), nameof(RoleGroupTransactionLimit), nameof(TillSession),
         nameof(ChargeCategoryType), nameof(ChargeConditionType), nameof(ChargeBasisType), nameof(ChargeShortfallPolicyType),
-        nameof(ChargeCode), nameof(ProductCharge), nameof(ProductChargeTier)
+        nameof(ChargeCode), nameof(ProductCharge), nameof(ProductChargeTier), nameof(AccountChargeArrear)
     ];
 
     [Fact]

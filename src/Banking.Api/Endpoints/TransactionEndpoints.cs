@@ -16,7 +16,7 @@ namespace Banking.Api.Endpoints;
 internal sealed record ChargeQuoteRequest(long? AccountId, string? Kind, decimal? Amount);
 
 /// <summary>B5-01: the charge on a transaction. Amount is what the account would pay; zero when waived or none applies.</summary>
-internal sealed record ChargeQuoteView(long? ProductChargeId, string? ChargeCode, decimal Amount, bool Waived);
+internal sealed record ChargeQuoteView(long? ProductChargeId, string? ChargeCode, decimal Amount, decimal Arrear, bool Waived);
 
 internal sealed record CashDepositRequest(long? AccountId, decimal? Amount, string? Narration, bool? ByHolder, CashPerson? Depositor);
 
@@ -283,7 +283,7 @@ internal static class TransactionEndpoints
             return ApiProblems.Result(quote.ProblemCode == ProblemCodes.NotFound ? StatusCodes.Status404NotFound : StatusCodes.Status409Conflict, quote.ProblemCode);
         }
 
-        return TypedResults.Ok(new ChargeQuoteView(quote.ProductChargeId, quote.ChargeCode, quote.Amount, quote.Waived));
+        return TypedResults.Ok(new ChargeQuoteView(quote.ProductChargeId, quote.ChargeCode, quote.Amount, quote.Arrear, quote.Waived));
     }
 
     private static async Task<IResult> SignersAsync(long accountId, CashPostings cash, CancellationToken cancellationToken)

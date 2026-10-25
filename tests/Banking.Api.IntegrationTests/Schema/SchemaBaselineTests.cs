@@ -32,7 +32,7 @@ public sealed class SchemaBaselineTests
         "LedgerAccountDailyBalance", "SystemLedgerSetting", "ProductLedgerSetting", "RoleGroupTransactionLimit",
         "TillSession",
         "ChargeCategoryType", "ChargeConditionType", "ChargeBasisType", "ChargeShortfallPolicyType",
-        "ChargeCode", "ProductCharge", "ProductChargeTier"
+        "ChargeCode", "ProductCharge", "ProductChargeTier", "AccountChargeArrear"
     ];
 
     private readonly MsSqlContainerFixture _fixture;
@@ -201,6 +201,8 @@ public sealed class SchemaBaselineTests
         indexes.ShouldContain("UX_ChargeCode_Code");
         indexes.ShouldContain("UX_ProductCharge_Product_Charge_Condition_From");
         indexes.ShouldContain("UX_ProductChargeTier_Charge_Tier");
+        indexes.ShouldContain("IX_AccountChargeArrear_Account_Raised");
+        checks.ShouldContain("CK_AccountChargeArrear_Amounts");
     }
 
     private static async Task<string[]> QueryStringsAsync(

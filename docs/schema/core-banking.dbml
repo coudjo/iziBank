@@ -1030,6 +1030,25 @@ Table ProductChargeTier {
   Note: 'B0-03. Check: MinimumCharge null, or MaximumCharge null, or MaximumCharge >= MinimumCharge. Bands are written with their charge and cascade with it.'
 }
 
+Table AccountChargeArrear {
+  AccountChargeArrearId bigint [pk, increment]
+  AccountId bigint [not null]
+  ProductChargeId bigint [not null]
+  RaisedTransactionId bigint [not null, note: 'The posting that raised it']
+  RaisedOn date [not null, note: 'Working date of that posting']
+  Amount decimal(19,4) [not null]
+  OutstandingAmount decimal(19,4) [not null, note: 'Reduced only under the account balance lock, by credits in the same posting']
+  RowVersion rowversion [not null]
+  Indexes {
+    (AccountId, RaisedOn, AccountChargeArrearId) [name: 'IX_AccountChargeArrear_Account_Raised']
+  }
+  Note: 'B5-02. Check: Amount > 0 and 0 <= OutstandingAmount <= Amount (CK_AccountChargeArrear_Amounts). Collected oldest first by RaisedOn, then id.'
+}
+
+Ref: AccountChargeArrear.AccountId > Account.AccountId
+Ref: AccountChargeArrear.ProductChargeId > ProductCharge.ProductChargeId
+Ref: AccountChargeArrear.RaisedTransactionId > PostedTransaction.PostedTransactionId
+
 Ref: ChargeCode.ChargeCategoryId > ChargeCategoryType.Id
 Ref: ProductCharge.ProductId > Product.ProductId
 Ref: ProductCharge.ChargeId > ChargeCode.ChargeId

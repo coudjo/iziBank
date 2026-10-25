@@ -188,7 +188,7 @@ public sealed class CashPostings
         var accountLines = new List<AccountLine> { new(account.AccountId, EntrySides.Debit, amount) };
         if (charge.IncomeLine is { } income)
         {
-            accountLines.Add(new AccountLine(account.AccountId, EntrySides.Debit, charge.Amount));
+            accountLines.Add(new AccountLine(account.AccountId, EntrySides.Debit, charge.Amount, charge.AllowShortfall));
             lines.Add(income);
         }
 
@@ -210,7 +210,8 @@ public sealed class CashPostings
                     lines,
                     CheckSignerKyc: true,
                     details,
-                    [new LedgerFloor(till, actor.BranchId, ProblemCodes.TillInsufficientCash)]),
+                    [new LedgerFloor(till, actor.BranchId, ProblemCodes.TillInsufficientCash)],
+                    Arrears: charge.ArrearRaises(account.AccountId)),
                 cancellationToken)
             .ConfigureAwait(false);
     }

@@ -156,7 +156,7 @@ public sealed class Transfers
         var accountLines = new List<AccountLine> { new(from.AccountId, EntrySides.Debit, value), new(to.AccountId, EntrySides.Credit, value) };
         if (charge.IncomeLine is { } income)
         {
-            accountLines.Add(new AccountLine(from.AccountId, EntrySides.Debit, charge.Amount));
+            accountLines.Add(new AccountLine(from.AccountId, EntrySides.Debit, charge.Amount, charge.AllowShortfall));
             ledger.Add(income);
         }
 
@@ -175,6 +175,7 @@ public sealed class Transfers
                 ["signers"] = string.Join(",", confirmed.Order().Select(static id => id.ToString(CultureInfo.InvariantCulture)))
             });
 
+        posting = posting with { Arrears = charge.ArrearRaises(from.AccountId) };
         return await _engine.SubmitAsync(actor, posting, cancellationToken).ConfigureAwait(false);
     }
 }

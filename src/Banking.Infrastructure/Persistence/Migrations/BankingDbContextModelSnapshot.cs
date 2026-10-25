@@ -638,6 +638,55 @@ namespace Banking.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Banking.Domain.Charges.AccountChargeArrear", b =>
+                {
+                    b.Property<long>("AccountChargeArrearId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("AccountChargeArrearId"));
+
+                    b.Property<long>("AccountId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)");
+
+                    b.Property<decimal>("OutstandingAmount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)");
+
+                    b.Property<long>("ProductChargeId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateOnly>("RaisedOn")
+                        .HasColumnType("date");
+
+                    b.Property<long>("RaisedTransactionId")
+                        .HasColumnType("bigint");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("AccountChargeArrearId");
+
+                    b.HasIndex("ProductChargeId");
+
+                    b.HasIndex("RaisedTransactionId");
+
+                    b.HasIndex("AccountId", "RaisedOn", "AccountChargeArrearId")
+                        .HasDatabaseName("IX_AccountChargeArrear_Account_Raised");
+
+                    b.ToTable("AccountChargeArrear", "dbo", t =>
+                        {
+                            t.HasCheckConstraint("CK_AccountChargeArrear_Amounts", "[Amount] > 0 AND [OutstandingAmount] >= 0 AND [OutstandingAmount] <= [Amount]");
+                        });
+                });
+
             modelBuilder.Entity("Banking.Domain.Charges.ChargeCode", b =>
                 {
                     b.Property<int>("ChargeId")
@@ -4496,6 +4545,27 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.Navigation("Account");
 
                     b.Navigation("Action");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Charges.AccountChargeArrear", b =>
+                {
+                    b.HasOne("Banking.Domain.Accounts.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Charges.ProductCharge", null)
+                        .WithMany()
+                        .HasForeignKey("ProductChargeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Transactions.PostedTransaction", null)
+                        .WithMany()
+                        .HasForeignKey("RaisedTransactionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Banking.Domain.Charges.ChargeCode", b =>

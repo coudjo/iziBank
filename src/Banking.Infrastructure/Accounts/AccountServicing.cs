@@ -42,6 +42,13 @@ public sealed class AccountServicing
         _timeProvider = timeProvider;
     }
 
+    /// <summary>What the account still owes in charge arrears (B5-02). An account with any cannot be closed.</summary>
+    private Task<decimal> OutstandingArrearsAsync(long accountId, CancellationToken cancellationToken) =>
+        _db.Set<Banking.Domain.Charges.AccountChargeArrear>()
+            .AsNoTracking()
+            .Where(row => row.AccountId == accountId)
+            .SumAsync(row => row.OutstandingAmount, cancellationToken);
+
     // ---------------------------------------------------------------- Close
 
     public async Task<AccountCloseStatus?> CloseStatusAsync(long accountId, CancellationToken cancellationToken)
@@ -52,7 +59,7 @@ public sealed class AccountServicing
             return null;
         }
 
-        var checks = AccountCloseRules.Check(balance);
+        var checks = AccountCloseRules.Check(balance, await OutstandingArrearsAsync(accountId, cancellationToken).ConfigureAwait(false));
         return new AccountCloseStatus(checks.All(static check => check.Passed), checks);
     }
 
@@ -88,7 +95,8 @@ public sealed class AccountServicing
                 return OperationResult.Fail<long>(problem);
             }
 
-            var failed = AccountCloseRules.Check(account.Balance).Where(static check => !check.Passed).Select(static check => check.Code).ToList();
+            var arrears = await OutstandingArrearsAsync(accountId, cancellationToken).ConfigureAwait(false);
+            var failed = AccountCloseRules.Check(account.Balance, arrears).Where(static check => !check.Passed).Select(static check => check.Code).ToList();
             if (failed.Count > 0)
             {
                 return OperationResult.FailWith<long>(ProblemCodes.AccountCloseBlocked, new Dictionary<string, object?>(StringComparer.Ordinal) { ["failedChecks"] = failed });

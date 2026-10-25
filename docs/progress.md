@@ -28,3 +28,4 @@
 | B4-01 reversals, B4-02 journals | done | 2026-10-22 | owner: build and test green |
 | B0-03 charge rules | written; waiting for owner build, test and migration 0008 | 2026-10-22 | migration 0008_ChargeRules to generate |
 | B5-01 charges on withdrawals and transfers | written; waiting for owner build, test and OpenAPI export | 2026-10-22 | no migration; `docs/api/openapi.json` re-export for the quote endpoint |
+| B5-02 shortfall policies and arrears | written; periodic fees not yet; waiting for owner build, test, migration 0008 and OpenAPI export | 2026-10-22 | migration 0008 includes `AccountChargeArrear` |

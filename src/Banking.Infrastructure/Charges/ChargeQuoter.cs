@@ -1,4 +1,5 @@
 using Banking.Application.Abstractions;
+using Banking.Application.Charges;
 using Banking.Application.Errors;
 using Banking.Domain.Accounts;
 using Banking.Domain.Charges;
@@ -7,37 +8,56 @@ using Banking.Domain.Lookups;
 using Banking.Domain.Supervision;
 using Banking.Domain.Transactions;
 using Banking.Infrastructure.Persistence;
+using Banking.Infrastructure.Transactions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Banking.Infrastructure.Charges;
 
 /// <summary>
-/// What a per-transaction charge comes to on one account, and the income line that books it.
+/// What a per-transaction charge comes to on one account, and the lines that book it.
 /// </summary>
 /// <param name="ProductChargeId">The approved product charge that applies, or null when none does.</param>
 /// <param name="ChargeCode">The charge code of that product charge.</param>
-/// <param name="Amount">The amount to debit to the account; zero when waived or when no charge applies.</param>
+/// <param name="Amount">The amount to debit to the account now; zero when waived, written off or none applies.</param>
+/// <param name="Arrear">The part the balance could not cover that is kept to be collected later (DEFER).</param>
+/// <param name="AllowShortfall">True when the charge may take the balance below zero (CHARGE_FULL).</param>
 /// <param name="Waived">True when the free-transaction allowance for the month covers this transaction.</param>
 /// <param name="IncomeLine">The credit to the product's charge income account in the account's branch, when Amount is above zero.</param>
 /// <param name="ProblemCode">Set when the charge cannot be booked, for example when no charge income account is set up.</param>
-public sealed record ChargeQuote(long? ProductChargeId, string? ChargeCode, decimal Amount, bool Waived, LedgerLine? IncomeLine, string? ProblemCode);
+public sealed record ChargeQuote(
+    long? ProductChargeId,
+    string? ChargeCode,
+    decimal Amount,
+    decimal Arrear,
+    bool AllowShortfall,
+    bool Waived,
+    LedgerLine? IncomeLine,
+    string? ProblemCode)
+{
+    /// <summary>The arrear to record on the posting, for the account it is charged to.</summary>
+    public IReadOnlyList<ArrearRaise>? ArrearRaises(long accountId) =>
+        Arrear > 0m && ProductChargeId is { } id ? [new ArrearRaise(accountId, id, Arrear)] : null;
+}
 
-/// <summary>Plan B 2.4 and B5-01: works out a per-transaction charge and the lines that book it. Read-only.</summary>
+/// <summary>Plan B 6.8, B5-01 and B5-02: works out a per-transaction charge and the lines that book it. Read-only.</summary>
 public sealed class ChargeQuoter
 {
     private readonly BankingDbContext _db;
     private readonly IWorkingDateProvider _workingDates;
+    private readonly IOptions<ChargeOptions> _options;
 
-    public ChargeQuoter(BankingDbContext db, IWorkingDateProvider workingDates)
+    public ChargeQuoter(BankingDbContext db, IWorkingDateProvider workingDates, IOptions<ChargeOptions> options)
     {
         _db = db;
         _workingDates = workingDates;
+        _options = options;
     }
 
     /// <summary>
     /// The charge for one transaction of the given condition. Exempt accounts (B-16) and products without an approved
-    /// charge on the working date pay nothing. A free-transaction allowance counts the account's debits of the same
-    /// kind earlier in the calendar month.
+    /// charge on the working date pay nothing. The shortfall policy decides what the charge takes when the balance,
+    /// after the principal, does not cover it (B-17).
     /// </summary>
     public async Task<ChargeQuote> QuoteAsync(long accountId, string conditionCode, decimal amount, CancellationToken cancellationToken)
     {
@@ -62,6 +82,7 @@ public sealed class ChargeQuoter
             .AsNoTracking()
             .Include(row => row.ChargeCode)
             .Include(row => row.ChargeCondition)
+            .Include(row => row.ShortfallPolicy)
             .Include(row => row.Tiers)
             .ThenInclude(row => row.ChargeBasis)
             .Where(row => row.ProductId == account.ProductId
@@ -85,30 +106,42 @@ public sealed class ChargeQuoter
         var waived = ChargeCalculator.IsWaived(charge.FreeTransactions, earlier);
         if (waived || fee <= 0m)
         {
-            return new ChargeQuote(charge.ProductChargeId, charge.ChargeCode!.Code, 0m, waived, null, null);
+            return new ChargeQuote(charge.ProductChargeId, charge.ChargeCode!.Code, 0m, 0m, false, waived, null, null);
         }
 
-        var incomeAccountId = await _db.Set<ProductLedgerSetting>()
+        // What the balance can give the charge is what is left after the principal (B-17).
+        var available = await _db.Set<AccountBalance>()
             .AsNoTracking()
-            .Where(row => row.ProductId == account.ProductId && row.SettingCode == LedgerSettingCodes.ChargeIncome)
-            .Select(row => (long?)row.LedgerAccountId)
+            .Where(row => row.AccountId == accountId)
+            .Select(row => row.AvailableBalance)
             .SingleOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
+        var policy = ChargeShortfallRules.Resolve(charge.ShortfallPolicy?.Code, _options.Value.ShortfallPolicy);
+        var outcome = ChargeShortfallRules.Apply(policy, fee, available - amount);
+        var code = charge.ChargeCode!.Code;
+        if (outcome.Charged <= 0m)
+        {
+            return new ChargeQuote(charge.ProductChargeId, code, 0m, outcome.Arrear, false, false, null, null);
+        }
+
+        var incomeAccountId = await IncomeAccountAsync(account.ProductId, cancellationToken).ConfigureAwait(false);
         if (incomeAccountId is null)
         {
-            return new ChargeQuote(charge.ProductChargeId, charge.ChargeCode!.Code, 0m, false, null, ProblemCodes.LedgerSettingMissing);
+            return new ChargeQuote(charge.ProductChargeId, code, 0m, 0m, false, false, null, ProblemCodes.LedgerSettingMissing);
         }
 
         return new ChargeQuote(
             charge.ProductChargeId,
-            charge.ChargeCode!.Code,
-            fee,
+            code,
+            outcome.Charged,
+            outcome.Arrear,
+            policy == LookupCodes.ChargeShortfallPolicies.ChargeFull,
             false,
-            new LedgerLine(incomeAccountId.Value, account.BranchId, EntrySides.Credit, fee),
+            new LedgerLine(incomeAccountId.Value, account.BranchId, EntrySides.Credit, outcome.Charged),
             null);
     }
 
-    private static ChargeQuote Nothing(string? problemCode) => new(null, null, 0m, false, null, problemCode);
+    private static ChargeQuote Nothing(string? problemCode) => new(null, null, 0m, 0m, false, false, null, problemCode);
 
     private async Task<bool> ExemptAsync(long accountId, CancellationToken cancellationToken)
     {
@@ -121,7 +154,18 @@ public sealed class ChargeQuoter
         return exempt == true;
     }
 
-    /// <summary>Counts the account's debits of the same kind earlier this month, one per posted transaction.</summary>
+    private async Task<long?> IncomeAccountAsync(int productId, CancellationToken cancellationToken) =>
+        await _db.Set<ProductLedgerSetting>()
+            .AsNoTracking()
+            .Where(row => row.ProductId == productId && row.SettingCode == LedgerSettingCodes.ChargeIncome)
+            .Select(row => (long?)row.LedgerAccountId)
+            .SingleOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+    /// <summary>
+    /// Counts the account's debits of the same kind earlier this month, one per posted transaction. A transaction in
+    /// which the account is also credited (an arrear collected from a transfer in) is not a withdrawal and is not counted.
+    /// </summary>
     private async Task<int> CountThisMonthAsync(long accountId, string conditionCode, DateOnly working, CancellationToken cancellationToken)
     {
         string[] codes = conditionCode == LookupCodes.ChargeConditions.PerTransferOut
@@ -140,7 +184,10 @@ public sealed class ChargeQuoter
                 && row.CrDb == EntrySides.Debit
                 && row.EntryDate >= monthStart
                 && row.EntryDate <= working
-                && codeIds.Contains(row.TransactionCodeId))
+                && codeIds.Contains(row.TransactionCodeId)
+                && !_db.Set<AccountLedgerEntry>().Any(credit => credit.PostedTransactionId == row.PostedTransactionId
+                    && credit.AccountId == accountId
+                    && credit.CrDb == EntrySides.Credit))
             .Select(row => row.PostedTransactionId)
             .Distinct()
             .CountAsync(cancellationToken)

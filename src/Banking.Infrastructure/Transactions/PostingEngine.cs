@@ -4,7 +4,9 @@ using Banking.Application.Abstractions;
 using Banking.Application.Errors;
 using Banking.Application.Supervision;
 using Banking.Domain.Accounts;
+using Banking.Domain.Charges;
 using Banking.Domain.Institution;
+using Banking.Domain.Ledger;
 using Banking.Domain.Lookups;
 using Banking.Domain.Security;
 using Banking.Domain.Supervision;
@@ -39,7 +41,14 @@ public sealed record PostingDraft(
     IReadOnlyList<LedgerFloor>? Floors = null,
     long? ClosesTillSessionId = null,
     bool ExactLedgerLines = false,
-    long? ReversesTransactionId = null);
+    long? ReversesTransactionId = null,
+    IReadOnlyList<ArrearRaise>? Arrears = null);
+
+/// <summary>A charge the account could not pay in full, to be collected from later credits (B5-02, DEFER).</summary>
+public sealed record ArrearRaise(long AccountId, long ProductChargeId, decimal Amount);
+
+/// <summary>An arrear a credit collects in its posting, with the charge income account it books to.</summary>
+internal sealed record ArrearCollection(Account Account, decimal Amount, long IncomeLedgerAccountId);
 
 /// <summary>
 /// A cash ledger account (till or vault) whose balance in one branch must not go below zero after the posting
@@ -457,7 +466,8 @@ public sealed class PostingEngine
         {
             var account = accounts[group.Key];
             var credit = group.Where(static line => line.CrDb == EntrySides.Credit).Sum(static line => line.Amount);
-            var debit = group.Where(static line => line.CrDb == EntrySides.Debit).Sum(static line => line.Amount);
+            // A charge the balance cannot cover may take it below zero (CHARGE_FULL); the principal still has to fit.
+            var debit = group.Where(static line => line.CrDb == EntrySides.Debit && !line.AllowShortfall).Sum(static line => line.Amount);
             var state = new AccountPostingState(
                 Closed: account.ClosedOn is not null,
                 Approved: SupervisionRules.CheckUsable(account).Allowed,
@@ -502,6 +512,21 @@ public sealed class PostingEngine
         if (accounts.Values.Select(static row => row.Product!.CurrencyId).Distinct().Count() > 1)
         {
             return new Refusal(ProblemCodes.TransactionCurrencyMismatch);
+        }
+
+        // Collecting an arrear books to charge income, so a credit to an account with arrears needs that account (B5-02).
+        if (!draft.ExactLedgerLines)
+        {
+            foreach (var credited in draft.AccountLines.Where(static line => line.CrDb == EntrySides.Credit).Select(static line => line.AccountId).Distinct())
+            {
+                var owed = await _db.Set<AccountChargeArrear>().AsNoTracking().AnyAsync(row => row.AccountId == credited && row.OutstandingAmount > 0m, cancellationToken).ConfigureAwait(false);
+                if (owed && await IncomeAccountAsync(accounts[credited].ProductId, cancellationToken).ConfigureAwait(false) is null)
+                {
+                    return new Refusal(
+                        ProblemCodes.LedgerSettingMissing,
+                        new Dictionary<string, object?>(StringComparer.Ordinal) { ["settingCode"] = LedgerSettingCodes.ChargeIncome, ["productId"] = accounts[credited].ProductId });
+                }
+            }
         }
 
         if (draft.CheckSignerKyc)
@@ -627,6 +652,19 @@ public sealed class PostingEngine
             customerLines.Add((account, line, balanceAfter));
         }
 
+        // An arrear is collected by a credit to its account, in this same posting (B5-02). The collection is a debit to
+        // the account, booked to the control account and to charge income, and it never exceeds what the credit adds.
+        var allLedgerLines = new List<LedgerLine>(ledgerLines);
+        foreach (var collection in await CollectArrearsAsync(draft, accounts, cancellationToken).ConfigureAwait(false))
+        {
+            var account = collection.Account;
+            var balanceAfter = PostingRules.Post(account.Balance!, EntrySides.Debit, collection.Amount);
+            account.Balance!.LastDebitTransactionDate = now;
+            customerLines.Add((account, new AccountLine(account.AccountId, EntrySides.Debit, collection.Amount), balanceAfter));
+            allLedgerLines.Add(new LedgerLine(account.Product!.LedgerControlAccountId!.Value, account.BranchId, EntrySides.Debit, collection.Amount));
+            allLedgerLines.Add(new LedgerLine(collection.IncomeLedgerAccountId, account.BranchId, EntrySides.Credit, collection.Amount));
+        }
+
         _db.Set<PostedTransaction>().Add(posted);
         _activity.Record(
             supervisorId is null ? EventCodes.PostingPost : EventCodes.PostingApprove,
@@ -649,7 +687,7 @@ public sealed class PostingEngine
                 .ConfigureAwait(false);
         }
 
-        foreach (var line in ledgerLines)
+        foreach (var line in allLedgerLines)
         {
             await _db.Database.ExecuteSqlInterpolatedAsync(
                     $"""
@@ -669,9 +707,82 @@ public sealed class PostingEngine
             _activity.Record(EventCodes.TillClose, nameof(TillSession), tillSessionId.ToString(CultureInfo.InvariantCulture));
         }
 
+        foreach (var raise in draft.Arrears ?? [])
+        {
+            _db.Set<AccountChargeArrear>().Add(new AccountChargeArrear
+            {
+                AccountId = raise.AccountId,
+                ProductChargeId = raise.ProductChargeId,
+                RaisedTransactionId = posted.PostedTransactionId,
+                RaisedOn = workingDate,
+                Amount = raise.Amount,
+                OutstandingAmount = raise.Amount
+            });
+        }
+
         request.PostedTransactionId = posted.PostedTransactionId;
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return posted.PostedTransactionId;
+    }
+
+    private async Task<long?> IncomeAccountAsync(int productId, CancellationToken cancellationToken) =>
+        await _db.Set<ProductLedgerSetting>()
+            .AsNoTracking()
+            .Where(row => row.ProductId == productId && row.SettingCode == LedgerSettingCodes.ChargeIncome)
+            .Select(row => (long?)row.LedgerAccountId)
+            .SingleOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+    /// <summary>
+    /// Works out the arrears the credits of a posting collect, oldest first, and reduces them. A credit collects at most
+    /// what it adds to its account. A reversal (exact lines) collects nothing.
+    /// </summary>
+    private async Task<IReadOnlyList<ArrearCollection>> CollectArrearsAsync(PostingDraft draft, Dictionary<long, Account> accounts, CancellationToken cancellationToken)
+    {
+        var collections = new List<ArrearCollection>();
+        if (draft.ExactLedgerLines)
+        {
+            return collections;
+        }
+
+        foreach (var group in draft.AccountLines.Where(static line => line.CrDb == EntrySides.Credit).GroupBy(static line => line.AccountId))
+        {
+            var account = accounts[group.Key];
+            var arrears = await _db.Set<AccountChargeArrear>()
+                .Where(row => row.AccountId == group.Key && row.OutstandingAmount > 0m)
+                .OrderBy(row => row.RaisedOn)
+                .ThenBy(row => row.AccountChargeArrearId)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+            if (arrears.Count == 0)
+            {
+                continue;
+            }
+
+            var income = await IncomeAccountAsync(account.ProductId, cancellationToken).ConfigureAwait(false)
+                ?? throw new InvalidOperationException("Charge income is checked before the posting is made.");
+            var remaining = group.Sum(static line => line.Amount);
+            var collected = 0m;
+            foreach (var arrear in arrears)
+            {
+                if (remaining <= 0m)
+                {
+                    break;
+                }
+
+                var take = Math.Min(remaining, arrear.OutstandingAmount);
+                arrear.OutstandingAmount -= take;
+                remaining -= take;
+                collected += take;
+            }
+
+            if (collected > 0m)
+            {
+                collections.Add(new ArrearCollection(account, collected, income));
+            }
+        }
+
+        return collections;
     }
 
     /// <summary>Loads a pending request in the actor's branch the actor may decide on, with its draft.</summary>
