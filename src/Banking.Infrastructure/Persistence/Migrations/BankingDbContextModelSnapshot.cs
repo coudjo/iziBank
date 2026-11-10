@@ -1146,6 +1146,47 @@ namespace Banking.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Banking.Domain.Interest.AccountInterestAccrual", b =>
+                {
+                    b.Property<long>("AccountInterestAccrualId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("AccountInterestAccrualId"));
+
+                    b.Property<long>("AccountId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateOnly>("AccrualDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime>("AccruedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)");
+
+                    b.Property<decimal>("Balance")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("decimal(19,4)");
+
+                    b.Property<decimal>("Rate")
+                        .HasPrecision(9, 4)
+                        .HasColumnType("decimal(9,4)");
+
+                    b.HasKey("AccountInterestAccrualId");
+
+                    b.HasIndex("AccountId", "AccrualDate")
+                        .IsUnique()
+                        .HasDatabaseName("UX_AccountInterestAccrual_Account_Date");
+
+                    b.ToTable("AccountInterestAccrual", "dbo", t =>
+                        {
+                            t.HasCheckConstraint("CK_AccountInterestAccrual_Amounts", "[Rate] >= 0 AND [Amount] >= 0");
+                        });
+                });
+
             modelBuilder.Entity("Banking.Domain.Ledger.LedgerAccount", b =>
                 {
                     b.Property<long>("LedgerAccountId")
@@ -1426,6 +1467,38 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.ToTable("BusinessDayStatusType", "dbo");
                 });
 
+            modelBuilder.Entity("Banking.Domain.Lookups.CapitalizationFrequencyType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Code");
+
+                    b.ToTable("CapitalizationFrequencyType", "dbo");
+                });
+
             modelBuilder.Entity("Banking.Domain.Lookups.ChargeBasisType", b =>
                 {
                     b.Property<int>("Id")
@@ -1584,6 +1657,38 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.HasAlternateKey("Code");
 
                     b.ToTable("CloseReasonType", "dbo");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Lookups.DayCountType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Code");
+
+                    b.ToTable("DayCountType", "dbo");
                 });
 
             modelBuilder.Entity("Banking.Domain.Lookups.FreezeReleaseActionType", b =>
@@ -2763,6 +2868,12 @@ namespace Banking.Infrastructure.Persistence.Migrations
                         .HasPrecision(9, 4)
                         .HasColumnType("decimal(9,4)");
 
+                    b.Property<int?>("InterestCapitalizationFrequencyId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("InterestDayCountId")
+                        .HasColumnType("int");
+
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -2813,6 +2924,9 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("SupervisedOn")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("WithholdingTaxApplies")
+                        .HasColumnType("bit");
+
                     b.HasKey("ProductId");
 
                     b.HasIndex("BranchId");
@@ -2820,6 +2934,10 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.HasIndex("CreatedByUserId");
 
                     b.HasIndex("CurrencyId");
+
+                    b.HasIndex("InterestCapitalizationFrequencyId");
+
+                    b.HasIndex("InterestDayCountId");
 
                     b.HasIndex("LedgerControlAccountId");
 
@@ -4739,6 +4857,17 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.Navigation("RegulatoryCategory");
                 });
 
+            modelBuilder.Entity("Banking.Domain.Interest.AccountInterestAccrual", b =>
+                {
+                    b.HasOne("Banking.Domain.Accounts.Account", "Account")
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Account");
+                });
+
             modelBuilder.Entity("Banking.Domain.Ledger.LedgerAccount", b =>
                 {
                     b.HasOne("Banking.Domain.Institution.Branch", "Branch")
@@ -5220,6 +5349,16 @@ namespace Banking.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
+                    b.HasOne("Banking.Domain.Lookups.CapitalizationFrequencyType", "InterestCapitalizationFrequency")
+                        .WithMany()
+                        .HasForeignKey("InterestCapitalizationFrequencyId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Banking.Domain.Lookups.DayCountType", "InterestDayCount")
+                        .WithMany()
+                        .HasForeignKey("InterestDayCountId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("Banking.Domain.Ledger.LedgerAccount", "LedgerControlAccount")
                         .WithMany()
                         .HasForeignKey("LedgerControlAccountId")
@@ -5244,6 +5383,10 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.Navigation("Branch");
 
                     b.Navigation("Currency");
+
+                    b.Navigation("InterestCapitalizationFrequency");
+
+                    b.Navigation("InterestDayCount");
 
                     b.Navigation("LedgerControlAccount");
 

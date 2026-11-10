@@ -32,7 +32,8 @@ public sealed class SchemaBaselineTests
         "LedgerAccountDailyBalance", "SystemLedgerSetting", "ProductLedgerSetting", "RoleGroupTransactionLimit",
         "TillSession",
         "ChargeCategoryType", "ChargeConditionType", "ChargeBasisType", "ChargeShortfallPolicyType",
-        "ChargeCode", "ProductCharge", "ProductChargeTier", "AccountChargeArrear"
+        "ChargeCode", "ProductCharge", "ProductChargeTier", "AccountChargeArrear",
+        "AccountInterestAccrual", "CapitalizationFrequencyType", "DayCountType"
     ];
 
     private readonly MsSqlContainerFixture _fixture;
@@ -160,6 +161,7 @@ public sealed class SchemaBaselineTests
         checks.ShouldContain("CK_ProductCharge_FreeTransactions");
         checks.ShouldContain("CK_ProductChargeTier_Amount");
         checks.ShouldContain("CK_ProductChargeTier_MinMax");
+        checks.ShouldContain("CK_AccountInterestAccrual_Amounts");
 
         var indexes = await QueryStringsAsync(
             connection,
@@ -202,6 +204,7 @@ public sealed class SchemaBaselineTests
         indexes.ShouldContain("UX_ProductCharge_Product_Charge_Condition_From");
         indexes.ShouldContain("UX_ProductChargeTier_Charge_Tier");
         indexes.ShouldContain("IX_AccountChargeArrear_Account_Raised");
+        indexes.ShouldContain("UX_AccountInterestAccrual_Account_Date");
         checks.ShouldContain("CK_AccountChargeArrear_Amounts");
     }
 

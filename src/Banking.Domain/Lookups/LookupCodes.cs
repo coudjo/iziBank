@@ -354,6 +354,24 @@ public static class LookupCodes
         public static readonly IReadOnlyList<string> All = [CollectAvailable, ChargeFull, Defer];
     }
 
+    public static class CapitalizationFrequencies
+    {
+        public const string Monthly = "MONTHLY";
+        public const string Quarterly = "QUARTERLY";
+        public const string HalfYearly = "HALF_YEARLY";
+        public const string Yearly = "YEARLY";
+
+        public static readonly IReadOnlyList<string> All = [Monthly, Quarterly, HalfYearly, Yearly];
+    }
+
+    public static class DayCounts
+    {
+        public const string Act365 = "ACT_365";
+        public const string Act360 = "ACT_360";
+
+        public static readonly IReadOnlyList<string> All = [Act365, Act360];
+    }
+
     public static IEnumerable<string> AllCodes()
     {
         return RegulatoryCategories.All
@@ -376,7 +394,9 @@ public static class LookupCodes
             .Concat(ChargeCategories.All)
             .Concat(ChargeConditions.All)
             .Concat(ChargeBases.All)
-            .Concat(ChargeShortfallPolicies.All);
+            .Concat(ChargeShortfallPolicies.All)
+            .Concat(CapitalizationFrequencies.All)
+            .Concat(DayCounts.All);
     }
 
     public static string ToDisplayName(string code)

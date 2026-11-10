@@ -21,7 +21,10 @@ internal sealed record ProductRequest(
     short? AccountsPerCustomer,
     bool? IsChequeBookAllowed,
     bool? IsFreezed,
-    bool? IsActive);
+    bool? IsActive,
+    int? InterestCapitalizationFrequencyId = null,
+    int? InterestDayCountId = null,
+    bool? WithholdingTaxApplies = null);
 
 internal sealed record ProductRateRequest(int? RateTypeId, decimal? MinimumAmount, decimal? MaximumAmount, decimal? InterestRate, DateOnly? EffectiveFrom, DateOnly? EffectiveTo);
 
@@ -211,7 +214,10 @@ internal static class ProductEndpoints
             request.AccountsPerCustomer,
             request.IsChequeBookAllowed,
             request.IsFreezed,
-            request.IsActive);
+            request.IsActive,
+            request.InterestCapitalizationFrequencyId,
+            request.InterestDayCountId,
+            request.WithholdingTaxApplies);
 
     private static ProductRateDraft ToDraft(ProductRateRequest request) =>
         new(request.RateTypeId, request.MinimumAmount, request.MaximumAmount, request.InterestRate, request.EffectiveFrom, request.EffectiveTo);

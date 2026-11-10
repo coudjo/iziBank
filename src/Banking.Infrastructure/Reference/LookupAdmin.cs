@@ -39,6 +39,8 @@ public sealed class LookupAdmin
         new LookupSet<ChargeConditionType>("charge-conditions", LookupCodes.ChargeConditions.All),
         new LookupSet<ChargeBasisType>("charge-bases", LookupCodes.ChargeBases.All),
         new LookupSet<ChargeShortfallPolicyType>("charge-shortfall-policies", LookupCodes.ChargeShortfallPolicies.All),
+        new LookupSet<CapitalizationFrequencyType>("capitalization-frequencies", LookupCodes.CapitalizationFrequencies.All),
+        new LookupSet<DayCountType>("day-counts", LookupCodes.DayCounts.All),
         new LookupSet<LedgerAccountType>("ledger-account-types", LookupCodes.LedgerAccountTypes.All)
     ];
 

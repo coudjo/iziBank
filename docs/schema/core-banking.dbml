@@ -466,6 +466,9 @@ Table Product {
   LedgerControlAccountId bigint
   CreditInterestRate decimal(9,4)
   DebitInterestRate decimal(9,4)
+  InterestCapitalizationFrequencyId int
+  InterestDayCountId int
+  WithholdingTaxApplies bool [not null, default: false]
   MinimumBalance decimal(19,4)
   AccountsPerCustomer smallint
   IsFreezed bool
@@ -1049,6 +1052,9 @@ Ref: AccountChargeArrear.AccountId > Account.AccountId
 Ref: AccountChargeArrear.ProductChargeId > ProductCharge.ProductChargeId
 Ref: AccountChargeArrear.RaisedTransactionId > PostedTransaction.PostedTransactionId
 
+Ref: Product.InterestCapitalizationFrequencyId > CapitalizationFrequencyType.Id
+Ref: Product.InterestDayCountId > DayCountType.Id
+Ref: AccountInterestAccrual.AccountId > Account.AccountId
 Ref: ChargeCode.ChargeCategoryId > ChargeCategoryType.Id
 Ref: ProductCharge.ProductId > Product.ProductId
 Ref: ProductCharge.ChargeId > ChargeCode.ChargeId
@@ -1409,6 +1415,36 @@ Table ChargeBasisType {
   Code varchar(30) [not null, unique]
   Name varchar(100) [not null]
   IsActive bool [not null, default: true]
+}
+
+Table CapitalizationFrequencyType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+  Note: 'B5-03. MONTHLY, QUARTERLY, HALF_YEARLY, YEARLY (Q10). Set per product.'
+}
+
+Table DayCountType {
+  Id int [pk, increment]
+  Code varchar(30) [not null, unique]
+  Name varchar(100) [not null]
+  IsActive bool [not null, default: true]
+  Note: 'B5-03. ACT_365 (default) or ACT_360.'
+}
+
+Table AccountInterestAccrual {
+  AccountInterestAccrualId bigint [pk, increment]
+  AccountId bigint [not null]
+  AccrualDate date [not null]
+  Balance decimal(19,4) [not null]
+  Rate decimal(9,4) [not null]
+  Amount decimal(19,6) [not null]
+  AccruedOn datetime2 [not null]
+  indexes {
+    (AccountId, AccrualDate) [unique, name: 'UX_AccountInterestAccrual_Account_Date']
+  }
+  Note: 'B5-03 (plan 2.4). Append-only, one row per account per day. Rate and Amount never negative. Rate 0 on a zero or negative balance.'
 }
 
 Table ChargeShortfallPolicyType {

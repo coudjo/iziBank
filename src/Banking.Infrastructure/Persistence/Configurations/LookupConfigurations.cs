@@ -54,3 +54,7 @@ internal sealed class ChargeConditionTypeConfiguration : LookupConfiguration<Cha
 internal sealed class ChargeBasisTypeConfiguration : LookupConfiguration<ChargeBasisType>;
 
 internal sealed class ChargeShortfallPolicyTypeConfiguration : LookupConfiguration<ChargeShortfallPolicyType>;
+
+internal sealed class CapitalizationFrequencyTypeConfiguration : LookupConfiguration<CapitalizationFrequencyType>;
+
+internal sealed class DayCountTypeConfiguration : LookupConfiguration<DayCountType>;

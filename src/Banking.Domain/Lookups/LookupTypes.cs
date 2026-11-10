@@ -41,3 +41,7 @@ public sealed class ChargeConditionType : Lookup;
 public sealed class ChargeBasisType : Lookup;
 
 public sealed class ChargeShortfallPolicyType : Lookup;
+
+public sealed class CapitalizationFrequencyType : Lookup;
+
+public sealed class DayCountType : Lookup;

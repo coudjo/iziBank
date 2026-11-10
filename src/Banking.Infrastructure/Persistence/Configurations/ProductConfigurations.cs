@@ -24,6 +24,16 @@ internal sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
             .HasForeignKey(entity => entity.BranchId)
             .OnDelete(DeleteBehavior.NoAction);
 
+        builder.HasOne(entity => entity.InterestCapitalizationFrequency)
+            .WithMany()
+            .HasForeignKey(entity => entity.InterestCapitalizationFrequencyId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.HasOne(entity => entity.InterestDayCount)
+            .WithMany()
+            .HasForeignKey(entity => entity.InterestDayCountId)
+            .OnDelete(DeleteBehavior.NoAction);
+
         builder.HasOne(entity => entity.ProductType)
             .WithMany()
             .HasForeignKey(entity => entity.ProductTypeId)

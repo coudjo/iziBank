@@ -1,6 +1,7 @@
 using Banking.Domain.Accounts;
 using Banking.Domain.Charges;
 using Banking.Domain.Institution;
+using Banking.Domain.Interest;
 using Banking.Domain.Ledger;
 using Banking.Domain.Lookups;
 using Banking.Domain.Parties;
@@ -40,7 +41,8 @@ public sealed class BankingModelTests
         nameof(LedgerEntry), nameof(LedgerAccountDailyBalance),
         nameof(SystemLedgerSetting), nameof(ProductLedgerSetting), nameof(RoleGroupTransactionLimit), nameof(TillSession),
         nameof(ChargeCategoryType), nameof(ChargeConditionType), nameof(ChargeBasisType), nameof(ChargeShortfallPolicyType),
-        nameof(ChargeCode), nameof(ProductCharge), nameof(ProductChargeTier), nameof(AccountChargeArrear)
+        nameof(ChargeCode), nameof(ProductCharge), nameof(ProductChargeTier), nameof(AccountChargeArrear),
+        nameof(AccountInterestAccrual), nameof(CapitalizationFrequencyType), nameof(DayCountType)
     ];
 
     [Fact]

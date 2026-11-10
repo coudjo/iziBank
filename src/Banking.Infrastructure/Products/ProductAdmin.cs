@@ -28,7 +28,10 @@ public sealed record ProductChange(
     short? AccountsPerCustomer,
     bool IsChequeBookAllowed,
     bool IsFreezed,
-    bool IsActive);
+    bool IsActive,
+    int? InterestCapitalizationFrequencyId = null,
+    int? InterestDayCountId = null,
+    bool WithholdingTaxApplies = false);
 
 public sealed record PendingProductChange(long ChangeRequestId, ProductChange Proposed, long RequestedByUserId, DateTime RequestedOn);
 
@@ -59,7 +62,10 @@ public sealed record ProductView(
     long? ModifiedByUserId,
     long? SupervisedByUserId,
     DateTime? SupervisedOn,
-    PendingProductChange? PendingChange);
+    PendingProductChange? PendingChange,
+    int? InterestCapitalizationFrequencyId = null,
+    int? InterestDayCountId = null,
+    bool WithholdingTaxApplies = false);
 
 /// <summary>
 /// A product as sent by the portal. On an update, null flags keep their current value; on a create they default to
@@ -78,7 +84,10 @@ public sealed record ProductDraft(
     short? AccountsPerCustomer,
     bool? IsChequeBookAllowed,
     bool? IsFreezed,
-    bool? IsActive);
+    bool? IsActive,
+    int? InterestCapitalizationFrequencyId = null,
+    int? InterestDayCountId = null,
+    bool? WithholdingTaxApplies = null);
 
 public sealed record ProductFilter(int? ProductTypeId, string? Search, string? SupervisionState, bool? IsActive, bool OpenableOnly);
 
@@ -216,6 +225,8 @@ public sealed class ProductAdmin
             return OperationResult.Fail<int>(ProblemCodes.ProductCodeTaken);
         }
 
+        var dayCountId = draft.InterestDayCountId ?? await DayCountIdAsync(LookupCodes.DayCounts.Act365, cancellationToken).ConfigureAwait(false);
+
         var product = new Product
         {
             BranchId = branchId,
@@ -231,7 +242,10 @@ public sealed class ProductAdmin
             AccountsPerCustomer = draft.AccountsPerCustomer,
             IsChequeBookAllowed = draft.IsChequeBookAllowed ?? false,
             IsFreezed = draft.IsFreezed ?? false,
-            IsActive = draft.IsActive ?? true
+            IsActive = draft.IsActive ?? true,
+            InterestCapitalizationFrequencyId = draft.InterestCapitalizationFrequencyId,
+            InterestDayCountId = dayCountId,
+            WithholdingTaxApplies = draft.WithholdingTaxApplies ?? false
         };
         SupervisionRules.StartNew(product, _supervision.Enabled);
         _db.Set<Product>().Add(product);
@@ -303,7 +317,10 @@ public sealed class ProductAdmin
             draft.AccountsPerCustomer,
             draft.IsChequeBookAllowed ?? current.IsChequeBookAllowed,
             draft.IsFreezed ?? current.IsFreezed,
-            draft.IsActive ?? current.IsActive);
+            draft.IsActive ?? current.IsActive,
+            draft.InterestCapitalizationFrequencyId ?? current.InterestCapitalizationFrequencyId,
+            draft.InterestDayCountId ?? current.InterestDayCountId,
+            draft.WithholdingTaxApplies ?? current.WithholdingTaxApplies);
 
         if (pending)
         {
@@ -554,6 +571,18 @@ public sealed class ProductAdmin
             errors["minimumBalance"] = ["The minimum balance cannot be negative."];
         }
 
+        if (draft.InterestCapitalizationFrequencyId is { } frequencyId
+            && !await _db.Set<CapitalizationFrequencyType>().AnyAsync(row => row.Id == frequencyId && row.IsActive, cancellationToken).ConfigureAwait(false))
+        {
+            errors["interestCapitalizationFrequencyId"] = ["Choose a capitalization frequency from the list."];
+        }
+
+        if (draft.InterestDayCountId is { } dayCountId
+            && !await _db.Set<DayCountType>().AnyAsync(row => row.Id == dayCountId && row.IsActive, cancellationToken).ConfigureAwait(false))
+        {
+            errors["interestDayCountId"] = ["Choose a day count convention from the list."];
+        }
+
         if (draft.AccountsPerCustomer is < 0)
         {
             errors["accountsPerCustomer"] = ["Enter 0 for no limit, or the number of accounts allowed."];
@@ -572,7 +601,13 @@ public sealed class ProductAdmin
             product.AccountsPerCustomer,
             product.IsChequeBookAllowed ?? false,
             product.IsFreezed ?? false,
-            product.IsActive);
+            product.IsActive,
+            product.InterestCapitalizationFrequencyId,
+            product.InterestDayCountId,
+            product.WithholdingTaxApplies);
+
+    private async Task<int?> DayCountIdAsync(string code, CancellationToken cancellationToken) =>
+        await _db.Set<DayCountType>().Where(row => row.Code == code).Select(row => (int?)row.Id).SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
 
     private static void Apply(Product product, ProductChange change)
     {
@@ -585,6 +620,9 @@ public sealed class ProductAdmin
         product.IsChequeBookAllowed = change.IsChequeBookAllowed;
         product.IsFreezed = change.IsFreezed;
         product.IsActive = change.IsActive;
+        product.InterestCapitalizationFrequencyId = change.InterestCapitalizationFrequencyId;
+        product.InterestDayCountId = change.InterestDayCountId;
+        product.WithholdingTaxApplies = change.WithholdingTaxApplies;
     }
 
     private IQueryable<ChangeRequest> PendingChangeQuery(int productId)
@@ -658,7 +696,10 @@ public sealed class ProductAdmin
             row.ModifiedByUserId,
             row.SupervisedByUserId,
             row.SupervisedOn,
-            null));
+            null,
+            row.InterestCapitalizationFrequencyId,
+            row.InterestDayCountId,
+            row.WithholdingTaxApplies));
 
     private static Dictionary<string, object?>? Note(string? reason) =>
         string.IsNullOrWhiteSpace(reason) ? null : new Dictionary<string, object?> { ["reason"] = reason.Length > 300 ? reason[..300] : reason };

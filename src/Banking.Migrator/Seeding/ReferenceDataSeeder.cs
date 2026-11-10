@@ -56,6 +56,10 @@ internal static class ReferenceDataSeeder
             .ConfigureAwait(false);
         await SeedLookupAsync<ChargeShortfallPolicyType>(context, LookupCodes.ChargeShortfallPolicies.All, cancellationToken)
             .ConfigureAwait(false);
+        await SeedLookupAsync<CapitalizationFrequencyType>(context, LookupCodes.CapitalizationFrequencies.All, cancellationToken)
+            .ConfigureAwait(false);
+        await SeedLookupAsync<DayCountType>(context, LookupCodes.DayCounts.All, cancellationToken)
+            .ConfigureAwait(false);
         await SeedLookupAsync<LedgerAccountType>(context, LookupCodes.LedgerAccountTypes.All, cancellationToken)
             .ConfigureAwait(false);
 

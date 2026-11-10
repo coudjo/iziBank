@@ -38,6 +38,12 @@ public sealed class Product : AuditableEntity, ISupervisable
 
     public bool IsActive { get; set; } = true;
 
+    public int? InterestCapitalizationFrequencyId { get; set; }
+
+    public int? InterestDayCountId { get; set; }
+
+    public bool WithholdingTaxApplies { get; set; }
+
     public bool IsSupervisionRequired { get; set; } = true;
 
     public long? SupervisedByUserId { get; set; }
@@ -51,6 +57,10 @@ public sealed class Product : AuditableEntity, ISupervisable
     public Currency? Currency { get; set; }
 
     public LedgerAccount? LedgerControlAccount { get; set; }
+
+    public CapitalizationFrequencyType? InterestCapitalizationFrequency { get; set; }
+
+    public DayCountType? InterestDayCount { get; set; }
 
     public StaffUser? SupervisedByUser { get; set; }
 
