@@ -29,4 +29,5 @@
 | B0-03 charge rules | written; waiting for owner build, test and migration 0008 | 2026-10-22 | migration 0008_ChargeRules to generate |
 | B5-01 charges on withdrawals and transfers | written; waiting for owner build, test and OpenAPI export | 2026-10-22 | no migration; `docs/api/openapi.json` re-export for the quote endpoint |
 | B5-02 shortfall policies and arrears | done (tests green); periodic fees not yet | 2026-10-25 | migration `0009_AccountChargeArrear` adds `AccountChargeArrear`; OpenAPI export still to confirm |
-| B5-03 interest accrual | written; waiting for owner build, test, migration 0010 and OpenAPI export | 2026-10-26 | migration `0010_InterestAccrual`; product endpoints changed, so re-export `docs/api/openapi.json`; capitalization is B5-04 |
+| B5-03 interest accrual | done (tests green, pushed) | 2026-10-26 | migration `0010_InterestAccrual`; product endpoints changed, re-export `docs/api/openapi.json` still to confirm |
+| B5-04 capitalization and withholding | written; waiting for owner migration `0011_InterestCapitalization`, build, test and OpenAPI export | 2026-11-10 | migration `0011_InterestCapitalization`; `AccountInterestCapitalization` table; two-step posting and row write is open; periodic fees not in this step |

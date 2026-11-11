@@ -1055,6 +1055,8 @@ Ref: AccountChargeArrear.RaisedTransactionId > PostedTransaction.PostedTransacti
 Ref: Product.InterestCapitalizationFrequencyId > CapitalizationFrequencyType.Id
 Ref: Product.InterestDayCountId > DayCountType.Id
 Ref: AccountInterestAccrual.AccountId > Account.AccountId
+Ref: AccountInterestCapitalization.AccountId > Account.AccountId
+Ref: AccountInterestCapitalization.PostedTransactionId > PostedTransaction.PostedTransactionId
 Ref: ChargeCode.ChargeCategoryId > ChargeCategoryType.Id
 Ref: ProductCharge.ProductId > Product.ProductId
 Ref: ProductCharge.ChargeId > ChargeCode.ChargeId
@@ -1445,6 +1447,22 @@ Table AccountInterestAccrual {
     (AccountId, AccrualDate) [unique, name: 'UX_AccountInterestAccrual_Account_Date']
   }
   Note: 'B5-03 (plan 2.4). Append-only, one row per account per day. Rate and Amount never negative. Rate 0 on a zero or negative balance.'
+}
+
+Table AccountInterestCapitalization {
+  AccountInterestCapitalizationId bigint [pk, increment]
+  AccountId bigint [not null]
+  FromDate date [not null]
+  ToDate date [not null]
+  Amount decimal(19,2) [not null]
+  TaxAmount decimal(19,2) [not null]
+  PostedTransactionId bigint [not null]
+  CreatedOn datetime2 [not null]
+  indexes {
+    (AccountId, FromDate) [unique, name: 'UX_AccountInterestCapitalization_Account_From']
+    (AccountId, ToDate) [name: 'IX_AccountInterestCapitalization_Account_To']
+  }
+  Note: 'B5-04 (plan 2.4, 6.9). Append-only. One row per account per capitalized period; the unique index blocks crediting the same period twice. Amount is the gross interest rounded to 2 dp; TaxAmount is the withholding taken from it. Check: FromDate <= ToDate, 0 <= TaxAmount <= Amount.'
 }
 
 Table ChargeShortfallPolicyType {

@@ -253,7 +253,7 @@ internal sealed class PostingTestBed
         (await ApproveAsync(requestId)).ShouldBe(PostingRequestStatuses.Posted);
     }
 
-    private static async Task<long> LedgerAccountAsync(BankingDbContext context, string code, string typeCode, int branchId)
+    internal static async Task<long> LedgerAccountAsync(BankingDbContext context, string code, string typeCode, int branchId)
     {
         var typeId = await context.Set<LedgerAccountType>().Where(row => row.Code == typeCode).Select(row => row.Id).SingleAsync();
         var account = new LedgerAccount

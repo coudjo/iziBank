@@ -2,6 +2,7 @@ using Banking.Application.Abstractions;
 using Banking.Application.Errors;
 using Banking.Domain.Accounts;
 using Banking.Domain.Lookups;
+using Banking.Infrastructure.Interest;
 using Banking.Infrastructure.Persistence;
 using Banking.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
@@ -33,9 +34,11 @@ public sealed class AccountServicing
     private readonly ICurrentUser _currentUser;
     private readonly IActivityContext _activity;
     private readonly TimeProvider _timeProvider;
+    private readonly InterestCapitalization _capitalization;
 
-    public AccountServicing(BankingDbContext db, ICurrentUser currentUser, IActivityContext activity, TimeProvider timeProvider)
+    public AccountServicing(BankingDbContext db, ICurrentUser currentUser, IActivityContext activity, TimeProvider timeProvider, InterestCapitalization capitalization)
     {
+        _capitalization = capitalization;
         _db = db;
         _currentUser = currentUser;
         _activity = activity;
@@ -74,6 +77,14 @@ public sealed class AccountServicing
             return OperationResult.Fail<long>(
                 ProblemCodes.Validation,
                 new Dictionary<string, string[]>(StringComparer.Ordinal) { ["closeReasonId"] = ["Choose why the account is closing."] });
+        }
+
+        // B5-04: interest accrued so far is capitalized before the close checks run. It posts in its own transaction,
+        // so it has to finish before this one starts.
+        var capitalized = await _capitalization.CapitalizeToLastAccrualAsync(userId, accountId, cancellationToken).ConfigureAwait(false);
+        if (capitalized.ProblemCode is not null)
+        {
+            return OperationResult.Fail<long>(capitalized.ProblemCode, capitalized.Errors);
         }
 
         var transaction = await _db.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);

@@ -33,7 +33,7 @@ public sealed class SchemaBaselineTests
         "TillSession",
         "ChargeCategoryType", "ChargeConditionType", "ChargeBasisType", "ChargeShortfallPolicyType",
         "ChargeCode", "ProductCharge", "ProductChargeTier", "AccountChargeArrear",
-        "AccountInterestAccrual", "CapitalizationFrequencyType", "DayCountType"
+        "AccountInterestAccrual", "AccountInterestCapitalization", "CapitalizationFrequencyType", "DayCountType"
     ];
 
     private readonly MsSqlContainerFixture _fixture;
@@ -162,6 +162,7 @@ public sealed class SchemaBaselineTests
         checks.ShouldContain("CK_ProductChargeTier_Amount");
         checks.ShouldContain("CK_ProductChargeTier_MinMax");
         checks.ShouldContain("CK_AccountInterestAccrual_Amounts");
+        checks.ShouldContain("CK_AccountInterestCapitalization_Amounts");
 
         var indexes = await QueryStringsAsync(
             connection,
@@ -205,6 +206,7 @@ public sealed class SchemaBaselineTests
         indexes.ShouldContain("UX_ProductChargeTier_Charge_Tier");
         indexes.ShouldContain("IX_AccountChargeArrear_Account_Raised");
         indexes.ShouldContain("UX_AccountInterestAccrual_Account_Date");
+        indexes.ShouldContain("UX_AccountInterestCapitalization_Account_From");
         checks.ShouldContain("CK_AccountChargeArrear_Amounts");
     }
 

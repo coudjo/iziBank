@@ -46,10 +46,10 @@ public sealed class ChargeCalculatorTests
     }
 
     [Theory]
-    [InlineData(2, 0, true)]
-    [InlineData(2, 1, true)]
-    [InlineData(2, 2, false)]
-    [InlineData(0, 0, false)]
+    [InlineData((short)2, 0, true)]
+    [InlineData((short)2, 1, true)]
+    [InlineData((short)2, 2, false)]
+    [InlineData((short)0, 0, false)]
     [InlineData(null, 0, false)]
     public void A_free_allowance_waives_only_the_transactions_within_it(short? free, int used, bool waived) =>
         ChargeCalculator.IsWaived(free, used).ShouldBe(waived);

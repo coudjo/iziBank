@@ -123,7 +123,17 @@ public sealed class PostingEngine
 
     // ---------------------------------------------------------------- Submit
 
-    public async Task<OperationResult<PostingOutcome>> SubmitAsync(PostingActor actor, PostingDraft draft, CancellationToken cancellationToken)
+    public Task<OperationResult<PostingOutcome>> SubmitAsync(PostingActor actor, PostingDraft draft, CancellationToken cancellationToken) =>
+        SubmitCoreAsync(actor, draft, approvedBySystem: false, cancellationToken);
+
+    /// <summary>
+    /// B5-04: a posting the system makes on its own (capitalization, end of day). It needs no supervisor, but every
+    /// account and ledger check still applies, and the posting is refused exactly as a teller's would be.
+    /// </summary>
+    public Task<OperationResult<PostingOutcome>> SubmitSystemAsync(PostingActor actor, PostingDraft draft, CancellationToken cancellationToken) =>
+        SubmitCoreAsync(actor, draft, approvedBySystem: true, cancellationToken);
+
+    private async Task<OperationResult<PostingOutcome>> SubmitCoreAsync(PostingActor actor, PostingDraft draft, bool approvedBySystem, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(actor);
         ArgumentNullException.ThrowIfNull(draft);
@@ -161,7 +171,7 @@ public sealed class PostingEngine
                 return Fail(ledger.Problem);
             }
 
-            var needsApproval = await NeedsApprovalAsync(actor, draft, accounts, cancellationToken).ConfigureAwait(false);
+            var needsApproval = !approvedBySystem && await NeedsApprovalAsync(actor, draft, accounts, cancellationToken).ConfigureAwait(false);
             var now = _timeProvider.GetUtcNow().UtcDateTime;
             var request = new PostingRequest
             {

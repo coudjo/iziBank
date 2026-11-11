@@ -1187,6 +1187,54 @@ namespace Banking.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Banking.Domain.Interest.AccountInterestCapitalization", b =>
+                {
+                    b.Property<long>("AccountInterestCapitalizationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("AccountInterestCapitalizationId"));
+
+                    b.Property<long>("AccountId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(19, 2)
+                        .HasColumnType("decimal(19,2)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateOnly>("FromDate")
+                        .HasColumnType("date");
+
+                    b.Property<long>("PostedTransactionId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("TaxAmount")
+                        .HasPrecision(19, 2)
+                        .HasColumnType("decimal(19,2)");
+
+                    b.Property<DateOnly>("ToDate")
+                        .HasColumnType("date");
+
+                    b.HasKey("AccountInterestCapitalizationId");
+
+                    b.HasIndex("PostedTransactionId");
+
+                    b.HasIndex("AccountId", "FromDate")
+                        .IsUnique()
+                        .HasDatabaseName("UX_AccountInterestCapitalization_Account_From");
+
+                    b.HasIndex("AccountId", "ToDate")
+                        .HasDatabaseName("IX_AccountInterestCapitalization_Account_To");
+
+                    b.ToTable("AccountInterestCapitalization", "dbo", t =>
+                        {
+                            t.HasCheckConstraint("CK_AccountInterestCapitalization_Amounts", "[FromDate] <= [ToDate] AND [Amount] >= 0 AND [TaxAmount] >= 0 AND [TaxAmount] <= [Amount]");
+                        });
+                });
+
             modelBuilder.Entity("Banking.Domain.Ledger.LedgerAccount", b =>
                 {
                     b.Property<long>("LedgerAccountId")
@@ -4866,6 +4914,21 @@ namespace Banking.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Account");
+                });
+
+            modelBuilder.Entity("Banking.Domain.Interest.AccountInterestCapitalization", b =>
+                {
+                    b.HasOne("Banking.Domain.Accounts.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Transactions.PostedTransaction", null)
+                        .WithMany()
+                        .HasForeignKey("PostedTransactionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Banking.Domain.Ledger.LedgerAccount", b =>
