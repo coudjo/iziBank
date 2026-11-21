@@ -687,6 +687,56 @@ namespace Banking.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Banking.Domain.Charges.AccountChargePeriod", b =>
+                {
+                    b.Property<long>("AccountChargePeriodId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("AccountChargePeriodId"));
+
+                    b.Property<long>("AccountId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("ChargedAmount")
+                        .HasPrecision(19, 2)
+                        .HasColumnType("decimal(19,2)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("FeeAmount")
+                        .HasPrecision(19, 2)
+                        .HasColumnType("decimal(19,2)");
+
+                    b.Property<DateOnly>("PeriodEnd")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("PeriodStart")
+                        .HasColumnType("date");
+
+                    b.Property<long>("PostedTransactionId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ProductChargeId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("AccountChargePeriodId");
+
+                    b.HasIndex("PostedTransactionId");
+
+                    b.HasIndex("ProductChargeId");
+
+                    b.HasIndex("AccountId", "PeriodStart")
+                        .IsUnique()
+                        .HasDatabaseName("UX_AccountChargePeriod_Account_Start");
+
+                    b.ToTable("AccountChargePeriod", "dbo", t =>
+                        {
+                            t.HasCheckConstraint("CK_AccountChargePeriod_Amounts", "[PeriodStart] <= [PeriodEnd] AND [FeeAmount] > 0 AND [ChargedAmount] >= 0 AND [ChargedAmount] <= [FeeAmount]");
+                        });
+                });
+
             modelBuilder.Entity("Banking.Domain.Charges.ChargeCode", b =>
                 {
                     b.Property<int>("ChargeId")
@@ -4730,6 +4780,27 @@ namespace Banking.Infrastructure.Persistence.Migrations
                     b.HasOne("Banking.Domain.Transactions.PostedTransaction", null)
                         .WithMany()
                         .HasForeignKey("RaisedTransactionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Banking.Domain.Charges.AccountChargePeriod", b =>
+                {
+                    b.HasOne("Banking.Domain.Accounts.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Transactions.PostedTransaction", null)
+                        .WithMany()
+                        .HasForeignKey("PostedTransactionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Banking.Domain.Charges.ProductCharge", null)
+                        .WithMany()
+                        .HasForeignKey("ProductChargeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

@@ -1057,6 +1057,9 @@ Ref: Product.InterestDayCountId > DayCountType.Id
 Ref: AccountInterestAccrual.AccountId > Account.AccountId
 Ref: AccountInterestCapitalization.AccountId > Account.AccountId
 Ref: AccountInterestCapitalization.PostedTransactionId > PostedTransaction.PostedTransactionId
+Ref: AccountChargePeriod.AccountId > Account.AccountId
+Ref: AccountChargePeriod.ProductChargeId > ProductCharge.ProductChargeId
+Ref: AccountChargePeriod.PostedTransactionId > PostedTransaction.PostedTransactionId
 Ref: ChargeCode.ChargeCategoryId > ChargeCategoryType.Id
 Ref: ProductCharge.ProductId > Product.ProductId
 Ref: ProductCharge.ChargeId > ChargeCode.ChargeId
@@ -1463,6 +1466,22 @@ Table AccountInterestCapitalization {
     (AccountId, ToDate) [name: 'IX_AccountInterestCapitalization_Account_To']
   }
   Note: 'B5-04 (plan 2.4, 6.9). Append-only. One row per account per capitalized period; the unique index blocks crediting the same period twice. Amount is the gross interest rounded to 2 dp; TaxAmount is the withholding taken from it. Check: FromDate <= ToDate, 0 <= TaxAmount <= Amount.'
+}
+
+Table AccountChargePeriod {
+  AccountChargePeriodId bigint [pk, increment]
+  AccountId bigint [not null]
+  ProductChargeId bigint [not null]
+  PeriodStart date [not null]
+  PeriodEnd date [not null]
+  FeeAmount decimal(19,2) [not null]
+  ChargedAmount decimal(19,2) [not null]
+  PostedTransactionId bigint [not null]
+  CreatedOn datetime2 [not null]
+  indexes {
+    (AccountId, PeriodStart) [unique, name: 'UX_AccountChargePeriod_Account_Start']
+  }
+  Note: 'B5-05 (plan 6.8). Append-only. One row per account per calendar month, written with the periodic fee posting only. ChargedAmount is 0 to FeeAmount; the rest, if any, is an AccountChargeArrear (DEFER) or written off (COLLECT_AVAILABLE).'
 }
 
 Table ChargeShortfallPolicyType {
