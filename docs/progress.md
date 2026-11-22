@@ -30,5 +30,5 @@
 | B5-01 charges on withdrawals and transfers | written; waiting for owner build, test and OpenAPI export | 2026-10-22 | no migration; `docs/api/openapi.json` re-export for the quote endpoint |
 | B5-02 shortfall policies and arrears | done (tests green); periodic fees not yet | 2026-10-25 | migration `0009_AccountChargeArrear` adds `AccountChargeArrear`; OpenAPI export still to confirm |
 | B5-03 interest accrual | done (tests green, pushed) | 2026-10-26 | migration `0010_InterestAccrual`; product endpoints changed, re-export `docs/api/openapi.json` still to confirm |
-| B5-04 capitalization and withholding | done (tests green) | 2026-11-12 | migration `0011_InterestCapitalization` adds `AccountInterestCapitalization`; two-step posting and row write is open (ADR B-19); periodic fees not in this step |
-| B5-05 periodic fees | done (tests green); migration `0012_PeriodicFees` adds `AccountChargePeriod`; two-step posting and row write must be closed before go-live (ADR B-20); no integration test yet | 2026-11-21 | table `AccountChargePeriod` |
+| B5-04 capitalization and withholding | done (tests green) | 2026-11-12 | migration `0011_InterestCapitalization` adds `AccountInterestCapitalization`; posting and row now in one transaction (ADR B-19); periodic fees not in this step |
+| B5-05 periodic fees | done (tests green); migration `0012_PeriodicFees` adds `AccountChargePeriod`; posting and row in one transaction (ADR B-20); no integration test yet | 2026-11-21 | table `AccountChargePeriod` |

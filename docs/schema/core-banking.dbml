@@ -1480,6 +1480,8 @@ Table AccountChargePeriod {
   CreatedOn datetime2 [not null]
   indexes {
     (AccountId, PeriodStart) [unique, name: 'UX_AccountChargePeriod_Account_Start']
+    (PostedTransactionId) [name: 'IX_AccountChargePeriod_PostedTransactionId']
+    (ProductChargeId) [name: 'IX_AccountChargePeriod_ProductChargeId']
   }
   Note: 'B5-05 (plan 6.8). Append-only. One row per account per calendar month, written with the periodic fee posting only. ChargedAmount is 0 to FeeAmount; the rest, if any, is an AccountChargeArrear (DEFER) or written off (COLLECT_AVAILABLE).'
 }

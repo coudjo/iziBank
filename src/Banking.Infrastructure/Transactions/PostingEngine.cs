@@ -130,10 +130,19 @@ public sealed class PostingEngine
     /// B5-04: a posting the system makes on its own (capitalization, end of day). It needs no supervisor, but every
     /// account and ledger check still applies, and the posting is refused exactly as a teller's would be.
     /// </summary>
-    public Task<OperationResult<PostingOutcome>> SubmitSystemAsync(PostingActor actor, PostingDraft draft, CancellationToken cancellationToken) =>
-        SubmitCoreAsync(actor, draft, approvedBySystem: true, cancellationToken);
+    /// <param name="inSameTransaction">
+    /// Runs inside the posting's own transaction, after the posting is written and before it commits, with the new
+    /// posted transaction id. A failure there rolls the posting back too, so a caller can write its own record with
+    /// the posting and never be left with one without the other (B5-05).
+    /// </param>
+    public Task<OperationResult<PostingOutcome>> SubmitSystemAsync(
+        PostingActor actor,
+        PostingDraft draft,
+        CancellationToken cancellationToken,
+        Func<long, CancellationToken, Task>? inSameTransaction = null) =>
+        SubmitCoreAsync(actor, draft, approvedBySystem: true, cancellationToken, inSameTransaction);
 
-    private async Task<OperationResult<PostingOutcome>> SubmitCoreAsync(PostingActor actor, PostingDraft draft, bool approvedBySystem, CancellationToken cancellationToken)
+    private async Task<OperationResult<PostingOutcome>> SubmitCoreAsync(PostingActor actor, PostingDraft draft, bool approvedBySystem, CancellationToken cancellationToken, Func<long, CancellationToken, Task>? inSameTransaction = null)
     {
         ArgumentNullException.ThrowIfNull(actor);
         ArgumentNullException.ThrowIfNull(draft);
@@ -202,6 +211,10 @@ public sealed class PostingEngine
             {
                 postedId = await PostAsync(request, draft, codeId, workingDate, ledger.Lines!, accounts, actor.StaffUserId, null, now, cancellationToken)
                     .ConfigureAwait(false);
+                if (inSameTransaction is not null && postedId is { } written)
+                {
+                    await inSameTransaction(written, cancellationToken).ConfigureAwait(false);
+                }
             }
 
             await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);

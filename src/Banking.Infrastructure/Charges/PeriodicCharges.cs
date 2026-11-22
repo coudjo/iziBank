@@ -173,31 +173,26 @@ public sealed class PeriodicCharges
             },
             Arrears: arrears);
 
-        var posting = await _engine.SubmitSystemAsync(actor, draft, cancellationToken).ConfigureAwait(false);
+        // The period row is written inside the posting's transaction, so the fee and its record commit or roll back together.
+        var posting = await _engine.SubmitSystemAsync(actor, draft, cancellationToken, async (postedId, ct) =>
+        {
+            _db.Set<AccountChargePeriod>().Add(new AccountChargePeriod
+            {
+                AccountId = account.AccountId,
+                ProductChargeId = charge.ProductChargeId,
+                PeriodStart = start,
+                PeriodEnd = end,
+                FeeAmount = flat,
+                ChargedAmount = debit,
+                PostedTransactionId = postedId,
+                CreatedOn = _timeProvider.GetUtcNow().UtcDateTime
+            });
+            await _db.SaveChangesAsync(ct).ConfigureAwait(false);
+        }).ConfigureAwait(false);
         if (posting.ProblemCode is not null)
         {
             return OperationResult.Fail<PeriodOutcome>(posting.ProblemCode, posting.Errors);
         }
-
-        if (posting.Value?.PostedTransactionId is not { } postedId)
-        {
-            return OperationResult.Fail<PeriodOutcome>(ProblemCodes.Validation);
-        }
-
-        // Two steps: the posting commits first, then this row. If the row write fails after the posting, the next run
-        // would charge the month again. Must be closed before go-live (see ADR B-20 and progress.md).
-        _db.Set<AccountChargePeriod>().Add(new AccountChargePeriod
-        {
-            AccountId = account.AccountId,
-            ProductChargeId = charge.ProductChargeId,
-            PeriodStart = start,
-            PeriodEnd = end,
-            FeeAmount = flat,
-            ChargedAmount = debit,
-            PostedTransactionId = postedId,
-            CreatedOn = _timeProvider.GetUtcNow().UtcDateTime
-        });
-        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         return OperationResult.Ok(new PeriodOutcome(true, false, debit));
     }

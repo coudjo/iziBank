@@ -217,29 +217,25 @@ public sealed class InterestCapitalization
                 ["toDate"] = to.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)
             });
 
-        var outcome = await _engine.SubmitSystemAsync(actor, draft, cancellationToken).ConfigureAwait(false);
+        // The period row is written inside the posting's transaction, so the credit and its record commit or roll back together.
+        var outcome = await _engine.SubmitSystemAsync(actor, draft, cancellationToken, async (postedId, ct) =>
+        {
+            _db.Set<AccountInterestCapitalization>().Add(new AccountInterestCapitalization
+            {
+                AccountId = account.AccountId,
+                FromDate = from,
+                ToDate = to,
+                Amount = gross,
+                TaxAmount = tax,
+                PostedTransactionId = postedId,
+                CreatedOn = _timeProvider.GetUtcNow().UtcDateTime
+            });
+            await _db.SaveChangesAsync(ct).ConfigureAwait(false);
+        }).ConfigureAwait(false);
         if (outcome.ProblemCode is not null)
         {
             return OperationResult.Fail<PeriodPosted?>(outcome.ProblemCode, outcome.Errors);
         }
-
-        if (outcome.Value?.PostedTransactionId is not { } postedId)
-        {
-            return OperationResult.Fail<PeriodPosted?>(ProblemCodes.Validation);
-        }
-
-        // Two steps: the posting commits first, then this row. Revisit when the end-of-day run (B6) owns the transaction.
-        _db.Set<AccountInterestCapitalization>().Add(new AccountInterestCapitalization
-        {
-            AccountId = account.AccountId,
-            FromDate = from,
-            ToDate = to,
-            Amount = gross,
-            TaxAmount = tax,
-            PostedTransactionId = postedId,
-            CreatedOn = _timeProvider.GetUtcNow().UtcDateTime
-        });
-        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         return OperationResult.Ok<PeriodPosted?>(new PeriodPosted(gross, tax));
     }
