@@ -32,4 +32,4 @@
 | B5-03 interest accrual | done (tests green, pushed) | 2026-10-26 | migration `0010_InterestAccrual`; product endpoints changed, re-export `docs/api/openapi.json` still to confirm |
 | B5-04 capitalization and withholding | done (tests green) | 2026-11-12 | migration `0011_InterestCapitalization` adds `AccountInterestCapitalization`; posting and row now in one transaction (ADR B-19); periodic fees not in this step |
 | B5-05 periodic fees | done (tests green); migration `0012_PeriodicFees` adds `AccountChargePeriod`; posting and row in one transaction (ADR B-20); no integration test yet | 2026-11-21 | table `AccountChargePeriod` |
-| B6 end of day | written; waiting for build and test; trigger (endpoint or scheduled job) not decided | 2026-11-22 | `EndOfDayRunner`, `InterestDailyJournal`; daily journal rounds to 2 dp per product, residue open (ADR B-21) |
+| B6 end of day | done (test green); scheduled job `EndOfDayService` off by default, turn on with `EndOfDay:Enabled` and `EndOfDay:RunAtUtc` | 2026-11-22 | `EndOfDayRunner`, `InterestDailyJournal` carries fractions of a cent forward; job runs as the system staff user |

@@ -71,6 +71,32 @@ public sealed class EndOfDayTests : IAsyncLifetime
         (await check.Set<PostedTransaction>().CountAsync(row => row.TransactionCodeId == codeId && row.BranchId == _bed.HomeBranchId)).ShouldBe(1);
     }
 
+    [Fact]
+    public async Task The_expense_account_always_holds_the_rounded_accruals_to_date()
+    {
+        await _bed.AccountAsync(funding: 1000m);
+        var (expenseId, _) = await SetUpInterestAsync(5m);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var tomorrow = today.AddDays(1);
+        var actor = new PostingActor(_bed.SetupStaffId, _bed.HomeBranchId);
+
+        foreach (var day in new[] { today, tomorrow })
+        {
+            using var scope = _bed.Host.Factory.Services.CreateScope();
+            var run = await scope.ServiceProvider.GetRequiredService<EndOfDayRunner>().RunAsync(actor, day, CancellationToken.None);
+            run.ProblemCode.ShouldBeNull();
+            run.Value!.InterestJournalPosted.ShouldBeTrue();
+        }
+
+        decimal toDate;
+        await using (var context = _bed.Host.NewContext())
+        {
+            toDate = await context.Set<AccountInterestAccrual>().Where(row => row.AccrualDate <= tomorrow).SumAsync(row => row.Amount);
+        }
+
+        (await _bed.LedgerBalanceAsync(expenseId)).ShouldBe(Math.Round(toDate, 2, MidpointRounding.AwayFromZero));
+    }
+
     /// <summary>A savings product with a credit rate, and its interest expense and payable accounts.</summary>
     private async Task<(long ExpenseId, long PayableId)> SetUpInterestAsync(decimal rate)
     {

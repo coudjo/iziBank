@@ -11,9 +11,11 @@ using Microsoft.EntityFrameworkCore;
 namespace Banking.Infrastructure.Interest;
 
 /// <summary>
-/// B6: the daily interest journal (plan 6.9). For one working date and branch it posts the day's accrued interest, by product,
-/// as one ledger-only posting: Dr <c>INTEREST_EXPENSE</c> / Cr <c>INTEREST_PAYABLE</c>. Each product's total is rounded to
-/// two decimals, because a posting holds whole cents. A branch's day is posted once; running the same date again posts nothing.
+/// B6: the daily interest journal (plan 6.9). For one working date and branch it posts, by product, the interest accrued
+/// to date, rounded to cents, less what the product's expense account already holds. Carrying that difference forward keeps
+/// the ledger equal to the rounded accruals at every point, so a fraction of a cent is posted on a later day rather than lost.
+/// It is one ledger-only <c>INT_ACCR</c> posting per branch and day: Dr <c>INTEREST_EXPENSE</c> / Cr <c>INTEREST_PAYABLE</c>.
+/// A branch's day posts once; running the same date again posts nothing.
 /// </summary>
 public sealed class InterestDailyJournal
 {
@@ -26,7 +28,7 @@ public sealed class InterestDailyJournal
         _engine = engine;
     }
 
-    /// <summary>Returns true when a journal was posted, false when the day had nothing to post or was already posted.</summary>
+    /// <summary>Returns true when a journal was posted, false when there was nothing to post or the day was already posted.</summary>
     public async Task<OperationResult<bool>> PostDailyAsync(PostingActor actor, DateOnly workingDate, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(actor);
@@ -51,23 +53,20 @@ public sealed class InterestDailyJournal
             return OperationResult.Ok(false);
         }
 
-        var totals = await _db.Set<AccountInterestAccrual>()
+        // Accrued to date, by product, across every day up to and including the working date.
+        var toDate = await _db.Set<AccountInterestAccrual>()
             .AsNoTracking()
-            .Where(row => row.AccrualDate == workingDate && row.Account!.BranchId == actor.BranchId)
+            .Where(row => row.AccrualDate <= workingDate && row.Account!.BranchId == actor.BranchId)
             .GroupBy(row => row.Account!.ProductId)
-            .Select(group => new ProductAccrual(group.Key, group.Sum(row => row.Amount)))
+            .Select(group => new ProductAmount(group.Key, group.Sum(row => row.Amount)))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
-        var accrued = totals
-            .Select(total => new ProductAccrual(total.ProductId, Math.Round(total.Amount, 2, MidpointRounding.AwayFromZero)))
-            .Where(total => total.Amount > 0m)
-            .ToList();
-        if (accrued.Count == 0)
+        if (toDate.Count == 0)
         {
             return OperationResult.Ok(false);
         }
 
-        var productIds = accrued.Select(total => total.ProductId).ToList();
+        var productIds = toDate.Select(total => total.ProductId).ToList();
         var settings = await _db.Set<ProductLedgerSetting>()
             .AsNoTracking()
             .Where(row => productIds.Contains(row.ProductId)
@@ -77,7 +76,8 @@ public sealed class InterestDailyJournal
             .ConfigureAwait(false);
 
         var ledger = new List<LedgerLine>();
-        foreach (var total in accrued)
+        var amount = 0m;
+        foreach (var total in toDate)
         {
             var expense = settings.SingleOrDefault(row => row.ProductId == total.ProductId && row.SettingCode == LedgerSettingCodes.InterestExpense);
             if (expense is null)
@@ -95,11 +95,25 @@ public sealed class InterestDailyJournal
                     new Dictionary<string, object?>(StringComparer.Ordinal) { ["settingCode"] = LedgerSettingCodes.InterestPayable, ["productId"] = total.ProductId });
             }
 
-            ledger.Add(new LedgerLine(expense.LedgerAccountId, actor.BranchId, EntrySides.Debit, total.Amount));
-            ledger.Add(new LedgerLine(payable.LedgerAccountId, actor.BranchId, EntrySides.Credit, total.Amount));
+            // The product's expense account holds what earlier days posted. The due amount is the rounded total less that.
+            // One expense account per product is assumed (each product has its own setting).
+            var posted = await PostedToAsync(expense.LedgerAccountId, actor.BranchId, cancellationToken).ConfigureAwait(false);
+            var due = Math.Round(total.Amount, 2, MidpointRounding.AwayFromZero) - posted;
+            if (due <= 0m)
+            {
+                continue;
+            }
+
+            ledger.Add(new LedgerLine(expense.LedgerAccountId, actor.BranchId, EntrySides.Debit, due));
+            ledger.Add(new LedgerLine(payable.LedgerAccountId, actor.BranchId, EntrySides.Credit, due));
+            amount += due;
         }
 
-        var amount = accrued.Sum(total => total.Amount);
+        if (ledger.Count == 0)
+        {
+            return OperationResult.Ok(false);
+        }
+
         var draft = new PostingDraft(
             TransactionCodes.InterestAccrual,
             null,
@@ -119,7 +133,14 @@ public sealed class InterestDailyJournal
             : OperationResult.Ok(true);
     }
 
-    private sealed record ProductAccrual(int ProductId, decimal Amount);
+    private async Task<decimal> PostedToAsync(long ledgerAccountId, int branchId, CancellationToken cancellationToken) =>
+        await _db.Set<LedgerEntry>()
+            .AsNoTracking()
+            .Where(row => row.LedgerAccountId == ledgerAccountId && row.BranchId == branchId)
+            .SumAsync(row => row.CrDb == EntrySides.Debit ? row.Amount : -row.Amount, cancellationToken)
+            .ConfigureAwait(false);
+
+    private sealed record ProductAmount(int ProductId, decimal Amount);
 
     private sealed record ProductSetting(int ProductId, string SettingCode, long LedgerAccountId);
 }

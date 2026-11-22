@@ -1,3 +1,5 @@
+using Banking.Api.EndOfDay;
+using Banking.Application.EndOfDay;
 using System.Globalization;
 using Banking.Api.Activity;
 using Banking.Api.Endpoints;
@@ -50,6 +52,7 @@ try
     builder.Services.Configure<Banking.Application.Transactions.TransactionOptions>(builder.Configuration.GetSection(Banking.Application.Transactions.TransactionOptions.SectionName));
     builder.Services.Configure<Banking.Application.Charges.ChargeOptions>(builder.Configuration.GetSection(Banking.Application.Charges.ChargeOptions.SectionName));
     builder.Services.Configure<Banking.Application.Interest.InterestOptions>(builder.Configuration.GetSection(Banking.Application.Interest.InterestOptions.SectionName));
+    builder.Services.Configure<EndOfDayOptions>(builder.Configuration.GetSection(EndOfDayOptions.SectionName));
 
     // Fail at start-up, not on the first business-day request, if the weekend setting is wrong.
     _ = (builder.Configuration.GetSection(CalendarOptions.SectionName).Get<CalendarOptions>() ?? new CalendarOptions()).ParseWeekendDays();
@@ -86,6 +89,8 @@ try
     {
         builder.Services.AddHostedService<SessionSweeperService>();
     }
+
+    builder.Services.AddHostedService<EndOfDayService>();
 
     var app = builder.Build();
 
