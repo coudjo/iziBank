@@ -134,6 +134,7 @@ try
     api.MapTransactionEndpoints();
     api.MapProductEndpoints();
     api.MapAccountEndpoints();
+    api.MapInquiryEndpoints();
     api.MapPartyEndpoints();
     api.MapPartyDocumentEndpoints();
     api.MapPartyProfileEndpoints();

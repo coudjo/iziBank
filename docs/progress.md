@@ -33,3 +33,5 @@
 | B5-04 capitalization and withholding | done (tests green) | 2026-11-12 | migration `0011_InterestCapitalization` adds `AccountInterestCapitalization`; posting and row now in one transaction (ADR B-19); periodic fees not in this step |
 | B5-05 periodic fees | done (tests green); migration `0012_PeriodicFees` adds `AccountChargePeriod`; posting and row in one transaction (ADR B-20); no integration test yet | 2026-11-21 | table `AccountChargePeriod` |
 | B6 end of day | done (test green); scheduled job `EndOfDayService` off by default, turn on with `EndOfDay:Enabled` and `EndOfDay:RunAtUtc` | 2026-11-22 | `EndOfDayRunner`, `InterestDailyJournal` carries fractions of a cent forward; job runs as the system staff user |
+| B7-01 account entries and statement | done (3 tests green) | 2026-11-24 | `AccountHistory`; `GET /accounts/{id}/entries` and `/statement`; OpenAPI re-export still to do |
+| B7-02 GL inquiry and trial balance | done (test green) | 2026-11-24 | `LedgerInquiry`; `GET /ledger-accounts/{id}/entries` and `GET /reports/trial-balance`; figures come from the ledger lines, not the end-of-day table; OpenAPI re-export still to do |

@@ -5822,6 +5822,264 @@
         }
       }
     },
+    "/api/v1/accounts/{accountId}/entries": {
+      "get": {
+        "tags": [
+          "Accounts"
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfAccountEntryView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{accountId}/statement": {
+      "get": {
+        "tags": [
+          "Accounts"
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountStatement"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ledger-accounts/{ledgerAccountId}/entries": {
+      "get": {
+        "tags": [
+          "Ledger accounts"
+        ],
+        "parameters": [
+          {
+            "name": "ledgerAccountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "branchId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfLedgerEntryView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/trial-balance": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "branchId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrialBalance"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/parties/individuals": {
       "post": {
         "tags": [
@@ -8416,6 +8674,57 @@
           }
         }
       },
+      "AccountEntryView": {
+        "required": [
+          "accountLedgerEntryId",
+          "reference",
+          "entryDate",
+          "transactionCode",
+          "narration",
+          "crDb",
+          "amount",
+          "balanceAfter",
+          "postedOn"
+        ],
+        "type": "object",
+        "properties": {
+          "accountLedgerEntryId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "entryDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "transactionCode": {
+            "type": "string"
+          },
+          "narration": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "crDb": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "balanceAfter": {
+            "type": "number",
+            "format": "double"
+          },
+          "postedOn": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "AccountHolderRequest": {
         "required": [
           "partyId",
@@ -8709,6 +9018,59 @@
           },
           "hasEffectiveSignature": {
             "type": "boolean"
+          }
+        }
+      },
+      "AccountStatement": {
+        "required": [
+          "accountId",
+          "from",
+          "to",
+          "openingBalance",
+          "totalCredits",
+          "totalDebits",
+          "closingBalance",
+          "reconciles",
+          "entries"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "openingBalance": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalCredits": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalDebits": {
+            "type": "number",
+            "format": "double"
+          },
+          "closingBalance": {
+            "type": "number",
+            "format": "double"
+          },
+          "reconciles": {
+            "type": "boolean"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountEntryView"
+            }
           }
         }
       },
@@ -11404,6 +11766,52 @@
           }
         }
       },
+      "LedgerEntryView": {
+        "required": [
+          "ledgerEntryId",
+          "reference",
+          "entryDate",
+          "transactionCode",
+          "narration",
+          "crDb",
+          "amount",
+          "postedOn"
+        ],
+        "type": "object",
+        "properties": {
+          "ledgerEntryId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "entryDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "transactionCode": {
+            "type": "string"
+          },
+          "narration": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "crDb": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "postedOn": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "LedgerFloor": {
         "required": [
           "ledgerAccountId",
@@ -11886,6 +12294,35 @@
           }
         }
       },
+      "PagedResultOfAccountEntryView": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountEntryView"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "PagedResultOfAccountListRow": {
         "required": [
           "items",
@@ -12015,6 +12452,35 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/LedgerAccountView"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PagedResultOfLedgerEntryView": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LedgerEntryView"
             }
           },
           "page": {
@@ -13024,6 +13490,24 @@
           },
           "isActive": {
             "type": "boolean"
+          },
+          "interestCapitalizationFrequencyId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "interestDayCountId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "withholdingTaxApplies": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -13417,6 +13901,26 @@
               "null",
               "boolean"
             ]
+          },
+          "interestCapitalizationFrequencyId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "interestDayCountId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "withholdingTaxApplies": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       },
@@ -13586,6 +14090,24 @@
                 "$ref": "#/components/schemas/PendingProductChange"
               }
             ]
+          },
+          "interestCapitalizationFrequencyId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "interestDayCountId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "withholdingTaxApplies": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -14375,6 +14897,79 @@
           }
         }
       },
+      "TrialBalance": {
+        "required": [
+          "branchId",
+          "asOf",
+          "rows",
+          "totalDebit",
+          "totalCredit",
+          "balanced"
+        ],
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "asOf": {
+            "type": "string",
+            "format": "date"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrialBalanceRow"
+            }
+          },
+          "totalDebit": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalCredit": {
+            "type": "number",
+            "format": "double"
+          },
+          "balanced": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TrialBalanceRow": {
+        "required": [
+          "ledgerAccountId",
+          "ledgerAccountCode",
+          "accountName",
+          "debit",
+          "credit",
+          "net"
+        ],
+        "type": "object",
+        "properties": {
+          "ledgerAccountId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "ledgerAccountCode": {
+            "type": "string"
+          },
+          "accountName": {
+            "type": "string"
+          },
+          "debit": {
+            "type": "number",
+            "format": "double"
+          },
+          "credit": {
+            "type": "number",
+            "format": "double"
+          },
+          "net": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
       "UpdateInstitutionProfileRequest": {
         "required": [
           "institutionName",
@@ -14544,6 +15139,9 @@
     },
     {
       "name": "Accounts"
+    },
+    {
+      "name": "Reports"
     },
     {
       "name": "Parties"
