@@ -6080,6 +6080,84 @@
         }
       }
     },
+    "/api/v1/reports/teller-cash": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "branchId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TellerCashReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/uncollected-fees": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "branchId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UncollectedFeesReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/parties/individuals": {
       "post": {
         "tags": [
@@ -14638,6 +14716,122 @@
           }
         }
       },
+      "TellerCashReport": {
+        "required": [
+          "branchId",
+          "date",
+          "sessions",
+          "totalExpected",
+          "totalCounted",
+          "totalDifference",
+          "mismatches"
+        ],
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "sessions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TellerCashRow"
+            }
+          },
+          "totalExpected": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalCounted": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalDifference": {
+            "type": "number",
+            "format": "double"
+          },
+          "mismatches": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "TellerCashRow": {
+        "required": [
+          "tillSessionId",
+          "staffCode",
+          "status",
+          "openedOn",
+          "closedOn",
+          "expectedAmount",
+          "countedAmount",
+          "difference",
+          "bookedDifference",
+          "reconciles"
+        ],
+        "type": "object",
+        "properties": {
+          "tillSessionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "staffCode": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "openedOn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "closedOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "expectedAmount": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "countedAmount": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "difference": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "bookedDifference": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "reconciles": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        }
+      },
       "TillAmountRequest": {
         "required": [
           "amount"
@@ -14965,6 +15159,72 @@
             "format": "double"
           },
           "net": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "UncollectedFeeRow": {
+        "required": [
+          "accountChargeArrearId",
+          "accountId",
+          "productChargeId",
+          "raisedOn",
+          "amount",
+          "outstandingAmount"
+        ],
+        "type": "object",
+        "properties": {
+          "accountChargeArrearId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "accountId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "productChargeId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "raisedOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "outstandingAmount": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "UncollectedFeesReport": {
+        "required": [
+          "branchId",
+          "asOf",
+          "rows",
+          "totalOutstanding"
+        ],
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "asOf": {
+            "type": "string",
+            "format": "date"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UncollectedFeeRow"
+            }
+          },
+          "totalOutstanding": {
             "type": "number",
             "format": "double"
           }

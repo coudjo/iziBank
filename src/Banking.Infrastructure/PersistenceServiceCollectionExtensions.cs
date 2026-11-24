@@ -93,6 +93,7 @@ public static class PersistenceServiceCollectionExtensions
         services.TryAddScoped<Banking.Infrastructure.EndOfDay.EndOfDayRunner>();
         services.TryAddScoped<Banking.Infrastructure.Inquiry.AccountHistory>();
         services.TryAddScoped<Banking.Infrastructure.Inquiry.LedgerInquiry>();
+        services.TryAddScoped<Banking.Infrastructure.Inquiry.CashAndFeeReports>();
 
         return services;
     }

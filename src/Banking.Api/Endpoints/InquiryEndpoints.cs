@@ -8,7 +8,7 @@ using Banking.Infrastructure.Security;
 
 namespace Banking.Api.Endpoints;
 
-/// <summary>B7-01 and B7-02: account entries and statement (plan 6.11), GL inquiry and trial balance (plan 8).</summary>
+/// <summary>B7-01 to B7-03: account entries and statement (plan 6.11), GL inquiry, trial balance and cash and fee reports (plan 8).</summary>
 internal static class InquiryEndpoints
 {
     private const string AccountArea = "ACCOUNT";
@@ -46,6 +46,14 @@ internal static class InquiryEndpoints
         reports.MapGet("/trial-balance", TrialBalanceAsync)
             .RequirePermission(ModuleCatalog.Ledger, ReportArea, PermissionAction.View)
             .Produces<TrialBalance>();
+
+        reports.MapGet("/teller-cash", TellerCashAsync)
+            .RequirePermission(ModuleCatalog.Ledger, ReportArea, PermissionAction.View)
+            .Produces<TellerCashReport>();
+
+        reports.MapGet("/uncollected-fees", UncollectedFeesAsync)
+            .RequirePermission(ModuleCatalog.Ledger, ReportArea, PermissionAction.View)
+            .Produces<UncollectedFeesReport>();
 
         return api;
     }
@@ -114,4 +122,18 @@ internal static class InquiryEndpoints
         LedgerInquiry inquiry,
         CancellationToken cancellationToken) =>
         TypedResults.Ok(await inquiry.TrialBalanceAsync(branchId, date, cancellationToken).ConfigureAwait(false));
+
+    private static async Task<IResult> TellerCashAsync(
+        int branchId,
+        DateOnly date,
+        CashAndFeeReports reports,
+        CancellationToken cancellationToken) =>
+        TypedResults.Ok(await reports.TellerCashAsync(branchId, date, cancellationToken).ConfigureAwait(false));
+
+    private static async Task<IResult> UncollectedFeesAsync(
+        int branchId,
+        DateOnly date,
+        CashAndFeeReports reports,
+        CancellationToken cancellationToken) =>
+        TypedResults.Ok(await reports.UncollectedFeesAsync(branchId, date, cancellationToken).ConfigureAwait(false));
 }
