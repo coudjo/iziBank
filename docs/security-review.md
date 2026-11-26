@@ -1,28 +1,33 @@
-# Security review (A6-02)
+# Security review: posting and ledger (B8-02) and concurrency (B8-03)
 
-Reviewed 2026-10-21 against the Phase A checklist (implementation plan 10.3), plus the issues found on the way.
-Each item has evidence (a test or the code that enforces it) or a ticket.
+Each item in B8-02 is either covered by a named integration test or has a ticket. Tests marked "new" were added in
+B8 and have not yet been run.
 
-## Checklist
+| Item | Covered by | Status |
+|---|---|---|
+| Mandate bypass: a withdrawal needs the account mandate | `TillAndCashTests.Cash_rules_tills_vault_and_third_parties`; `TransferTests.All_to_sign_needs_every_signer` | covered |
+| Limit bypass: an amount above the teller limit is held, not posted | `TransferTests.Above_the_limit_the_amount_is_held_until_a_different_supervisor_approves` (includes a teller's own approval being refused) | covered |
+| Double posting: a retry with the same `Idempotency-Key` does not post twice | `TransferTests.A_transfer_within_the_limit_posts_at_once_and_a_retry_does_not_post_twice` | covered |
+| Approval by the requester | `TransferTests.A_supervisor_cannot_approve_their_own_request`; `RoleGroupTests.The_requester_cannot_approve_their_own_change` | covered |
+| Ledger tamper: posted rows cannot be changed or deleted with raw SQL | `PostingLedgerTests.Posted_rows_cannot_be_updated_or_deleted_even_with_raw_sql` (`PostedTransaction`, `LedgerEntry`); `LedgerTamperTests.Account_ledger_lines_cannot_be_updated_or_deleted_with_raw_sql` (`AccountLedgerEntry`, new) | covered |
+| Ledger tamper: digest verification after a full end of day | Ticket SEC-B8-02-1 | open |
 
-| Item | Status | Evidence |
-| --- | --- | --- |
-| No secret, token or image bytes in logs, audit rows or responses | Verified | `AuditTrailTests.Secret_hashes_and_image_bytes_never_reach_the_audit_log`. `AuditRedaction` writes `[redacted]` for `*Hash`, `*Secret*`, `*Password*` and a size for binary values; `ActivityLogWriter` drops detail keys containing secret, password, otp or token. The request log row records the route template, never the query string or body (`ActivityLoggingMiddleware`). EF sensitive-data logging is off. Staff responses carry no hash. |
-| Login errors are indistinguishable (unknown user, wrong secret, disabled) | Fixed, verified | Same `auth.invalid-credentials` for all three: `AuthFlowTests.Wrong_secret_unknown_code_and_disabled_user_get_the_same_401_and_are_logged`. **Found:** unknown and disabled codes skipped the password hash, so they answered in about a millisecond while a real code took the cost of PBKDF2; timing told an attacker which staff codes exist. **Fixed:** they now check one hash too (`AuthService.RejectAtEqualCost`), verified by `AuthFlowTests.Unknown_and_disabled_codes_still_check_one_password_hash_so_timing_reveals_nothing`. |
-| Lockout works and is derived from the ledger-backed log | Verified | `AuthFlowTests.Five_failures_lock_the_code_even_with_the_right_secret`. `AuthService.LockoutRemainingAsync` counts `LOGIN_FAILED` rows in `UserActivityLog` (append-only) since the later of the window start and the last success; index on `(EventTypeId, EntityId, EventTimestamp)`. Unknown codes lock the same way, so lockout does not reveal which codes exist either. |
-| Every endpoint has a permission attribute (a reflection test fails the build otherwise) | Verified | `PermissionTests.Every_api_endpoint_declares_its_access_rule` reads every route from `EndpointDataSource` and fails on any without `RequirePermission`, `AuthenticatedOnly` or explicit anonymous access. |
-| Identification numbers masked in lists | Verified | `PartyDocumentTests.Lists_mask_numbers_and_the_primary_ID_cannot_be_removed`; `PartySearch` and `PartyDocuments` use `PartyRules.MaskIdentificationNumber`. Full numbers only on the single-record reads, which are logged as sensitive reads (fail closed, D7). |
-| Uploads validated by content, size-limited | Verified | `PartyDocumentTests.Uploads_are_checked_by_content_size_and_declared_type`. `FileSignatures.Detect` reads magic bytes; `RequestBody.ReadAsync` stops reading at the limit (5 MB images, 1 MB signatures); the declared type must match the content. |
-| JWT signing key not in the repo; `AllowSelfApproval` guarded in Production | Fixed, verified | `appsettings.json` has no key; the API refuses to start without one of 32+ characters (`Program.cs`). `SupervisionOptionsTests.Self_approval_refuses_to_start_outside_development_and_test`. **Found:** `.env.example` carried a real-looking random key that the API would accept, so copying the example to a server would have used a public key. **Fixed:** the example is empty, with the command to generate one; the API refuses to start until it is set. |
-| SQL Server TDE or disk encryption noted in the runbook as an infrastructure requirement | Done | `docs/runbook.md`, "Infrastructure requirements". |
+## Ticket SEC-B8-02-1: digest verification after end of day
 
-## Other findings
+Decide how the ledger is verified end to end after a full end-of-day run.
 
-| Finding | Status | Change |
-| --- | --- | --- |
-| API responses had no caching rules, so browsers and proxies could keep customer details, photos and document images on disk | Fixed | Every response carries `Cache-Control: no-store` and `X-Content-Type-Options: nosniff` (`Program.cs`); `ApiHostTests.Responses_are_never_cached_and_never_sniffed`. |
-| The OpenAPI description was served anonymously in Production | Fixed | Mapped only in Development, or when `OpenApi:Expose` is set (`scripts/export-openapi.sh` sets it); `ApiHostTests.The_api_description_is_not_published_outside_development`. |
-| Behind nginx, every session and activity row would record nginx's address as the client IP | Fixed | Forwarded headers are read from proxies listed in `Network:TrustedProxies` (CIDR) only; with none listed the connection address is used. Set it in deployment (runbook). |
-| No limit on login attempts across many staff codes from one address (password spraying) | Ticket T1 | Lockout is per staff code. Add an IP-partitioned rate limiter on `POST /auth/login` once the trusted proxy setting is in place in each environment, so the real client address is the partition key. |
-| Staff search sends a name in the query string (portal P15); audit queries send account and customer numbers (portal P21) | Ticket T2 | Query strings reach proxy and server access logs. Move these filters to POST bodies, as `POST /parties/search` and `POST /accounts/search` already do. |
-| The activity log has no index for "by staff member, by date", which the audit viewer uses | Ticket T3 | Add `(StaffUserId, EventTimestamp)` to `UserActivityLog` if A6-01 shows the query is slow at volume. |
+- Option A: SQL Server database ledger digests (`sys.sp_verify_database_ledger`). This needs a database created with
+  `LEDGER = ON` and digest storage. The append-only tables exist already, but the database may not be ledger-enabled.
+- Option B: an application check after end of day that recomputes each branch's ledger totals, compares them with
+  `LedgerAccountDailyBalance`, and checks every account's `BalanceAfter` chain against its `ClearBalance`.
+
+Decide before go-live, and record the choice as an ADR.
+
+## Concurrency (B8-03)
+
+- `ConcurrencySoakTests.Parallel_transfers_on_few_accounts_keep_every_balance_and_the_ledger_consistent` (new): 60
+  parallel transfers across three accounts, a fixed seed, and checks that no money is lost, every statement reconciles
+  to its balance, and the branch trial balance is zero.
+- `TransferTests.Parallel_transfers_both_ways_never_lose_an_update` (existing): parallel transfers in both directions.
+
+Not yet done in B8-03: the end-of-day checks run after the soak, and the soak at production volume belongs to B8-01.

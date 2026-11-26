@@ -36,3 +36,5 @@
 | B7-01 account entries and statement | done (3 tests green) | 2026-11-24 | `AccountHistory`; `GET /accounts/{id}/entries` and `/statement`; OpenAPI re-export still to do |
 | B7-02 GL inquiry and trial balance | done (test green) | 2026-11-24 | `LedgerInquiry`; `GET /ledger-accounts/{id}/entries` and `GET /reports/trial-balance`; figures come from the ledger lines, not the end-of-day table; OpenAPI re-export still to do |
 | B7-03 teller cash and uncollected fees reports | done (tests green, including a short till reconciled to its close posting) | 2026-11-24 | `CashAndFeeReports`; `GET /reports/teller-cash` and `/uncollected-fees`; uncollected fees are the current outstanding amounts, not a snapshot at the date |
+| B8-02 security review | done for the tests; digest verification after end of day open (SEC-B8-02-1) | 2026-11-24 | `docs/security-review.md`; `LedgerTamperTests` green |
+| B8-03 concurrency soak | done (test green) | 2026-11-24 | `ConcurrencySoakTests`; the end-of-day checks and production volume are not yet covered |
